@@ -27,6 +27,10 @@ class _HomepageState extends State<Homepage> {
               ))
         ],
       ),
+      body: Center(
+        child: Text('Hello from CarHive')
+        ,
+      ),
     );
   }
 }
