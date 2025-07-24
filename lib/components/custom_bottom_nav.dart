@@ -14,6 +14,11 @@ class CustomBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color selectedColor = Color.fromARGB(255, 132, 33, 156);
+    final Color unselectedColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white70
+        : Colors.black54;
+    final Color fabColor = Color.fromARGB(255, 132, 33, 156);
     return Stack(
       alignment: Alignment.bottomCenter,
       children: [
@@ -25,11 +30,11 @@ class CustomBottomNav extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(Icons.home, "Home", 0),
-                _buildNavItem(Icons.campaign, "My Ads", 1),
+                _buildNavItem(context, Icons.home, "Home", 0, selectedColor, unselectedColor),
+                _buildNavItem(context, Icons.campaign, "My Ads", 1, selectedColor, unselectedColor),
                 const SizedBox(width: 48), // space for FAB
-                _buildNavItem(Icons.shop, "Investment", 3),
-                _buildNavItem(Icons.menu, "Profile", 4),
+                _buildNavItem(context, Icons.shop, "Investment", 3, selectedColor, unselectedColor),
+                _buildNavItem(context, Icons.menu, "Profile", 4, selectedColor, unselectedColor),
               ],
             ),
           ),
@@ -38,7 +43,7 @@ class CustomBottomNav extends StatelessWidget {
           bottom: 16,
           child: FloatingActionButton(
             onPressed: onFabPressed,
-            backgroundColor: const Color.fromARGB(255, 161, 41, 191),
+            backgroundColor: fabColor,
             child: const Icon(Icons.add, size: 32),
             shape: const CircleBorder(),
           ),
@@ -47,24 +52,20 @@ class CustomBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index) => GestureDetector(
+  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index, Color selectedColor, Color unselectedColor) => GestureDetector(
         onTap: () => onTabSelected(index),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              color: selectedIndex == index
-                  ? const Color.fromARGB(255, 161, 41, 191)
-                  : Colors.black54,
+              color: selectedIndex == index ? selectedColor : unselectedColor,
             ),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: selectedIndex == index
-                    ? const Color.fromARGB(255, 161, 41, 191)
-                    : Colors.black54,
+                color: selectedIndex == index ? selectedColor : unselectedColor,
               ),
             ),
           ],

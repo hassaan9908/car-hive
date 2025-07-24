@@ -46,7 +46,6 @@ class Homepage extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          SizedBox(height: 16),
           custom.SearchBar(),
           SizedBox(height: 16),
           CarTabs(),

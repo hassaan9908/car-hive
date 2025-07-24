@@ -16,6 +16,7 @@ class CarTabs extends StatelessWidget {
                 borderSide: BorderSide(width: 3.0, color: Colors.deepPurple),
                 insets: EdgeInsets.symmetric(horizontal: 24.0),
               ),
+              
               labelColor: Colors.deepPurple,
               labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               unselectedLabelColor: Colors.grey,
