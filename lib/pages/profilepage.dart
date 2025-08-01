@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../components/custom_bottom_nav.dart';
 import 'package:provider/provider.dart';
 import '../theme/theme_provider.dart';
+import '../auth/loginscreen.dart';
+import '../auth/auth_service.dart';
 
 class Profilepage extends StatelessWidget {
   const Profilepage({super.key});
@@ -22,6 +24,8 @@ class Profilepage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _auth = AuthService();
+
     return WillPopScope(
       onWillPop: () async {
         Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
@@ -39,32 +43,41 @@ class Profilepage extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color.fromARGB(255, 96, 24, 114),
-                    Color.fromARGB(255, 132, 33, 156),
+                    Color.fromARGB(255, 35, 38, 68),
+                    Color.fromARGB(255, 70, 73, 97),
                   ],
                 ),
               ),
               child: Center(
-                child: Container(
-                  height: 45,
-                  margin: EdgeInsets.only(left: 17, right: 17, top: 70),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Log in / Sign up',
-                      style: TextStyle(
-                        color: Color.fromARGB(255, 132, 33, 156),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const Loginscreen()),
+                    );
+                  },
+                  child: Container(
+                    height: 45,
+                    margin: EdgeInsets.only(left: 17, right: 17, top: 70),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Log in / Sign up',
+                        style: TextStyle(
+                          color: Color.fromARGB(255, 35, 38, 68),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ),
+            
             // Section: Personal
             _sectionHeader(context, "Personal"),
             _profileTile(context, Icons.settings, "Theme"),
@@ -81,6 +94,11 @@ class Profilepage extends StatelessWidget {
             _profileTile(context, Icons.article, "Blog"),
             _profileTile(context, Icons.ondemand_video, "Videos"),
             _profileTile(context, Icons.directions_car, "Cool Rides"),
+
+            ElevatedButton(
+              onPressed: _auth.signout,
+              child: Text("Log out")
+              )
           ],
         ),
         bottomNavigationBar: CustomBottomNav(

@@ -30,7 +30,7 @@ class Homepage extends StatelessWidget {
             color: Colors.white
           ),
           ),
-        backgroundColor: Color.fromARGB(255, 132, 33, 156),
+        backgroundColor: Theme.of(context).colorScheme.background,
         centerTitle: true,
         actions: [
           IconButton(

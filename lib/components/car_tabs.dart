@@ -13,11 +13,11 @@ class CarTabs extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 16),
             child: TabBar(
               indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(width: 3.0, color: Colors.deepPurple),
+                borderSide: BorderSide(width: 3.0, color: Color.fromARGB(255, 35, 38, 68)),
                 insets: EdgeInsets.symmetric(horizontal: 24.0),
               ),
               
-              labelColor: Colors.deepPurple,
+              labelColor: Color.fromARGB(255, 35, 38, 68),
               labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               unselectedLabelColor: Colors.grey,
               unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal, fontSize: 16),

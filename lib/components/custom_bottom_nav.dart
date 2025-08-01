@@ -14,11 +14,11 @@ class CustomBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color selectedColor = Color.fromARGB(255, 132, 33, 156);
+    final Color selectedColor = Color.fromARGB(255, 94, 98, 135);
     final Color unselectedColor = Theme.of(context).brightness == Brightness.dark
         ? Colors.white70
         : Colors.black54;
-    final Color fabColor = Color.fromARGB(255, 132, 33, 156);
+    final Color fabColor = Color.fromARGB(255, 35, 38, 68);
     return Stack(
       alignment: Alignment.bottomCenter,
       children: [
@@ -44,7 +44,7 @@ class CustomBottomNav extends StatelessWidget {
           child: FloatingActionButton(
             onPressed: onFabPressed,
             backgroundColor: fabColor,
-            child: const Icon(Icons.add, size: 32),
+            child: const Icon(Icons.add, size: 32, color: Colors.white,),
             shape: const CircleBorder(),
           ),
         ),
