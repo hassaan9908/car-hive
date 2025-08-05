@@ -11,6 +11,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'theme/light_theme.dart';
 import 'theme/dark_theme.dart';
 import 'theme/theme_provider.dart';
+import 'auth/auth_provider.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -35,8 +36,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp(

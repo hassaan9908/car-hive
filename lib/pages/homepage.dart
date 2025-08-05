@@ -38,7 +38,7 @@ class Homepage extends StatelessWidget {
               Navigator.pushNamed(context, '/notifications');
             },
              icon: Icon(
-              Icons.notifications,
+              Icons.chat,
               color: Colors.white,
               ))
         ],
