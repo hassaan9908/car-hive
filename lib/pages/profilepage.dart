@@ -41,16 +41,7 @@ class Profilepage extends StatelessWidget {
               // Gradient header with login button or greeting
               Container(
                 height: 160,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color.fromARGB(255, 35, 38, 68),
-                      Color.fromARGB(255, 70, 73, 97),
-                    ],
-                  ),
-                ),
+                color: Theme.of(context).colorScheme.background,
                 child: Center(
                   child: authProvider.isLoggedIn
                       ? _buildGreetingMessage(context, authProvider, colorScheme)

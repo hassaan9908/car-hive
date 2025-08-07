@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:carhive/auth/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart';
+import 'package:carhive/components/custom_textfield.dart';
 
 class Signupscreen extends StatefulWidget {
   const Signupscreen({super.key});
@@ -78,84 +79,36 @@ class _SignupscreenState extends State<Signupscreen> {
                   const SizedBox(height: 48),
 
                   // Name Field
-                  TextField(
+                  CustomTextField(
                     controller: _nameController,
+                    hintText: 'Full Name',
                     keyboardType: TextInputType.name,
-                    decoration: InputDecoration(
-                      hintText: 'Full Name',
-                      prefixIcon: Icon(Icons.person, color: colorScheme.primary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline ?? Colors.grey),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.primary, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surface,
-                    ),
+                    prefixIcon: Icon(Icons.person),
                   ),
                   const SizedBox(height: 16),
 
                   // Email Field
-                  TextField(
+                  CustomTextField(
                     controller: _emailController,
+                    hintText: 'Email',
                     keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      hintText: 'Email',
-                      prefixIcon: Icon(Icons.email, color: colorScheme.primary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline ?? Colors.grey),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.primary, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surface,
-                    ),
+                    prefixIcon: Icon(Icons.email),
                   ),
                   const SizedBox(height: 16),
 
                   // Password Field
-                  TextField(
+                  CustomTextField(
                     controller: _passwordController,
+                    hintText: 'Password',
                     obscureText: !_isPasswordVisible,
-                    decoration: InputDecoration(
-                      hintText: 'Password',
-                      prefixIcon: Icon(Icons.lock, color: colorScheme.primary),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                          color: colorScheme.primary,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isPasswordVisible = !_isPasswordVisible;
-                          });
-                        },
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline ?? Colors.grey),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.primary, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surface,
+                    prefixIcon: Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
                     ),
                   ),
                   const SizedBox(height: 24),

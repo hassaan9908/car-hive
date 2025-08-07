@@ -6,6 +6,7 @@ import 'package:carhive/pages/homepage.dart';
 import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:carhive/components/custom_textfield.dart';
 
 
 class Loginscreen extends StatefulWidget {
@@ -73,60 +74,27 @@ class _LoginscreenState extends State<Loginscreen> {
                   const SizedBox(height: 48),
                   
                   // Email Field
-                  TextField(
+                  CustomTextField(
                     controller: _emailController,
+                    hintText: 'Email',
                     keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      hintText: 'Email',
-                      prefixIcon: Icon(Icons.email, color: colorScheme.primary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline ?? Colors.grey),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.primary, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surface,
-                    ),
+                    prefixIcon: Icon(Icons.email),
                   ),
                   const SizedBox(height: 16),
                   
                   // Password Field
-                  TextField(
+                  CustomTextField(
                     controller: _passwordController,
+                    hintText: 'Password',
                     obscureText: !_isPasswordVisible,
-                    decoration: InputDecoration(
-                      hintText: 'Password',
-                      prefixIcon: Icon(Icons.lock, color: colorScheme.primary),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                          color: colorScheme.primary,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isPasswordVisible = !_isPasswordVisible;
-                          });
-                        },
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline ?? Colors.grey),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.primary, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surface,
+                    prefixIcon: Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -160,16 +128,7 @@ class _LoginscreenState extends State<Loginscreen> {
                           ),
                   ),
                   const SizedBox(height: 24),
-                  // ElevatedButton(
-                  //   onPressed: () async{
-                  //     bool isLogged = await g_login();
-                  //     if(isLogged){
-                  //       goToHome(context);
-                  //     }
 
-                  //   },
-                  //   child: Text('Signin with Google')
-                  //   ),
                   
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -237,18 +196,7 @@ class _LoginscreenState extends State<Loginscreen> {
     }
   }
   
-  // Future<bool> g_login() async{
-
-  //   final user = await GoogleSignIn().signIn();
-
-  //   GoogleSignInAuthentication userAuth = await user!.authentication;
-
-  //   var credential = firebase_auth.GoogleAuthProvider.credential(idToken: userAuth.idToken,accessToken: userAuth.accessToken);
-
-  //   firebase_auth.FirebaseAuth.instance.signInWithCredential(credential);
-
-  //   return firebase_auth.FirebaseAuth.instance.currentUser != null;
-  // }
+  
 
 
 }

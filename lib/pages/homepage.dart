@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../components/search_bar.dart' as custom;
+import '../components/custom_textfield.dart';
 import '../components/car_tabs.dart';
 import '../components/custom_bottom_nav.dart';
 
@@ -29,7 +29,7 @@ class Homepage extends StatelessWidget {
           style: TextStyle(
             color: Colors.white
           ),
-          ),
+        ),
         backgroundColor: Theme.of(context).colorScheme.background,
         centerTitle: true,
         actions: [
@@ -46,7 +46,13 @@ class Homepage extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          custom.SearchBar(),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: CustomTextField(
+              hintText: 'Search cars, brands, models...',
+              prefixIcon: Icon(Icons.search),
+            ),
+          ),
           SizedBox(height: 16),
           CarTabs(),
         ],
