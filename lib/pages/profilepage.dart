@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../theme/theme_provider.dart';
 import '../auth/loginscreen.dart';
 import '../auth/auth_service.dart';
+import '../auth/auth_provider.dart';
 
 class Profilepage extends StatelessWidget {
   const Profilepage({super.key});
@@ -24,7 +25,9 @@ class Profilepage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _auth = AuthService();
+    final authProvider = Provider.of<AuthProvider>(context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return WillPopScope(
       onWillPop: () async {
@@ -32,74 +35,75 @@ class Profilepage extends StatelessWidget {
         return false;
       },
       child: Scaffold(
-        body: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            // Gradient header with button
-            Container(
-              height: 180,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color.fromARGB(255, 35, 38, 68),
-                    Color.fromARGB(255, 70, 73, 97),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Gradient header with login button or greeting
+              Container(
+                height: 160,
+                color: Theme.of(context).colorScheme.background,
+                child: Center(
+                  child: authProvider.isLoggedIn
+                      ? _buildGreetingMessage(context, authProvider, colorScheme)
+                      : _buildLoginButton(context, colorScheme),
+                ),
+              ),
+              
+              // Scrollable content area
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    // Section: Personal
+                    _sectionHeader(context, "Personal"),
+                    _profileTile(context, Icons.settings, "Theme"),
+                    _profileTile(context, Icons.language, "Choose Language"),
+                    const Divider(),
+                    
+                    // Section: Products
+                    _sectionHeader(context, "Products"),
+                    _profileTile(context, Icons.directions_car, "Sell My Car"),
+                    _profileTile(context, Icons.directions_car_filled, "Buy Used Car"),
+                    _profileTile(context, Icons.car_rental, "Buy New Car"),
+                    const Divider(),
+                    
+                    // Section: Explore
+                    _sectionHeader(context, "Explore"),
+                    _profileTile(context, Icons.article, "Blog"),
+                    _profileTile(context, Icons.ondemand_video, "Videos"),
+                    _profileTile(context, Icons.directions_car, "Cool Rides"),
+
+                    // Logout button (only show when logged in)
+                    if (authProvider.isLoggedIn)
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: ElevatedButton(
+                          onPressed: () => _showLogoutDialog(context, authProvider),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            "Log out",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    
+                    // Add bottom padding to ensure content doesn't get cut off
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
-              child: Center(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const Loginscreen()),
-                    );
-                  },
-                  child: Container(
-                    height: 45,
-                    margin: EdgeInsets.only(left: 17, right: 17, top: 70),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Log in / Sign up',
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 35, 38, 68),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            
-            // Section: Personal
-            _sectionHeader(context, "Personal"),
-            _profileTile(context, Icons.settings, "Theme"),
-            _profileTile(context, Icons.language, "Choose Language"),
-            Divider(),
-            // Section: Products
-            _sectionHeader(context, "Products"),
-            _profileTile(context, Icons.directions_car, "Sell My Car"),
-            _profileTile(context, Icons.directions_car_filled, "Buy Used Car"),
-            _profileTile(context, Icons.car_rental, "Buy New Car"),
-            Divider(),
-            // Section: Explore
-            _sectionHeader(context, "Explore"),
-            _profileTile(context, Icons.article, "Blog"),
-            _profileTile(context, Icons.ondemand_video, "Videos"),
-            _profileTile(context, Icons.directions_car, "Cool Rides"),
-
-            ElevatedButton(
-              onPressed: _auth.signout,
-              child: Text("Log out")
-              )
-          ],
+            ],
+          ),
         ),
         bottomNavigationBar: CustomBottomNav(
           selectedIndex: _selectedIndex,
@@ -111,6 +115,124 @@ class Profilepage extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildLoginButton(BuildContext context, ColorScheme colorScheme) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const Loginscreen()),
+        );
+      },
+      child: Container(
+        height: 45,
+        margin: const EdgeInsets.symmetric(horizontal: 17),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Center(
+          child: Text(
+            'Log in / Sign up',
+            style: TextStyle(
+              color: Color.fromARGB(255, 35, 38, 68),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGreetingMessage(BuildContext context, AuthProvider authProvider, ColorScheme colorScheme) {
+    final displayName = authProvider.getDisplayName();
+    final email = authProvider.getEmail();
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 17),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // User avatar
+          CircleAvatar(
+            radius: 25,
+            backgroundColor: Colors.white,
+            child: Text(
+              displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color.fromARGB(255, 35, 38, 68),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          
+          // Greeting message
+          Text(
+            'Welcome back,',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 2),
+          
+          // Username
+          Text(
+            displayName.isNotEmpty ? displayName : 'User',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          
+          // Email (if different from display name)
+          if (email.isNotEmpty && email != displayName)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                email,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, AuthProvider authProvider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await authProvider.signOut();
+              },
+              child: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -142,7 +264,7 @@ class Profilepage extends StatelessWidget {
       }
       return ListTile(
         leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(title, style: TextStyle(fontSize: 16)),
+        title: Text(title, style: const TextStyle(fontSize: 16)),
         subtitle: Text(subtitle),
         onTap: () => _showThemeBottomSheet(context),
         dense: true,
@@ -150,7 +272,7 @@ class Profilepage extends StatelessWidget {
     }
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      title: Text(title, style: TextStyle(fontSize: 16)),
+      title: Text(title, style: const TextStyle(fontSize: 16)),
       onTap: () {},
       dense: true,
     );
@@ -168,7 +290,7 @@ class Profilepage extends StatelessWidget {
             RadioListTile<ThemeMode>(
               value: ThemeMode.system,
               groupValue: currentMode,
-              title: Text('System Default'),
+              title: const Text('System Default'),
               onChanged: (mode) {
                 themeProvider.setThemeMode(mode!);
                 Navigator.pop(ctx);
@@ -177,7 +299,7 @@ class Profilepage extends StatelessWidget {
             RadioListTile<ThemeMode>(
               value: ThemeMode.light,
               groupValue: currentMode,
-              title: Text('Light'),
+              title: const Text('Light'),
               onChanged: (mode) {
                 themeProvider.setThemeMode(mode!);
                 Navigator.pop(ctx);
@@ -186,7 +308,7 @@ class Profilepage extends StatelessWidget {
             RadioListTile<ThemeMode>(
               value: ThemeMode.dark,
               groupValue: currentMode,
-              title: Text('Dark'),
+              title: const Text('Dark'),
               onChanged: (mode) {
                 themeProvider.setThemeMode(mode!);
                 Navigator.pop(ctx);

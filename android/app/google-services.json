@@ -12,7 +12,20 @@
           "package_name": "com.example.carhive"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1043251250775-dr4juirs68ougug9lfcg9atk1dji189o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.carhive",
+            "certificate_hash": "8e52eb3149b62944d8a7ee3f030b598ebf07e041"
+          }
+        },
+        {
+          "client_id": "1043251250775-1ntdkmr2cgkmc0ppmj7knpa211gtr57b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCd1oSSITOW_0epwLHfNYJ1F2zFmfUHQgU"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1043251250775-1ntdkmr2cgkmc0ppmj7knpa211gtr57b.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
