@@ -8,13 +8,18 @@ class Homepage extends StatelessWidget {
 
   static const int _selectedIndex = 0;
   static const List<String> _navRoutes = [
-    '/', '/myads', '/upload', '/investment', '/profile'
+    '/',
+    '/myads',
+    '/upload',
+    '/investment',
+    '/profile'
   ];
 
   void _onTabSelected(BuildContext context, int index) {
     if (_selectedIndex == index) return;
     if (index == 0) {
-      Navigator.pushNamedAndRemoveUntil(context, _navRoutes[0], (route) => false);
+      Navigator.pushNamedAndRemoveUntil(
+          context, _navRoutes[0], (route) => false);
     } else {
       Navigator.pushReplacementNamed(context, _navRoutes[index]);
     }
@@ -24,32 +29,30 @@ class Homepage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'CarHive',
-          style: TextStyle(
-            color: Colors.white
-          ),
+        title: const Text(
+          'CarHive h h',
+          style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Theme.of(context).colorScheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: (){
-              Navigator.pushNamed(context, '/notifications');
-            },
-             icon: Icon(
-              Icons.chat,
-              color: Colors.white,
+              onPressed: () {
+                Navigator.pushNamed(context, '/notifications');
+              },
+              icon: const Icon(
+                Icons.chat,
+                color: Colors.white,
               ))
         ],
       ),
       body: ListView(
         padding: EdgeInsets.zero,
-        children: [
+        children: const [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(16.0),
             child: CustomTextField(
-              hintText: 'Search cars, brands, models...',
+              hintText: 'Search cars, brands, models.   with ..',
               prefixIcon: Icon(Icons.search),
             ),
           ),
