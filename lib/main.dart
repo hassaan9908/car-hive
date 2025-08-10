@@ -16,7 +16,7 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase with error handling
   try {
     await Firebase.initializeApp(
@@ -27,7 +27,7 @@ void main() async {
     print('Firebase initialization failed: $e');
     // Continue without Firebase for now
   }
-  
+
   runApp(const MyApp());
 }
 
@@ -51,12 +51,12 @@ class MyApp extends StatelessWidget {
             home: const Homepage(),
             debugShowCheckedModeBanner: false,
             routes: {
-              '/myads' : (context) => const Myads(),
-              '/profile' : (context) => const Profilepage(),
-              '/notifications' : (context) => const Notifications(),
-              '/investment' : (context) => const Mutualinvestment(), 
-              '/upload' : (context) => const Upload(),
-              'loginscreen' : (context) => const Loginscreen()
+              '/myads': (context) => const Myads(),
+              '/profile': (context) => const Profilepage(),
+              '/notifications': (context) => const Notifications(),
+              '/investment': (context) => const Mutualinvestment(),
+              '/upload': (context) => const Upload(),
+              'loginscreen': (context) => const Loginscreen()
             },
           );
         },
