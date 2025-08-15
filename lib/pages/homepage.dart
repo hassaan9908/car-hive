@@ -30,7 +30,7 @@ class Homepage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'CarHive h h',
+          'CarHive',
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -52,7 +52,7 @@ class Homepage extends StatelessWidget {
           Padding(
             padding: EdgeInsets.all(16.0),
             child: CustomTextField(
-              hintText: 'Search cars, brands, models.   with ..',
+              hintText: 'Search cars, brands, models.',
               prefixIcon: Icon(Icons.search),
             ),
           ),
