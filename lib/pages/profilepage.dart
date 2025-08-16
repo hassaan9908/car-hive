@@ -3,6 +3,7 @@ import '../components/custom_bottom_nav.dart';
 import 'package:provider/provider.dart';
 import '../theme/theme_provider.dart';
 import '../auth/loginscreen.dart';
+// ignore: unused_import
 import '../auth/auth_service.dart';
 import '../auth/auth_provider.dart';
 

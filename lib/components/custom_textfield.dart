@@ -64,11 +64,20 @@ class CustomTextField extends StatelessWidget {
         labelStyle: TextStyle(color: isDark ? Colors.white : colorScheme.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outline ?? Colors.grey),
+       borderSide: BorderSide(
+  color: (colorScheme.outline as Color?) ?? Colors.grey,
+),
+
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outline ?? Colors.grey),
+          // borderSide: BorderSide(color: colorScheme.outline ?? Colors.grey),
+          
+          // line chanhed by me and write below 
+          borderSide: BorderSide(
+  color: (colorScheme.outline as Color?) ?? Colors.grey,
+),
+
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
