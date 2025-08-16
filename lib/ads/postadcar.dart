@@ -7,7 +7,8 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
+
 
 class PostAdCar extends StatefulWidget {
   const PostAdCar({super.key});
@@ -27,7 +28,7 @@ class _PostAdCarState extends State<PostAdCar> {
   final formKey = GlobalKey<FormState>();
 
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _priceadController = TextEditingController();
+  // final TextEditingController _priceadController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
   final TextEditingController _mileageController = TextEditingController();
@@ -283,6 +284,7 @@ class _PostAdCarState extends State<PostAdCar> {
     super.dispose();
   }
 
+  // ignore: unused_element
   void _submitForm() {
     if ((_images.isEmpty && _webImages.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -522,6 +524,7 @@ class _PostAdCarState extends State<PostAdCar> {
                                 'anonymous',
                           });
 
+                          // ignore: use_build_context_synchronously
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content:
@@ -529,6 +532,7 @@ class _PostAdCarState extends State<PostAdCar> {
                           );
 
                           await Future.delayed(const Duration(seconds: 1));
+                          // ignore: use_build_context_synchronously
                           Navigator.pushReplacementNamed(context, '/myads');
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -577,6 +581,7 @@ class _PostAdCarState extends State<PostAdCar> {
     String title,
     IconData icon,
     VoidCallback onTap, {
+    // ignore: unused_element_parameter
     String? selectedValue,
     String? subtitle,
   }) {
