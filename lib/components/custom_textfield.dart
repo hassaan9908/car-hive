@@ -74,6 +74,10 @@ class CustomTextField extends StatelessWidget {
           borderSide: BorderSide(
             color: (colorScheme.outline as Color?) ?? Colors.grey,
           ),
+//        borderSide: BorderSide(
+//   color: (colorScheme.outline as Color?) ?? Colors.grey,
+// ),
+
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -83,6 +87,12 @@ class CustomTextField extends StatelessWidget {
           borderSide: BorderSide(
             color: (colorScheme.outline as Color?) ?? Colors.grey,
           ),
+          
+          // line chanhed by me and write below 
+//           borderSide: BorderSide(
+//   color: (colorScheme.outline as Color?) ?? Colors.grey,
+// ),
+
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

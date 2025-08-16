@@ -36,14 +36,14 @@ final ThemeData darkTheme = ThemeData(
     // For input text
     // This is not always respected, so you may need to set style: TextStyle(color: Colors.white) in the TextField itself
   ),
-  tabBarTheme: const TabBarThemeData(
-    labelStyle: TextStyle(color: Colors.white), // instead of labelColor
-    unselectedLabelStyle:
-        TextStyle(color: Colors.grey), // instead of unselectedLabelColor
-    indicator: UnderlineTabIndicator(
-      borderSide: BorderSide(color: Colors.deepPurpleAccent, width: 2),
-    ),
+tabBarTheme: const TabBarThemeData(
+  labelStyle: TextStyle(color: Colors.white), // instead of labelColor
+  unselectedLabelStyle: TextStyle(color: Colors.grey), // instead of unselectedLabelColor
+  indicator: UnderlineTabIndicator(
+    borderSide: BorderSide(color: Colors.deepPurpleAccent, width: 2),
   ),
+),
+
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       padding: const EdgeInsets.symmetric(vertical: 16),

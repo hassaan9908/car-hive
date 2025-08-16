@@ -534,7 +534,8 @@ class _PostAdCarState extends State<PostAdCar> {
                           await Future.delayed(const Duration(seconds: 1));
                           // ignore: use_build_context_synchronously
                           Navigator.pushReplacementNamed(context, '/myads');
-                        } catch (e) {
+                        }
+                         catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Failed to post ad: $e')),
                           );
