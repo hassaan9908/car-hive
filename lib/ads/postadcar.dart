@@ -311,6 +311,35 @@ class _PostAdCarState extends State<PostAdCar> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    
+    if (currentUser == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Sell Your Car"),
+          leading: const BackButton(),
+          backgroundColor: Colors.blue.shade800,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.login, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text('Please login to post an ad', style: TextStyle(fontSize: 18)),
+              SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, 'loginscreen');
+                },
+                child: Text('Login'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Sell Your Car"),
@@ -499,28 +528,21 @@ class _PostAdCarState extends State<PostAdCar> {
                         final newAd = AdModel(
                           title: _titleController.text,
                           price: _priceController.text,
-                          location: _locationController.text,
+                          location: selectedLocation ?? _locationController.text,
                           year: _yearController.text,
                           mileage: _mileageController.text,
                           fuel: _fuelController.text,
+                          description: _descriptionController.text,
+                          carBrand: _carbrandController.text,
+                          bodyColor: _bodyColorController.text,
+                          kmsDriven: _kmsController.text,
+                          registeredIn: selectedRegisteredIn,
+                          name: _nameController.text,
+                          phone: _phoneController.text,
                         );
 
-                        GlobalAdStore().addAd(newAd);
-
                         try {
-                          await FirebaseFirestore.instance
-                              .collection('ads')
-                              .add({
-                            'title': newAd.title,
-                            'price': newAd.price,
-                            'location': newAd.location,
-                            'year': newAd.year,
-                            'mileage': newAd.mileage,
-                            'fuel': newAd.fuel,
-                            'createdAt': Timestamp.now(),
-                            'userId': FirebaseAuth.instance.currentUser?.uid ??
-                                'anonymous',
-                          });
+                          await GlobalAdStore().addAd(newAd);
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(

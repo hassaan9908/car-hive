@@ -2,6 +2,7 @@ import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/store/global_ads.dart';
 import 'package:flutter/material.dart';
 import '../components/custom_bottom_nav.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Myads extends StatefulWidget {
   const Myads({super.key});
@@ -24,31 +25,87 @@ class _MyadsState extends State<Myads> {
 
   final List<String> _tabs = ['Active', 'Pending', 'Removed'];
 
-  /// Replace with actual counts later
-  // final List<int> _counts = [0, 0, 0]; =====-=-=-
-
-  List<AdModel> _activeAds = [];
-  List<AdModel> _pendingAds = [];
-  List<AdModel> _removedAds = [];
-  List<int> _counts = [];
-
   @override
-  void initState() {
-    super.initState();
+  Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    
+    if (currentUser == null) {
+      return WillPopScope(
+        onWillPop: () async {
+          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+          return false;
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'My Ads',
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: const Color.fromARGB(255, 132, 33, 156),
+            centerTitle: true,
+          ),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.login, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text('Please login to view your ads', style: TextStyle(fontSize: 18)),
+                SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, 'loginscreen');
+                  },
+                  child: Text('Login'),
+                ),
+              ],
+            ),
+          ),
+          bottomNavigationBar: CustomBottomNav(
+            selectedIndex: _selectedIndex,
+            onTabSelected: (index) => _onTabSelected(context, index),
+            onFabPressed: () {
+              if (_selectedIndex != 2) {
+                Navigator.pushReplacementNamed(context, Myads._navRoutes[2]);
+              }
+            },
+          ),
+        ),
+      );
+    }
 
-    final store = GlobalAdStore();
-    _activeAds = store.getByStatus('active');
-    _pendingAds = store.getByStatus('pending');
-    _removedAds = store.getByStatus('removed');
-
-    _counts = [
-      _activeAds.length,
-      _pendingAds.length,
-      _removedAds.length,
-    ];
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'My Ads',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: const Color.fromARGB(255, 132, 33, 156),
+          centerTitle: true,
+        ),
+        body: Column(
+          children: [
+            _buildTopTabs(),
+            Expanded(child: _buildTabContent(currentUser.uid)),
+          ],
+        ),
+        bottomNavigationBar: CustomBottomNav(
+          selectedIndex: _selectedIndex,
+          onTabSelected: (index) => _onTabSelected(context, index),
+          onFabPressed: () {
+            if (_selectedIndex != 2) {
+              Navigator.pushReplacementNamed(context, Myads._navRoutes[2]);
+            }
+          },
+        ),
+      ),
+    );
   }
-
-  // Default Active Ads = 0
 
   void _onTabSelected(BuildContext context, int index) {
     if (_selectedIndex == index) return;
@@ -69,41 +126,6 @@ class _MyadsState extends State<Myads> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-        return false;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'My Ads',
-            style: TextStyle(color: Colors.white),
-          ),
-          backgroundColor: const Color.fromARGB(255, 132, 33, 156),
-          centerTitle: true,
-        ),
-        body: Column(
-          children: [
-            _buildTopTabs(),
-            Expanded(child: _buildTabContent()),
-          ],
-        ),
-        bottomNavigationBar: CustomBottomNav(
-          selectedIndex: _selectedIndex,
-          onTabSelected: (index) => _onTabSelected(context, index),
-          onFabPressed: () {
-            if (_selectedIndex != 2) {
-              Navigator.pushReplacementNamed(context, Myads._navRoutes[2]);
-            }
-          },
-        ),
-      ),
-    );
-  }
-
   Widget _buildTopTabs() {
     return Container(
       color: Colors.white,
@@ -121,7 +143,7 @@ class _MyadsState extends State<Myads> {
                     horizontal: 10,
                   ),
                   child: Text(
-                    '${_tabs[index]} (${_counts[index]})',
+                    _tabs[index],
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight:
@@ -147,26 +169,71 @@ class _MyadsState extends State<Myads> {
     );
   }
 
-  Widget _buildTabContent() {
-    List<AdModel> ads;
+  Widget _buildTabContent(String userId) {
+    String status;
     switch (_selectedTabIndex) {
       case 0:
-        ads = GlobalAdStore().getByStatus('active');
+        status = 'active';
         break;
       case 1:
-        ads = GlobalAdStore().getByStatus('pending');
+        status = 'pending';
         break;
       case 2:
-        ads = GlobalAdStore().getByStatus('removed');
+        status = 'removed';
         break;
       default:
-        ads = [];
+        status = 'active';
     }
+
+    return StreamBuilder<List<AdModel>>(
+      stream: GlobalAdStore().getUserAdsByStatus(userId, status),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          String errorMessage = 'Error loading ads';
+          String errorDetails = '';
+          
+          if (snapshot.error.toString().contains('failed-precondition')) {
+            errorMessage = 'Database configuration required';
+            errorDetails = 'Please contact support to set up the database properly.';
+          } else if (snapshot.error.toString().contains('permission-denied')) {
+            errorMessage = 'Access denied';
+            errorDetails = 'You may not have permission to view ads.';
+          } else {
+            errorDetails = snapshot.error.toString();
+          }
+          
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(errorMessage, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                if (errorDetails.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      errorDetails,
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }
+
+        final ads = snapshot.data ?? [];
 
     if (ads.isEmpty) {
       return _buildAdPlaceholder(
         'No ${_tabs[_selectedTabIndex]} Ads',
-        'You haven’t posted anything yet.',
+            'You haven\'t posted anything yet.',
       );
     }
 
@@ -175,6 +242,8 @@ class _MyadsState extends State<Myads> {
       itemBuilder: (context, index) {
         final ad = ads[index];
         return _buildAdCard(ad);
+          },
+        );
       },
     );
   }
@@ -186,7 +255,15 @@ class _MyadsState extends State<Myads> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-            leading: Image.asset('assets/no_image.png', width: 50),
+            leading: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.car_rental, color: Colors.grey[400]),
+            ),
             title: Text(ad.title,
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(
@@ -194,38 +271,72 @@ class _MyadsState extends State<Myads> {
               style: const TextStyle(height: 1.5),
             ),
             trailing: PopupMenuButton<String>(
-              onSelected: (value) {
+              onSelected: (value) async {
                 if (value == 'Edit') {
                   // TODO: Navigate to edit screen 
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Edit feature coming soon!')),
+                  );
                 } else if (value == 'Remove') {
-                  setState(() {
-                    ad.status = 'removed';
-                  });
+                  try {
+                    await GlobalAdStore().updateAdStatus(ad.id!, 'removed');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Ad moved to removed')),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to remove ad: $e')),
+                    );
+                  }
+                } else if (value == 'Delete') {
+                  try {
+                    await GlobalAdStore().deleteAd(ad.id!);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Ad deleted permanently')),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to delete ad: $e')),
+                    );
+                  }
                 }
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(value: 'Edit', child: Text('Edit')),
                 const PopupMenuItem(value: 'Remove', child: Text('Remove')),
+                const PopupMenuItem(value: 'Delete', child: Text('Delete Permanently')),
               ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: ElevatedButton.icon(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'PKR ${ad.price}',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                ),
+                ElevatedButton.icon(
               onPressed: () {
                 // Feature logic (optional)
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Feature ad functionality coming soon!')),
+                    );
               },
               icon: const Icon(Icons.star, size: 18),
               label: const Text('Feature This Ad'),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 12),
-            child: Text('Ad will expire in 28 days',
-                style: TextStyle(color: Colors.grey[600])),
-          )
         ],
       ),
     );
@@ -233,26 +344,15 @@ class _MyadsState extends State<Myads> {
 
   Widget _buildAdPlaceholder(String title, String subtitle) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.view_list_outlined,
-                size: 80, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            ),
-          ],
-        ),
+          Icon(Icons.car_rental, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          SizedBox(height: 8),
+          Text(subtitle, style: TextStyle(color: Colors.grey)),
+        ],
       ),
     );
   }
