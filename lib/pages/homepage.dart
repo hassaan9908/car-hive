@@ -33,7 +33,7 @@ class Homepage extends StatelessWidget {
           'CarHive',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: Theme.of(context).colorScheme.background,
         centerTitle: true,
         actions: [
           IconButton(
