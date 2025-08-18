@@ -186,29 +186,72 @@ class _MyadsState extends State<Myads> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-            leading: Image.asset('assets/no_image.png', width: 50),
-            title: Text(ad.title,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            leading: (ad.photos.isNotEmpty)
+                ? Image.network(ad.photos.first,
+                    width: 50, height: 50, fit: BoxFit.cover)
+                : Image.asset('assets/no_image.png', width: 50, height: 50),
+            title: Text(
+              '${ad.brand} ${ad.carModel}', // ⟵ new model: no `title`
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             subtitle: Text(
-              '${ad.location}\n${ad.year} | ${ad.mileage} | ${ad.fuel}',
+              '${ad.location}\n${ad.year} | ${ad.kmsDriven} kms | ${ad.fuel}', // ⟵ `kmsDriven` (not mileage)
               style: const TextStyle(height: 1.5),
             ),
             trailing: PopupMenuButton<String>(
-              onSelected: (value) {
+              onSelected: (value) async {
                 if (value == 'Edit') {
-                  // TODO: Navigate to edit screen 
+                  // TODO: Navigate to edit screen
                 } else if (value == 'Remove') {
+                  // Status is final—update via store, then refresh lists
+                  final store = GlobalAdStore();
+                  store.updateStatus(
+                      ad.id, 'removed'); // ⟵ add this method below
                   setState(() {
-                    ad.status = 'removed';
+                    _activeAds = store.getByStatus('active');
+                    _pendingAds = store.getByStatus('pending');
+                    _removedAds = store.getByStatus('removed');
+                    _counts = [
+                      _activeAds.length,
+                      _pendingAds.length,
+                      _removedAds.length
+                    ];
                   });
                 }
               },
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'Edit', child: Text('Edit')),
-                const PopupMenuItem(value: 'Remove', child: Text('Remove')),
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'Edit', child: Text('Edit')),
+                PopupMenuItem(value: 'Remove', child: Text('Remove')),
               ],
             ),
-          ),
+          )
+
+          // ---------=====-=-=
+          // ListTile(
+          //   leading: Image.asset('assets/no_image.png', width: 50),
+          //   title: Text(ad.title,
+          //       style: const TextStyle(fontWeight: FontWeight.bold)),
+          //   subtitle: Text(
+          //     '${ad.location}\n${ad.year} | ${ad.mileage} | ${ad.fuel}',
+          //     style: const TextStyle(height: 1.5),
+          //   ),
+          //   trailing: PopupMenuButton<String>(
+          //     onSelected: (value) {
+          //       if (value == 'Edit') {
+          //         // TODO: Navigate to edit screen
+          //       } else if (value == 'Remove') {
+          //         setState(() {
+          //           ad.status = 'removed';
+          //         });
+          //       }
+          //     },
+          //     itemBuilder: (context) => [
+          //       const PopupMenuItem(value: 'Edit', child: Text('Edit')),
+          //       const PopupMenuItem(value: 'Remove', child: Text('Remove')),
+          //     ],
+          //   ),
+          // ),
+          ,
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: ElevatedButton.icon(
