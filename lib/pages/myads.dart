@@ -28,7 +28,7 @@ class _MyadsState extends State<Myads> {
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
-
+    
     if (currentUser == null) {
       return WillPopScope(
         onWillPop: () async {
@@ -41,23 +41,22 @@ class _MyadsState extends State<Myads> {
               'My Ads',
               style: TextStyle(color: Colors.white),
             ),
-            backgroundColor: const Color.fromARGB(255, 132, 33, 156),
+            backgroundColor: Theme.of(context).colorScheme.primary,
             centerTitle: true,
           ),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.login, size: 64, color: Colors.grey),
-                const SizedBox(height: 16),
-                const Text('Please login to view your ads',
-                    style: TextStyle(fontSize: 18)),
-                const SizedBox(height: 24),
+                Icon(Icons.login, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text('Please login to view your ads', style: TextStyle(fontSize: 18)),
+                SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.pushNamed(context, 'loginscreen');
                   },
-                  child: const Text('Login'),
+                  child: Text('Login'),
                 ),
               ],
             ),
@@ -86,7 +85,7 @@ class _MyadsState extends State<Myads> {
             'My Ads',
             style: TextStyle(color: Colors.white),
           ),
-          backgroundColor: const Color.fromARGB(255, 132, 33, 156),
+          backgroundColor: Theme.of(context).colorScheme.primary,
           centerTitle: true,
         ),
         body: Column(
@@ -190,37 +189,34 @@ class _MyadsState extends State<Myads> {
       stream: GlobalAdStore().getUserAdsByStatus(userId, status),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator());
         }
 
         if (snapshot.hasError) {
           String errorMessage = 'Error loading ads';
           String errorDetails = '';
-
+          
           if (snapshot.error.toString().contains('failed-precondition')) {
             errorMessage = 'Database configuration required';
-            errorDetails =
-                'Please contact support to set up the database properly.';
+            errorDetails = 'Please contact support to set up the database properly.';
           } else if (snapshot.error.toString().contains('permission-denied')) {
             errorMessage = 'Access denied';
             errorDetails = 'You may not have permission to view ads.';
           } else {
             errorDetails = snapshot.error.toString();
           }
-
+          
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.grey),
-                const SizedBox(height: 16),
-                Text(errorMessage,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(errorMessage, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
                 if (errorDetails.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    padding: EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
                       errorDetails,
                       style: TextStyle(fontSize: 14, color: Colors.grey[600]),
@@ -234,18 +230,18 @@ class _MyadsState extends State<Myads> {
 
         final ads = snapshot.data ?? [];
 
-        if (ads.isEmpty) {
-          return _buildAdPlaceholder(
-            'No ${_tabs[_selectedTabIndex]} Ads',
+    if (ads.isEmpty) {
+      return _buildAdPlaceholder(
+        'No ${_tabs[_selectedTabIndex]} Ads',
             'You haven\'t posted anything yet.',
-          );
-        }
+      );
+    }
 
-        return ListView.builder(
-          itemCount: ads.length,
-          itemBuilder: (context, index) {
-            final ad = ads[index];
-            return _buildAdCard(ad);
+    return ListView.builder(
+      itemCount: ads.length,
+      itemBuilder: (context, index) {
+        final ad = ads[index];
+        return _buildAdCard(ad);
           },
         );
       },
@@ -259,7 +255,6 @@ class _MyadsState extends State<Myads> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-<<<<<<< HEAD
             leading: Container(
               width: 50,
               height: 50,
@@ -271,33 +266,22 @@ class _MyadsState extends State<Myads> {
             ),
             title: Text(ad.title,
                 style: const TextStyle(fontWeight: FontWeight.bold)),
-=======
-            leading: (ad.photos.isNotEmpty)
-                ? Image.network(ad.photos.first,
-                    width: 50, height: 50, fit: BoxFit.cover)
-                : Image.asset('assets/no_image.png', width: 50, height: 50),
-            title: Text(
-              '${ad.brand} ${ad.carModel}', // ⟵ new model: no `title`
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
->>>>>>> home-feature
             subtitle: Text(
-              '${ad.location}\n${ad.year} | ${ad.kmsDriven} kms | ${ad.fuel}', // ⟵ `kmsDriven` (not mileage)
+              '${ad.location}\n${ad.year} | ${ad.mileage} | ${ad.fuel}',
               style: const TextStyle(height: 1.5),
             ),
             trailing: PopupMenuButton<String>(
               onSelected: (value) async {
                 if (value == 'Edit') {
-                  // TODO: Navigate to edit screen
-<<<<<<< HEAD
+                  // TODO: Navigate to edit screen 
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Edit feature coming soon!')),
+                    SnackBar(content: Text('Edit feature coming soon!')),
                   );
                 } else if (value == 'Remove') {
                   try {
                     await GlobalAdStore().updateAdStatus(ad.id!, 'removed');
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Ad moved to removed')),
+                      SnackBar(content: Text('Ad moved to removed')),
                     );
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -308,7 +292,7 @@ class _MyadsState extends State<Myads> {
                   try {
                     await GlobalAdStore().deleteAd(ad.id!);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Ad deleted permanently')),
+                      SnackBar(content: Text('Ad deleted permanently')),
                     );
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -320,60 +304,10 @@ class _MyadsState extends State<Myads> {
               itemBuilder: (context) => [
                 const PopupMenuItem(value: 'Edit', child: Text('Edit')),
                 const PopupMenuItem(value: 'Remove', child: Text('Remove')),
-                const PopupMenuItem(
-                    value: 'Delete', child: Text('Delete Permanently')),
-=======
-                } else if (value == 'Remove') {
-                  // Status is final—update via store, then refresh lists
-                  final store = GlobalAdStore();
-                  store.updateStatus(
-                      ad.id, 'removed'); // ⟵ add this method below
-                  setState(() {
-                    _activeAds = store.getByStatus('active');
-                    _pendingAds = store.getByStatus('pending');
-                    _removedAds = store.getByStatus('removed');
-                    _counts = [
-                      _activeAds.length,
-                      _pendingAds.length,
-                      _removedAds.length
-                    ];
-                  });
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'Edit', child: Text('Edit')),
-                PopupMenuItem(value: 'Remove', child: Text('Remove')),
->>>>>>> home-feature
+                const PopupMenuItem(value: 'Delete', child: Text('Delete Permanently')),
               ],
             ),
-          )
-
-          // ---------=====-=-=
-          // ListTile(
-          //   leading: Image.asset('assets/no_image.png', width: 50),
-          //   title: Text(ad.title,
-          //       style: const TextStyle(fontWeight: FontWeight.bold)),
-          //   subtitle: Text(
-          //     '${ad.location}\n${ad.year} | ${ad.mileage} | ${ad.fuel}',
-          //     style: const TextStyle(height: 1.5),
-          //   ),
-          //   trailing: PopupMenuButton<String>(
-          //     onSelected: (value) {
-          //       if (value == 'Edit') {
-          //         // TODO: Navigate to edit screen
-          //       } else if (value == 'Remove') {
-          //         setState(() {
-          //           ad.status = 'removed';
-          //         });
-          //       }
-          //     },
-          //     itemBuilder: (context) => [
-          //       const PopupMenuItem(value: 'Edit', child: Text('Edit')),
-          //       const PopupMenuItem(value: 'Remove', child: Text('Remove')),
-          //     ],
-          //   ),
-          // ),
-          ,
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
@@ -389,17 +323,15 @@ class _MyadsState extends State<Myads> {
                   ),
                 ),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    // Feature logic (optional)
+              onPressed: () {
+                // Feature logic (optional)
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content:
-                              Text('Feature ad functionality coming soon!')),
+                      SnackBar(content: Text('Feature ad functionality coming soon!')),
                     );
-                  },
-                  icon: const Icon(Icons.star, size: 18),
-                  label: const Text('Feature This Ad'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              },
+              icon: const Icon(Icons.star, size: 18),
+              label: const Text('Feature This Ad'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                 ),
               ],
             ),
@@ -412,16 +344,14 @@ class _MyadsState extends State<Myads> {
 
   Widget _buildAdPlaceholder(String title, String subtitle) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.car_rental, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(title,
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(subtitle, style: const TextStyle(color: Colors.grey)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+          Icon(Icons.car_rental, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          SizedBox(height: 8),
+          Text(subtitle, style: TextStyle(color: Colors.grey)),
         ],
       ),
     );
