@@ -1,14 +1,13 @@
 import 'package:carhive/models/ad_model.dart' show AdModel;
-// ignore: unused_import
 import 'package:carhive/store/global_ads.dart' show GlobalAdStore;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
-// ignore: unused_import
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostAdCar extends StatefulWidget {
   const PostAdCar({super.key});
@@ -28,25 +27,11 @@ class _PostAdCarState extends State<PostAdCar> {
   final formKey = GlobalKey<FormState>();
 
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _carModelController = TextEditingController();
-  final TextEditingController _brandController = TextEditingController();
-  final TextEditingController _registeredCityController =
-      TextEditingController();
-  final TextEditingController _bodyColorController = TextEditingController();
-  final TextEditingController _kmsDrivenController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _phoneNumberController = TextEditingController();
-  final TextEditingController _fuelController = TextEditingController();
-  final TextEditingController _yearController = TextEditingController();
+  final TextEditingController _priceadController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
-
-  // ====-=--=-=
-  // // final TextEditingController _priceadController = TextEditingController();
-  // final TextEditingController _locationController = TextEditingController();
-  // final TextEditingController _yearController = TextEditingController();
-  // final TextEditingController _mileageController = TextEditingController();
-  // final TextEditingController _fuelController = TextEditingController();
+  final TextEditingController _yearController = TextEditingController();
+  final TextEditingController _mileageController = TextEditingController();
+  final TextEditingController _fuelController = TextEditingController();
 
 // @override
 // void dispose () {
@@ -64,10 +49,10 @@ class _PostAdCarState extends State<PostAdCar> {
   final List<File> _images = [];
   final List<Uint8List> _webImages = [];
 
-  // final TextEditingController _bodyColorController = TextEditingController();
+  final TextEditingController _bodyColorController = TextEditingController();
   final TextEditingController _kmsController = TextEditingController();
-  // final TextEditingController _priceController = TextEditingController();
-  // final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _carbrandController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -235,8 +220,8 @@ class _PostAdCarState extends State<PostAdCar> {
                         Navigator.pop(context);
                       },
                     )),
-             SizedBox(height: 8),
-             Text("Popular Cities",
+            const SizedBox(height: 8),
+            const Text("Popular Cities",
                 style:
                     TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
             ...["Lahore", "Karachi", "Islamabad", "Multan", "Quetta"]
@@ -247,8 +232,8 @@ class _PostAdCarState extends State<PostAdCar> {
                         Navigator.pop(context);
                       },
                     )),
-             SizedBox(height: 8),
-             Text("Other Cities",
+            const SizedBox(height: 8),
+            const Text("Other Cities",
                 style:
                     TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
             ...[
@@ -284,7 +269,7 @@ class _PostAdCarState extends State<PostAdCar> {
     _titleController.dispose();
     _locationController.dispose();
     _yearController.dispose();
-    // _mileageController.dispose();
+    _mileageController.dispose();
     _fuelController.dispose();
 
     _bodyColorController.dispose();
@@ -298,11 +283,10 @@ class _PostAdCarState extends State<PostAdCar> {
     super.dispose();
   }
 
-  // ignore: unused_element
   void _submitForm() {
     if ((_images.isEmpty && _webImages.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text("Please add at least one image.")),
+        const SnackBar(content: Text("Please add at least one image.")),
       );
       return;
     }
@@ -311,7 +295,7 @@ class _PostAdCarState extends State<PostAdCar> {
         selectedCarModel == null ||
         selectedRegisteredIn == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text("Please select all dropdown options.")),
+        const SnackBar(content: Text("Please select all dropdown options.")),
       );
       return;
     }
@@ -319,7 +303,7 @@ class _PostAdCarState extends State<PostAdCar> {
     if (_formKey.currentState!.validate()) {
       // Form is valid and dropdowns/images are selected
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text("Posting Ad...")),
+        const SnackBar(content: Text("Posting Ad...")),
       );
       // Your submission logic here
     }
@@ -542,7 +526,6 @@ class _PostAdCarState extends State<PostAdCar> {
                     onPressed: () async {
                       if (_formKey.currentState!.validate()) {
                         final newAd = AdModel(
-<<<<<<< HEAD
                           title: _titleController.text,
                           price: _priceController.text,
                           location: selectedLocation ?? _locationController.text,
@@ -560,92 +543,22 @@ class _PostAdCarState extends State<PostAdCar> {
 
                         try {
                           await GlobalAdStore().addAd(newAd);
-=======
-                          id: '', // Firestore will generate later
-                          photos: [], // add image upload later
-                          location: _locationController.text,
-                          carModel: _carModelController.text,
-                          brand: _brandController.text,
-                          registeredCity: _registeredCityController.text,
-                          bodyColor: _bodyColorController.text,
-                          kmsDriven: _kmsDrivenController.text,
-                          price: _priceController.text,
-                          description: _descriptionController.text,
-                          phoneNumber: _phoneNumberController.text,
-                          fuel: _fuelController.text,
-                          year: _yearController.text,
-                          userId: FirebaseAuth.instance.currentUser?.uid ??
-                              'anonymous',
-                          createdAt: DateTime.now(),
-                          status: 'active',
-                        );
 
-                        // 1. Save to Firestore
-                        final docRef = await FirebaseFirestore.instance
-                            .collection('ads')
-                            .add(newAd.toMap());
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('Your ad has been submitted for review. You will be notified once it\'s approved.')),
+                          );
 
-                        // 2. Update local model with Firestore ID
-                        newAd.id = docRef.id;
->>>>>>> home-feature
-
-                        // 3. Add to Global Store
-                        final store = GlobalAdStore();
-                        store.addAd(newAd);
-
-                        // 4. Go back to MyAds screen
-                        Navigator.pop(
-                            context, true); // return to previous screen
+                          await Future.delayed(const Duration(seconds: 1));
+                          Navigator.pushReplacementNamed(context, '/myads');
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to post ad: $e')),
+                          );
+                        }
                       }
-                    }
-
-                    // onPressed: () async {
-                    //   if (_formKey.currentState!.validate()) {
-                    //     final newAd = AdModel(
-                    //       title: _titleController.text,
-                    //       price: _priceController.text,
-                    //       location: _locationController.text,
-                    //       year: _yearController.text,
-                    //       mileage: _mileageController.text,
-                    //       fuel: _fuelController.text,
-                    //     );
-
-                    //     GlobalAdStore().addAd(newAd);
-
-                    //     try {
-                    //       await FirebaseFirestore.instance
-                    //           .collection('ads')
-                    //           .add({
-                    //         'title': newAd.title,
-                    //         'price': newAd.price,
-                    //         'location': newAd.location,
-                    //         'year': newAd.year,
-                    //         'mileage': newAd.mileage,
-                    //         'fuel': newAd.fuel,
-                    //         'createdAt': Timestamp.now(),
-                    //         'userId': FirebaseAuth.instance.currentUser?.uid ??
-                    //             'anonymous',
-                    //       });
-
-                    //       // ignore: use_build_context_synchronously
-                    //       ScaffoldMessenger.of(context).showSnackBar(
-                    //         const SnackBar(
-                    //             content:
-                    //                 Text('Your ad is live within 1 minute')),
-                    //       );
-
-                    //       await Future.delayed(const Duration(seconds: 1));
-                    //       // ignore: use_build_context_synchronously
-                    //       Navigator.pushReplacementNamed(context, '/myads');
-                    //     }
-                    //      catch (e) {
-                    //       ScaffoldMessenger.of(context).showSnackBar(
-                    //         SnackBar(content: Text('Failed to post ad: $e')),
-                    //       );
-                    //     }
-                    //   }
-                    // },
-                    ,
+                    },
                     child: const Text(
                       "Post Ad",
                       style: TextStyle(fontSize: 16, color: Colors.white),
@@ -686,7 +599,6 @@ class _PostAdCarState extends State<PostAdCar> {
     String title,
     IconData icon,
     VoidCallback onTap, {
-    // ignore: unused_element_parameter
     String? selectedValue,
     String? subtitle,
   }) {

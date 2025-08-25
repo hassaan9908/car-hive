@@ -41,7 +41,7 @@ class _MyadsState extends State<Myads> {
               'My Ads',
               style: TextStyle(color: Colors.white),
             ),
-            backgroundColor: const Color.fromARGB(255, 132, 33, 156),
+            backgroundColor: Theme.of(context).colorScheme.primary,
             centerTitle: true,
           ),
           body: Center(
@@ -85,7 +85,7 @@ class _MyadsState extends State<Myads> {
             'My Ads',
             style: TextStyle(color: Colors.white),
           ),
-          backgroundColor: const Color.fromARGB(255, 132, 33, 156),
+          backgroundColor: Theme.of(context).colorScheme.primary,
           centerTitle: true,
         ),
         body: Column(
