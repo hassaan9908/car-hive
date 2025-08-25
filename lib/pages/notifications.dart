@@ -22,7 +22,7 @@ class _NotificationsState extends State<Notifications> {
               centerTitle: true,
       ),
       body: Center(
-        child: Text('Notifications'),
+        child: Text('Chats'),
       ),
     );
   }
