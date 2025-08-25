@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../components/custom_textfield.dart';
 import '../components/car_tabs.dart';
 import '../components/custom_bottom_nav.dart';
@@ -27,15 +28,53 @@ class Homepage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'CarHive',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Theme.of(context).colorScheme.background,
+        backgroundColor: colorScheme.primary,
         centerTitle: true,
         actions: [
+          // Admin Panel button (web only)
+          if (kIsWeb)
+            IconButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/admin');
+              },
+              icon: const Icon(
+                Icons.admin_panel_settings,
+                color: Colors.white,
+              ),
+              tooltip: 'Admin Panel',
+            ),
+          // Debug button (web only)
+          if (kIsWeb)
+            IconButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/admin-debug');
+              },
+              icon: const Icon(
+                Icons.bug_report,
+                color: Colors.orange,
+              ),
+              tooltip: 'Admin Debug',
+            ),
+          // Theme Showcase button (web only)
+          if (kIsWeb)
+            IconButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/theme-showcase');
+              },
+              icon: const Icon(
+                Icons.palette,
+                color: Colors.purple,
+              ),
+              tooltip: 'Theme Showcase',
+            ),
           IconButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/notifications');
@@ -43,22 +82,34 @@ class Homepage extends StatelessWidget {
               icon: const Icon(
                 Icons.chat,
                 color: Colors.white,
-              ))
+              )),
         ],
       ),
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: const [
-          Padding(
-            padding: EdgeInsets.all(16.0),
-            child: CustomTextField(
-              hintText: 'Search cars, brands, models.',
-              prefixIcon: Icon(Icons.search),
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colorScheme.background,
+              colorScheme.surfaceVariant,
+            ],
           ),
-          SizedBox(height: 16),
-          CarTabs(),
-        ],
+        ),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: const [
+            Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CustomTextField(
+                hintText: 'Search cars, brands, models.',
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+            SizedBox(height: 16),
+            CarTabs(),
+          ],
+        ),
       ),
       bottomNavigationBar: CustomBottomNav(
         selectedIndex: _selectedIndex,
