@@ -547,7 +547,7 @@ class _PostAdCarState extends State<PostAdCar> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content:
-                                    Text('Your ad is live within 1 minute')),
+                                    Text('Your ad has been submitted for review. You will be notified once it\'s approved.')),
                           );
 
                           await Future.delayed(const Duration(seconds: 1));
