@@ -1,11 +1,33 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// class AdModel {
+//   final String title;
+//   final String price;
+//   final String location;
+//   final String year;
+//   final String mileage;
+//   final String fuel;
+//   late final String status; // 'active', 'pending', 'removed'
+
+//   AdModel({
+//     required this.title,
+//     required this.price,
+//     required this.location,
+//     required this.year,
+//     required this.mileage,
+//     required this.fuel,
+//     this.status = 'active',
+//   });
+// }
+
+
 class AdModel {
-  final String title;
-  final String price;
-  final String location;
+  String id; // <-- make mutable
+  final String brand;
+  final String carModel;
   final String year;
-  final String mileage;
+  final String kmsDriven;
   final String fuel;
   late final String status; // 'active', 'pending', 'removed'
   final String? userId;
@@ -20,12 +42,21 @@ class AdModel {
   final String? phone;
 
   AdModel({
-    required this.title,
-    required this.price,
-    required this.location,
+    required this.id,
+    required this.brand,
+    required this.carModel,
     required this.year,
-    required this.mileage,
+    required this.kmsDriven,
     required this.fuel,
+    required this.price,
+    required this.description,
+    required this.phoneNumber,
+    required this.location,
+    required this.registeredCity,
+    required this.bodyColor,
+    required this.photos,
+    required this.userId,
+    required this.createdAt,
     this.status = 'active',
     this.userId,
     this.id,
