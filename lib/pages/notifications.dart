@@ -13,7 +13,7 @@ class _NotificationsState extends State<Notifications> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-                'Notifications',
+                'Chats',
                 style: TextStyle(
                   color: Colors.white
                 ),
