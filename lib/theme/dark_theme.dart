@@ -3,6 +3,7 @@ import 'app_colors.dart';
 
 final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
+
   useMaterial3: true,
   
   // Color Scheme
@@ -42,6 +43,7 @@ final ThemeData darkTheme = ThemeData(
     inverseSurface: AppColors.lightSurface,
     onInverseSurface: AppColors.lightOnSurface,
     inversePrimary: AppColors.primaryBlueLight,
+
   ),
   
   // App Bar Theme
@@ -92,11 +94,13 @@ final ThemeData darkTheme = ThemeData(
       borderSide: const BorderSide(color: AppColors.error),
     ),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+
     labelStyle: const TextStyle(color: AppColors.darkOnSurfaceVariant),
     floatingLabelStyle: const TextStyle(color: AppColors.primaryBlue),
   ),
   
   // Elevated Button Theme
+
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       backgroundColor: AppColors.primaryBlue,
@@ -264,5 +268,3 @@ final ThemeData darkTheme = ThemeData(
     ),
   ),
 );
-
-  

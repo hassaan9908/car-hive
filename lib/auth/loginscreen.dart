@@ -1,10 +1,13 @@
+// ignore: unused_import
 import 'package:carhive/auth/auth_service.dart';
+// ignore: unused_import
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
 import 'package:carhive/auth/signupscreen.dart';
 import 'package:carhive/pages/homepage.dart';
 import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart';
+// ignore: unused_import
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:carhive/components/custom_textfield.dart';
 
