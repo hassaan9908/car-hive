@@ -1,5 +1,6 @@
 import 'package:carhive/pages/homepage.dart';
 import 'package:flutter/material.dart';
+// ignore: unused_import
 import 'package:carhive/auth/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart';
@@ -33,7 +34,7 @@ class _SignupscreenState extends State<Signupscreen> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -83,7 +84,7 @@ class _SignupscreenState extends State<Signupscreen> {
                     controller: _nameController,
                     hintText: 'Full Name',
                     keyboardType: TextInputType.name,
-                    prefixIcon: Icon(Icons.person),
+                    prefixIcon: const Icon(Icons.person),
                   ),
                   const SizedBox(height: 16),
 
@@ -92,7 +93,7 @@ class _SignupscreenState extends State<Signupscreen> {
                     controller: _emailController,
                     hintText: 'Email',
                     keyboardType: TextInputType.emailAddress,
-                    prefixIcon: Icon(Icons.email),
+                    prefixIcon: const Icon(Icons.email),
                   ),
                   const SizedBox(height: 16),
 
@@ -101,9 +102,11 @@ class _SignupscreenState extends State<Signupscreen> {
                     controller: _passwordController,
                     hintText: 'Password',
                     obscureText: !_isPasswordVisible,
-                    prefixIcon: Icon(Icons.lock),
+                    prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
-                      icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                      icon: Icon(_isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off),
                       onPressed: () {
                         setState(() {
                           _isPasswordVisible = !_isPasswordVisible;
@@ -130,7 +133,8 @@ class _SignupscreenState extends State<Signupscreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Text(
@@ -183,13 +187,13 @@ class _SignupscreenState extends State<Signupscreen> {
 
   _signup() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     try {
       final user = await authProvider.createUserWithEmailAndPassword(
         _emailController.text,
         _passwordController.text,
       );
-      
+
       if (user != null) {
         print("User created successfully");
         goToHome(context);
