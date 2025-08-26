@@ -7,31 +7,72 @@ class CarTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return DefaultTabController(
       length: 2,
       child: Column(
         children: [
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colorScheme.outline),
+            ),
             child: TabBar(
-              indicator: BoxDecoration(), // Removes the underline/white line
-              labelColor: Color.fromARGB(255, 35, 38, 68),
-              labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              unselectedLabelColor: Colors.grey,
-              unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal, fontSize: 16),
-              tabs: [
+              indicator: BoxDecoration(
+                color: colorScheme.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: Colors.white,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+              unselectedLabelColor: colorScheme.onSurfaceVariant,
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+              ),
+              dividerColor: Colors.transparent,
+              tabs: const [
                 Tab(text: 'Used Cars'),
                 Tab(text: 'New Cars'),
               ],
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           SizedBox(
             height: 400, // Increased height for better content display
             child: TabBarView(
               children: [
                 _UsedCarsTab(),
-                Center(child: Text('New Cars List Placeholder')),
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.car_rental,
+                        size: 64,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'New Cars Coming Soon',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Stay tuned for new car listings',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -45,7 +86,7 @@ class _UsedCarsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<AdModel>>(
-      stream: GlobalAdStore().getAllAds(),
+      stream: GlobalAdStore().getAllActiveAds(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -117,10 +158,12 @@ class _UsedCarsTab extends StatelessWidget {
   }
 
   Widget _buildAdCard(BuildContext context, AdModel ad) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Card(
-      margin: EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -129,16 +172,20 @@ class _UsedCarsTab extends StatelessWidget {
             height: 200,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              color: colorScheme.surfaceVariant,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Center(
-              child: Icon(Icons.car_rental, size: 48, color: Colors.grey[400]),
+              child: Icon(
+                Icons.car_rental,
+                size: 48,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           
           Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -149,71 +196,77 @@ class _UsedCarsTab extends StatelessWidget {
                     Expanded(
                       child: Text(
                         ad.title,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleLarge,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Text(
                       'PKR ${ad.price}',
-                      style: TextStyle(
-                        fontSize: 18,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: colorScheme.primary,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue[700],
                       ),
                     ),
                   ],
                 ),
                 
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 
                 // Location
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                    SizedBox(width: 4),
+                    Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
                     Text(
                       ad.location,
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
                 
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 
                 // Car details
                 Row(
                   children: [
-                    _buildDetailChip('${ad.year}', Icons.calendar_today),
-                    SizedBox(width: 8),
-                    _buildDetailChip('${ad.mileage} km', Icons.speed),
-                    SizedBox(width: 8),
-                    _buildDetailChip(ad.fuel, Icons.local_gas_station),
+                    _buildDetailChip('${ad.year}', Icons.calendar_today, context),
+                    const SizedBox(width: 8),
+                    _buildDetailChip('${ad.mileage} km', Icons.speed, context),
+                    const SizedBox(width: 8),
+                    _buildDetailChip(ad.fuel, Icons.local_gas_station, context),
                   ],
                 ),
                 
                 if (ad.carBrand != null && ad.carBrand!.isNotEmpty) ...[
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'Brand: ${ad.carBrand}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
                 
                 if (ad.description != null && ad.description!.isNotEmpty) ...[
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     ad.description!,
-                    style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
                 
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 
                 // Contact button
                 SizedBox(
@@ -222,18 +275,10 @@ class _UsedCarsTab extends StatelessWidget {
                     onPressed: () {
                       // TODO: Implement contact functionality
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Contact feature coming soon!')),
+                        const SnackBar(content: Text('Contact feature coming soon!')),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[700],
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text('Contact Seller'),
+                    child: const Text('Contact Seller'),
                   ),
                 ),
               ],
@@ -244,21 +289,26 @@ class _UsedCarsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailChip(String text, IconData icon) {
+  Widget _buildDetailChip(String text, IconData icon, BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outline),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: Colors.grey[600]),
-          SizedBox(width: 4),
+          Icon(icon, size: 12, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 4),
           Text(
             text,
-            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

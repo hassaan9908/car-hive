@@ -33,7 +33,7 @@ class Mutualinvestment extends StatelessWidget {
                   color: Colors.white
                 ),
                 ),
-              backgroundColor: Theme.of(context).colorScheme.background,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               centerTitle: true,
             ),
         body: Center(

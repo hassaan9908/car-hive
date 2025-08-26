@@ -40,7 +40,6 @@ class CustomTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
 
     return TextFormField(
       controller: controller,
@@ -52,54 +51,49 @@ class CustomTextField extends StatelessWidget {
       maxLines: maxLines,
       minLines: minLines,
       enabled: enabled,
-      style: style ??
-          TextStyle(
-              color: isDark ? Colors.white : colorScheme.onSurface,
-              fontWeight: FontWeight.w500),
+
+      style: style ?? TextStyle(
+        color: colorScheme.onSurface,
+        fontWeight: FontWeight.w500,
+        fontSize: 16,
+      ),
+
       decoration: InputDecoration(
         hintText: hintText,
         labelText: labelText,
         prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: isDark
-            ? const Color.fromARGB(255, 55, 65, 85)
-            : colorScheme.surface,
+
+        fillColor: colorScheme.surfaceVariant,
         hintStyle: TextStyle(
-            color: isDark ? Colors.grey.shade400 : colorScheme.secondary),
-        labelStyle:
-            TextStyle(color: isDark ? Colors.white : colorScheme.primary),
+          color: colorScheme.onSurfaceVariant,
+          fontSize: 16,
+        ),
+        labelStyle: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          fontSize: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: (colorScheme.outline as Color?) ?? Colors.grey,
-          ),
-//        borderSide: BorderSide(
-//   color: (colorScheme.outline as Color?) ?? Colors.grey,
-// ),
-
+          borderSide: BorderSide(color: colorScheme.outline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          // borderSide: BorderSide(color: colorScheme.outline ?? Colors.grey),
-
-          // line chanhed by me and write below
-          borderSide: BorderSide(
-            color: (colorScheme.outline as Color?) ?? Colors.grey,
-          ),
-          
-          // line chanhed by me and write below 
-//           borderSide: BorderSide(
-//   color: (colorScheme.outline as Color?) ?? Colors.grey,
-// ),
+          borderSide: BorderSide(color: colorScheme.outline),
 
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
-        contentPadding: contentPadding ??
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.error),
+        ),
+        contentPadding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+
       ),
     );
   }
