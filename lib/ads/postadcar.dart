@@ -29,7 +29,6 @@ class _PostAdCarState extends State<PostAdCar> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _priceadController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _yearController = TextEditingController();
   final TextEditingController _mileageController = TextEditingController();
   final TextEditingController _fuelController = TextEditingController();
 
@@ -50,7 +49,6 @@ class _PostAdCarState extends State<PostAdCar> {
   final List<Uint8List> _webImages = [];
 
   final TextEditingController _bodyColorController = TextEditingController();
-  final TextEditingController _kmsController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
@@ -268,12 +266,10 @@ class _PostAdCarState extends State<PostAdCar> {
   void dispose() {
     _titleController.dispose();
     _locationController.dispose();
-    _yearController.dispose();
     _mileageController.dispose();
     _fuelController.dispose();
 
     _bodyColorController.dispose();
-    _kmsController.dispose();
     _priceController.dispose();
     _descriptionController.dispose();
     _nameController.dispose();
@@ -295,7 +291,7 @@ class _PostAdCarState extends State<PostAdCar> {
         selectedCarModel == null ||
         selectedRegisteredIn == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select all dropdown options.")),
+        const SnackBar(content: Text("Please select location, car model year, and registration city.")),
       );
       return;
     }
@@ -473,9 +469,16 @@ class _PostAdCarState extends State<PostAdCar> {
                 controller: _bodyColorController,
               ),
               _buildTextFieldTile(
-                label: "KMs Driven",
+                label: "Mileage (KMs)",
                 icon: Icons.speed,
-                controller: _kmsController,
+                controller: _mileageController,
+                hint: "50000",
+              ),
+              _buildTextFieldTile(
+                label: "Fuel Type",
+                icon: Icons.local_gas_station,
+                controller: _fuelController,
+                hint: "Petrol",
               ),
               _buildTextFieldTile(
                 label: "Price (PKR)",
@@ -529,13 +532,13 @@ class _PostAdCarState extends State<PostAdCar> {
                           title: _titleController.text,
                           price: _priceController.text,
                           location: selectedLocation ?? _locationController.text,
-                          year: _yearController.text,
+                          year: selectedCarModel ?? '',
                           mileage: _mileageController.text,
                           fuel: _fuelController.text,
                           description: _descriptionController.text,
                           carBrand: _carbrandController.text,
                           bodyColor: _bodyColorController.text,
-                          kmsDriven: _kmsController.text,
+                          kmsDriven: _mileageController.text, // Use mileage for kmsDriven
                           registeredIn: selectedRegisteredIn,
                           name: _nameController.text,
                           phone: _phoneController.text,

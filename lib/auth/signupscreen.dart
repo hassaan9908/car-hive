@@ -1,7 +1,5 @@
 import 'package:carhive/pages/homepage.dart';
 import 'package:flutter/material.dart';
-// ignore: unused_import
-import 'package:carhive/auth/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart';
 import 'package:carhive/components/custom_textfield.dart';

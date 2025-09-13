@@ -61,14 +61,14 @@ final ThemeData darkTheme = ThemeData(
   ),
   
   // Card Theme
-  cardTheme: CardTheme(
-    color: AppColors.darkSurface,
-    elevation: 4,
-    shadowColor: AppColors.neutral900,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-  ),
+  // cardTheme: CardTheme(
+  //   color: AppColors.darkSurface,
+  //   elevation: 4,
+  //   shadowColor: AppColors.neutral900,
+  //   shape: RoundedRectangleBorder(
+  //     borderRadius: BorderRadius.circular(12),
+  //   ),
+  // ),
   
   // Input Decoration Theme
   inputDecorationTheme: InputDecorationTheme(
@@ -159,12 +159,12 @@ final ThemeData darkTheme = ThemeData(
   ),
   
   // Tab Bar Theme
-  tabBarTheme: const TabBarTheme(
-    labelColor: AppColors.primaryBlueLight,
-    unselectedLabelColor: AppColors.darkOnSurfaceVariant,
-    indicatorColor: AppColors.primaryBlueLight,
-    indicatorSize: TabBarIndicatorSize.tab,
-  ),
+  // tabBarTheme: const TabBarTheme(
+  //   labelColor: AppColors.primaryBlueLight,
+  //   unselectedLabelColor: AppColors.darkOnSurfaceVariant,
+  //   indicatorColor: AppColors.primaryBlueLight,
+  //   indicatorSize: TabBarIndicatorSize.tab,
+  // ),
   
   // Floating Action Button Theme
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
