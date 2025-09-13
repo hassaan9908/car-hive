@@ -111,7 +111,7 @@ class CarDetailsPage extends StatelessWidget {
                   ),
                   _buildSpecificationCard(
                     context,
-                    'Mileage',
+                    'Mileage (KMs Driven)',
                     ad.mileage.isNotEmpty ? '${ad.mileage} km' : 'Not specified',
                     Icons.speed,
                   ),

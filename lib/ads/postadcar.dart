@@ -49,7 +49,6 @@ class _PostAdCarState extends State<PostAdCar> {
   final List<Uint8List> _webImages = [];
 
   final TextEditingController _bodyColorController = TextEditingController();
-  final TextEditingController _kmsController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
@@ -271,7 +270,6 @@ class _PostAdCarState extends State<PostAdCar> {
     _fuelController.dispose();
 
     _bodyColorController.dispose();
-    _kmsController.dispose();
     _priceController.dispose();
     _descriptionController.dispose();
     _nameController.dispose();
@@ -471,12 +469,7 @@ class _PostAdCarState extends State<PostAdCar> {
                 controller: _bodyColorController,
               ),
               _buildTextFieldTile(
-                label: "KMs Driven",
-                icon: Icons.speed,
-                controller: _kmsController,
-              ),
-              _buildTextFieldTile(
-                label: "Mileage",
+                label: "Mileage (KMs)",
                 icon: Icons.speed,
                 controller: _mileageController,
                 hint: "50000",
@@ -545,7 +538,7 @@ class _PostAdCarState extends State<PostAdCar> {
                           description: _descriptionController.text,
                           carBrand: _carbrandController.text,
                           bodyColor: _bodyColorController.text,
-                          kmsDriven: _kmsController.text,
+                          kmsDriven: _mileageController.text, // Use mileage for kmsDriven
                           registeredIn: selectedRegisteredIn,
                           name: _nameController.text,
                           phone: _phoneController.text,
