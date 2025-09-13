@@ -37,7 +37,8 @@ class Upload extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.blue,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Colors.white,
           title: const Text("Choose a plan"),
         ),
         body: currentUser == null ? _buildLoginPrompt(context) : _buildUploadOptions(context),
@@ -55,13 +56,21 @@ class Upload extends StatelessWidget {
   }
 
   Widget _buildLoginPrompt(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.login, size: 64, color: Colors.grey),
+          Icon(Icons.login, size: 64, color: colorScheme.onSurfaceVariant),
           SizedBox(height: 16),
-          Text('Please login to upload ads', style: TextStyle(fontSize: 18)),
+          Text(
+            'Please login to upload ads', 
+            style: TextStyle(
+              fontSize: 18,
+              color: colorScheme.onSurface,
+            ),
+          ),
           SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
@@ -75,18 +84,21 @@ class Upload extends StatelessWidget {
   }
 
   Widget _buildUploadOptions(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 20),
+          Padding(
+            padding: const EdgeInsets.only(left: 20),
             child: Text(
               "How do you want to sell your car?",
               style: TextStyle(
                 fontSize: 25,
                 fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
               ),
             ),
           ),
@@ -98,8 +110,9 @@ class Upload extends StatelessWidget {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colorScheme.outline),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -110,36 +123,46 @@ class Upload extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           "Sell It Myself!",
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 10),
-                        const Row(
+                        Row(
                           children: [
                             Icon(Icons.check,
                                 color: Colors.green, size: 18),
                             SizedBox(width: 5),
-                            Text("Post an ad in 2 minutes"),
+                            Text(
+                              "Post an ad in 2 minutes",
+                              style: TextStyle(color: colorScheme.onSurface),
+                            ),
                           ],
                         ),
-                        const Row(
+                        Row(
                           children: [
                             Icon(Icons.check,
                                 color: Colors.green, size: 18),
                             SizedBox(width: 5),
-                            Text("20 million users"),
+                            Text(
+                              "20 million users",
+                              style: TextStyle(color: colorScheme.onSurface),
+                            ),
                           ],
                         ),
-                        const Row(
+                        Row(
                           children: [
                             Icon(Icons.check,
                                 color: Colors.green, size: 18),
                             SizedBox(width: 5),
-                            Text("Connect directly with buyers"),
+                            Text(
+                              "Connect directly with buyers",
+                              style: TextStyle(color: colorScheme.onSurface),
+                            ),
                           ],
                         ),
                         // const Spacer(),
@@ -177,7 +200,7 @@ class Upload extends StatelessWidget {
                       height: double.infinity,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey.shade200,
+                        color: colorScheme.surfaceVariant,
                         image: const DecorationImage(
                           image: AssetImage('assets/your_image.png'),
                           fit: BoxFit.cover,
@@ -198,8 +221,9 @@ class Upload extends StatelessWidget {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colorScheme.outline),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -210,36 +234,46 @@ class Upload extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           "Sell It Through CarHive!",
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 10),
-                        const Row(
+                        Row(
                           children: [
                             Icon(Icons.check,
                                 color: Colors.green, size: 18),
                             SizedBox(width: 5),
-                            Text("Post an ad in 2 minutes"),
+                            Text(
+                              "Post an ad in 2 minutes",
+                              style: TextStyle(color: colorScheme.onSurface),
+                            ),
                           ],
                         ),
-                        const Row(
+                        Row(
                           children: [
                             Icon(Icons.check,
                                 color: Colors.green, size: 18),
                             SizedBox(width: 5),
-                            Text("20 million users"),
+                            Text(
+                              "20 million users",
+                              style: TextStyle(color: colorScheme.onSurface),
+                            ),
                           ],
                         ),
-                        const Row(
+                        Row(
                           children: [
                             Icon(Icons.check,
                                 color: Colors.green, size: 18),
                             SizedBox(width: 5),
-                            Text("Connect directly with buyers"),
+                            Text(
+                              "Connect directly with buyers",
+                              style: TextStyle(color: colorScheme.onSurface),
+                            ),
                           ],
                         ),
                         // const Spacer(),
@@ -278,7 +312,7 @@ class Upload extends StatelessWidget {
                       height: double.infinity,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey.shade200,
+                        color: colorScheme.surfaceVariant,
                         image: const DecorationImage(
                           image: AssetImage('assets/your_image.png'),
                           fit: BoxFit.cover,
