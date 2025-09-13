@@ -51,30 +51,6 @@ class Homepage extends StatelessWidget {
               ),
               tooltip: 'Admin Panel',
             ),
-          // Debug button (web only)
-          if (kIsWeb)
-            IconButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/admin-debug');
-              },
-              icon: const Icon(
-                Icons.bug_report,
-                color: Colors.orange,
-              ),
-              tooltip: 'Admin Debug',
-            ),
-          // Theme Showcase button (web only)
-          if (kIsWeb)
-            IconButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/theme-showcase');
-              },
-              icon: const Icon(
-                Icons.palette,
-                color: Colors.purple,
-              ),
-              tooltip: 'Theme Showcase',
-            ),
           IconButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/notifications');

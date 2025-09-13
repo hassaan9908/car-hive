@@ -29,7 +29,6 @@ class _PostAdCarState extends State<PostAdCar> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _priceadController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _yearController = TextEditingController();
   final TextEditingController _mileageController = TextEditingController();
   final TextEditingController _fuelController = TextEditingController();
 
@@ -268,7 +267,6 @@ class _PostAdCarState extends State<PostAdCar> {
   void dispose() {
     _titleController.dispose();
     _locationController.dispose();
-    _yearController.dispose();
     _mileageController.dispose();
     _fuelController.dispose();
 
@@ -295,7 +293,7 @@ class _PostAdCarState extends State<PostAdCar> {
         selectedCarModel == null ||
         selectedRegisteredIn == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select all dropdown options.")),
+        const SnackBar(content: Text("Please select location, car model year, and registration city.")),
       );
       return;
     }
@@ -478,6 +476,18 @@ class _PostAdCarState extends State<PostAdCar> {
                 controller: _kmsController,
               ),
               _buildTextFieldTile(
+                label: "Mileage",
+                icon: Icons.speed,
+                controller: _mileageController,
+                hint: "50000",
+              ),
+              _buildTextFieldTile(
+                label: "Fuel Type",
+                icon: Icons.local_gas_station,
+                controller: _fuelController,
+                hint: "Petrol",
+              ),
+              _buildTextFieldTile(
                 label: "Price (PKR)",
                 icon: Icons.local_offer,
                 controller: _priceController,
@@ -529,7 +539,7 @@ class _PostAdCarState extends State<PostAdCar> {
                           title: _titleController.text,
                           price: _priceController.text,
                           location: selectedLocation ?? _locationController.text,
-                          year: _yearController.text,
+                          year: selectedCarModel ?? '',
                           mileage: _mileageController.text,
                           fuel: _fuelController.text,
                           description: _descriptionController.text,
