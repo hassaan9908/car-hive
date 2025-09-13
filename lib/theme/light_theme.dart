@@ -60,19 +60,19 @@ final ThemeData lightTheme = ThemeData(
   ),
   
   // Card Theme
-  cardTheme: CardTheme(
-    color: Colors.white,
-    elevation: 1,
-    shadowColor: const Color(0xFF000000).withOpacity(0.05),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-      side: const BorderSide(
-        color: Color(0xFFF3F4F6),
-        width: 1,
-      ),
-    ),
-    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-  ),
+  // cardTheme: CardTheme(
+  //   color: Colors.white,
+  //   elevation: 1,
+  //   shadowColor: const Color(0xFF000000).withOpacity(0.05),
+  //   shape: RoundedRectangleBorder(
+  //     borderRadius: BorderRadius.circular(16),
+  //     side: const BorderSide(
+  //       color: Color(0xFFF3F4F6),
+  //       width: 1,
+  //     ),
+  //   ),
+  //   margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+  // ),
   
   // Input Decoration Theme
   inputDecorationTheme: InputDecorationTheme(
@@ -181,20 +181,20 @@ final ThemeData lightTheme = ThemeData(
   ),
   
   // Tab Bar Theme
-  tabBarTheme: const TabBarTheme(
-    labelColor: AppColors.primaryBlue,
-    unselectedLabelColor: Color(0xFF6B7280),
-    indicatorColor: AppColors.primaryBlue,
-    indicatorSize: TabBarIndicatorSize.tab,
-    labelStyle: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-    ),
-    unselectedLabelStyle: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w500,
-    ),
-  ),
+  // tabBarTheme: const TabBarTheme(
+  //   labelColor: AppColors.primaryBlue,
+  //   unselectedLabelColor: Color(0xFF6B7280),
+  //   indicatorColor: AppColors.primaryBlue,
+  //   indicatorSize: TabBarIndicatorSize.tab,
+  //   labelStyle: TextStyle(
+  //     fontSize: 16,
+  //     fontWeight: FontWeight.w600,
+  //   ),
+  //   unselectedLabelStyle: TextStyle(
+  //     fontSize: 16,
+  //     fontWeight: FontWeight.w500,
+  //   ),
+  // ),
   
   // Floating Action Button Theme
   floatingActionButtonTheme: const FloatingActionButtonThemeData(

@@ -5,6 +5,8 @@ import 'package:carhive/pages/myads.dart';
 import 'package:carhive/pages/notifications.dart';
 import 'package:carhive/pages/profilepage.dart';
 import 'package:carhive/pages/upload.dart';
+import 'package:carhive/pages/car_details_page.dart';
+import 'package:carhive/models/ad_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -63,6 +65,10 @@ class MyApp extends StatelessWidget {
               'loginscreen': (context) => const Loginscreen(),
               '/admin': (context) => const AdminMain(),
               '/admin-debug': (context) => const AdminDebugPage(),
+              '/car-details': (context) {
+                final ad = ModalRoute.of(context)!.settings.arguments as AdModel;
+                return CarDetailsPage(ad: ad);
+              },
             },
           );
         },

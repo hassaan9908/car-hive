@@ -145,8 +145,14 @@ class _UsedCarsTab extends StatelessWidget {
           );
         }
 
-        return ListView.builder(
+        return GridView.builder(
           padding: EdgeInsets.symmetric(horizontal: 16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.75,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
           itemCount: ads.length,
           itemBuilder: (context, index) {
             final ad = ads[index];
@@ -160,131 +166,125 @@ class _UsedCarsTab extends StatelessWidget {
   Widget _buildAdCard(BuildContext context, AdModel ad) {
     final colorScheme = Theme.of(context).colorScheme;
     
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Car image placeholder
-          Container(
-            height: 200,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Center(
-              child: Icon(
-                Icons.car_rental,
-                size: 48,
-                color: colorScheme.onSurfaceVariant,
+    return GestureDetector(
+      onTap: () {
+        // Navigate to detailed car page
+        Navigator.pushNamed(
+          context, 
+          '/car-details', 
+          arguments: ad,
+        );
+      },
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Car image placeholder
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceVariant,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.car_rental,
+                    size: 32,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
-          ),
-          
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title and price
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            
+            // Card content
+            Expanded(
+              flex: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        ad.title,
-                        style: Theme.of(context).textTheme.titleLarge,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                    // Title (truncated)
+                    Text(
+                      ad.title,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    
+                    const SizedBox(height: 4),
+                    
+                    // Price
                     Text(
                       'PKR ${ad.price}',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // Location
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: colorScheme.onSurfaceVariant,
+                    
+                    const SizedBox(height: 4),
+                    
+                    // Location
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 12,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            ad.location,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      ad.location,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                    
+                    const SizedBox(height: 4),
+                    
+                    // Car details (compact)
+                    Row(
+                      children: [
+                        _buildDetailChip('${ad.year}', Icons.calendar_today, context),
+                        const SizedBox(width: 4),
+                        _buildDetailChip('${ad.mileage}k', Icons.speed, context),
+                      ],
+                    ),
+                    
+                    const Spacer(),
+                    
+                    // Brand (if available)
+                    if (ad.carBrand != null && ad.carBrand!.isNotEmpty)
+                      Text(
+                        ad.carBrand!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
                   ],
                 ),
-                
-                const SizedBox(height: 8),
-                
-                // Car details
-                Row(
-                  children: [
-                    _buildDetailChip('${ad.year}', Icons.calendar_today, context),
-                    const SizedBox(width: 8),
-                    _buildDetailChip('${ad.mileage} km', Icons.speed, context),
-                    const SizedBox(width: 8),
-                    _buildDetailChip(ad.fuel, Icons.local_gas_station, context),
-                  ],
-                ),
-                
-                if (ad.carBrand != null && ad.carBrand!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Brand: ${ad.carBrand}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                
-                if (ad.description != null && ad.description!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    ad.description!,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-                
-                const SizedBox(height: 12),
-                
-                // Contact button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: Implement contact functionality
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Contact feature coming soon!')),
-                      );
-                    },
-                    child: const Text('Contact Seller'),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -293,21 +293,22 @@ class _UsedCarsTab extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colorScheme.outline),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: 4),
+          Icon(icon, size: 10, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 2),
           Text(
             text,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
+              fontSize: 10,
             ),
           ),
         ],
