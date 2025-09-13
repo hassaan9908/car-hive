@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_provider.dart';
-import '../../models/admin_stats_model.dart';
+
 import '../../models/ad_model.dart';
 
 class AdminDashboardPage extends StatefulWidget {
