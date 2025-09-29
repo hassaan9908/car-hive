@@ -16,6 +16,7 @@ class CustomTextField extends StatelessWidget {
   final TextStyle? style;
   final bool enabled;
   final EdgeInsetsGeometry? contentPadding;
+  final String? errorText;
 
   const CustomTextField({
     super.key,
@@ -34,6 +35,7 @@ class CustomTextField extends StatelessWidget {
     this.style,
     this.enabled = true,
     this.contentPadding,
+    this.errorText,
   });
 
   @override
@@ -56,6 +58,8 @@ class CustomTextField extends StatelessWidget {
         color: colorScheme.onSurface,
         fontWeight: FontWeight.w500,
         fontSize: 16,
+        textBaseline: TextBaseline.alphabetic,
+        inherit: false,
       ),
 
       decoration: InputDecoration(
@@ -63,16 +67,21 @@ class CustomTextField extends StatelessWidget {
         labelText: labelText,
         prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
+        errorText: errorText,
         filled: true,
 
         fillColor: colorScheme.surfaceVariant,
         hintStyle: TextStyle(
           color: colorScheme.onSurfaceVariant,
           fontSize: 16,
+          textBaseline: TextBaseline.alphabetic,
+          inherit: false,
         ),
         labelStyle: TextStyle(
           color: colorScheme.onSurfaceVariant,
           fontSize: 16,
+          textBaseline: TextBaseline.alphabetic,
+          inherit: false,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

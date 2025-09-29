@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart';
 import 'package:carhive/components/custom_textfield.dart';
+import 'package:carhive/utils/validators.dart';
 
 class Signupscreen extends StatefulWidget {
   const Signupscreen({super.key});
@@ -15,7 +16,14 @@ class _SignupscreenState extends State<Signupscreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+  final _formKey = GlobalKey<FormState>();
+  String? _nameError;
+  String? _emailError;
+  String? _passwordError;
+  String? _confirmPasswordError;
 
   @override
   void dispose() {
@@ -23,6 +31,7 @@ class _SignupscreenState extends State<Signupscreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
   }
 
   @override
@@ -51,11 +60,11 @@ class _SignupscreenState extends State<Signupscreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Logo or App Title
-                  Icon(
-                    Icons.car_rental,
-                    size: 80,
-                    color: colorScheme.primary,
-                  ),
+                 Image.asset(
+                    'assets/images/car-image.png',
+                    width: 100,
+                    height: 100,
+                    ),
                   const SizedBox(height: 24),
 
                   // Title
@@ -83,6 +92,7 @@ class _SignupscreenState extends State<Signupscreen> {
                     hintText: 'Full Name',
                     keyboardType: TextInputType.name,
                     prefixIcon: const Icon(Icons.person),
+                    errorText: _nameError,
                   ),
                   const SizedBox(height: 16),
 
@@ -92,6 +102,7 @@ class _SignupscreenState extends State<Signupscreen> {
                     hintText: 'Email',
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: const Icon(Icons.email),
+                    errorText: _emailError,
                   ),
                   const SizedBox(height: 16),
 
@@ -101,6 +112,7 @@ class _SignupscreenState extends State<Signupscreen> {
                     hintText: 'Password',
                     obscureText: !_isPasswordVisible,
                     prefixIcon: const Icon(Icons.lock),
+                    errorText: _passwordError,
                     suffixIcon: IconButton(
                       icon: Icon(_isPasswordVisible
                           ? Icons.visibility
@@ -108,6 +120,26 @@ class _SignupscreenState extends State<Signupscreen> {
                       onPressed: () {
                         setState(() {
                           _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Confirm Password Field
+                  CustomTextField(
+                    controller: _confirmPasswordController,
+                    hintText: 'Confirm Password',
+                    obscureText: !_isConfirmPasswordVisible,
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    errorText: _confirmPasswordError,
+                    suffixIcon: IconButton(
+                      icon: Icon(_isConfirmPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off),
+                      onPressed: () {
+                        setState(() {
+                          _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
                         });
                       },
                     ),
@@ -184,6 +216,53 @@ class _SignupscreenState extends State<Signupscreen> {
   }
 
   _signup() async {
+    // Clear previous errors
+    setState(() {
+      _nameError = null;
+      _emailError = null;
+      _passwordError = null;
+      _confirmPasswordError = null;
+    });
+
+    // Validate name
+    final nameError = Validators.validateName(_nameController.text);
+    if (nameError != null) {
+      setState(() {
+        _nameError = nameError;
+      });
+      return;
+    }
+
+    // Validate email
+    final emailError = Validators.validateEmail(_emailController.text);
+    if (emailError != null) {
+      setState(() {
+        _emailError = emailError;
+      });
+      return;
+    }
+
+    // Validate password
+    final passwordError = Validators.validatePassword(_passwordController.text);
+    if (passwordError != null) {
+      setState(() {
+        _passwordError = passwordError;
+      });
+      return;
+    }
+
+    // Validate confirm password
+    final confirmPasswordError = Validators.validateConfirmPassword(
+      _confirmPasswordController.text, 
+      _passwordController.text
+    );
+    if (confirmPasswordError != null) {
+      setState(() {
+        _confirmPasswordError = confirmPasswordError;
+      });
+      return;
+    }
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     try {
