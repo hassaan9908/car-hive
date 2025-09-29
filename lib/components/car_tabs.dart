@@ -3,7 +3,9 @@ import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/store/global_ads.dart';
 
 class CarTabs extends StatelessWidget {
-  const CarTabs({Key? key}) : super(key: key);
+  final int initialTab;
+  
+  const CarTabs({Key? key, this.initialTab = 0}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -11,6 +13,7 @@ class CarTabs extends StatelessWidget {
     
     return DefaultTabController(
       length: 2,
+      initialIndex: initialTab,
       child: Column(
         children: [
           Container(
@@ -30,11 +33,15 @@ class CarTabs extends StatelessWidget {
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
+                textBaseline: TextBaseline.alphabetic,
+                inherit: false,
               ),
               unselectedLabelColor: colorScheme.onSurfaceVariant,
               unselectedLabelStyle: const TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 16,
+                textBaseline: TextBaseline.alphabetic,
+                inherit: false,
               ),
               dividerColor: Colors.transparent,
               tabs: const [
@@ -44,8 +51,7 @@ class CarTabs extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 400, // Increased height for better content display
+          Expanded(
             child: TabBarView(
               children: [
                 _UsedCarsTab(),
@@ -112,14 +118,24 @@ class _UsedCarsTab extends StatelessWidget {
               children: [
                 Icon(Icons.error_outline, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text(errorMessage, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(errorMessage, style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold,
+                  textBaseline: TextBaseline.alphabetic,
+                  inherit: false,
+                )),
                 SizedBox(height: 8),
                 if (errorDetails.isNotEmpty)
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
                       errorDetails,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 14, 
+                        color: Colors.grey[600],
+                        textBaseline: TextBaseline.alphabetic,
+                        inherit: false,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -137,9 +153,18 @@ class _UsedCarsTab extends StatelessWidget {
               children: [
                 Icon(Icons.car_rental, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text('No cars available', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('No cars available', style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold,
+                  textBaseline: TextBaseline.alphabetic,
+                  inherit: false,
+                )),
                 SizedBox(height: 8),
-                Text('Check back later for new listings', style: TextStyle(color: Colors.grey)),
+                Text('Check back later for new listings', style: TextStyle(
+                  color: Colors.grey,
+                  textBaseline: TextBaseline.alphabetic,
+                  inherit: false,
+                )),
               ],
             ),
           );

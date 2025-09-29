@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../theme/theme_provider.dart';
 import '../auth/loginscreen.dart';
 import '../auth/auth_provider.dart';
+import 'homepage.dart';
 
 
 
@@ -36,6 +37,7 @@ class Profilepage extends StatelessWidget {
         return false;
       },
       child: Scaffold(
+       
         body: SafeArea(
           child: Column(
             children: [
@@ -174,7 +176,7 @@ class Profilepage extends StatelessWidget {
           
           // Greeting message
           Text(
-            'Welcome back,',
+            'Welcome',
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 14,
@@ -271,6 +273,35 @@ class Profilepage extends StatelessWidget {
         dense: true,
       );
     }
+    
+    // Handle Products section navigation
+    if (title == "Sell My Car") {
+      return ListTile(
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        title: Text(title, style: const TextStyle(fontSize: 16)),
+        onTap: () => _navigateToUpload(context),
+        dense: true,
+      );
+    }
+    
+    if (title == "Buy Used Car") {
+      return ListTile(
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        title: Text(title, style: const TextStyle(fontSize: 16)),
+        onTap: () => _navigateToUsedCars(context),
+        dense: true,
+      );
+    }
+    
+    if (title == "Buy New Car") {
+      return ListTile(
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        title: Text(title, style: const TextStyle(fontSize: 16)),
+        onTap: () => _navigateToNewCars(context),
+        dense: true,
+      );
+    }
+    
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
       title: Text(title, style: const TextStyle(fontSize: 16)),
@@ -318,6 +349,30 @@ class Profilepage extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  void _navigateToUpload(BuildContext context) {
+    Navigator.pushNamed(context, '/upload');
+  }
+
+  void _navigateToUsedCars(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const Homepage(initialTab: 0), // Used Cars tab
+      ),
+      (route) => false,
+    );
+  }
+
+  void _navigateToNewCars(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const Homepage(initialTab: 1), // New Cars tab
+      ),
+      (route) => false,
     );
   }
 }
