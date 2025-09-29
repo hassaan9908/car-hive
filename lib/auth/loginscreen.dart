@@ -4,6 +4,7 @@ import 'package:carhive/pages/homepage.dart';
 import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart';
 import 'package:carhive/components/custom_textfield.dart';
+import 'package:carhive/utils/validators.dart';
 
 
 class Loginscreen extends StatefulWidget {
@@ -18,6 +19,9 @@ class _LoginscreenState extends State<Loginscreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  final _formKey = GlobalKey<FormState>();
+  String? _emailError;
+  String? _passwordError;
 
   @override
   void dispose() {
@@ -44,11 +48,11 @@ class _LoginscreenState extends State<Loginscreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Logo or App Title
-                  Icon(
-                    Icons.car_rental,
-                    size: 80,
-                    color: colorScheme.primary,
-                  ),
+                  Image.asset(
+                    'assets/images/car-image.png',
+                    width: 100,
+                    height: 100,
+                    ),
                   const SizedBox(height: 24),
                   
                   // Title
@@ -76,6 +80,7 @@ class _LoginscreenState extends State<Loginscreen> {
                     hintText: 'Email',
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: Icon(Icons.email),
+                    errorText: _emailError,
                   ),
                   const SizedBox(height: 16),
                   
@@ -85,6 +90,7 @@ class _LoginscreenState extends State<Loginscreen> {
                     hintText: 'Password',
                     obscureText: !_isPasswordVisible,
                     prefixIcon: Icon(Icons.lock),
+                    errorText: _passwordError,
                     suffixIcon: IconButton(
                       icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
                       onPressed: () {
@@ -153,6 +159,25 @@ class _LoginscreenState extends State<Loginscreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
+                   ElevatedButton(
+                    
+                    onPressed: () => _loginWithGoogle(),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Sign in with Google'),
+                        const SizedBox(width: 6),
+                        Image.asset(
+                          'assets/images/google-logo.png',
+                          width: 20,
+                          height: 20,
+                        ),
+                      ],
+                    ),
+                    ),
+                  
+                  
                 ],
               ),
             ),
@@ -170,6 +195,30 @@ class _LoginscreenState extends State<Loginscreen> {
   }
 
   _login() async {
+    // Clear previous errors
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+    });
+
+    // Validate email
+    final emailError = Validators.validateEmail(_emailController.text);
+    if (emailError != null) {
+      setState(() {
+        _emailError = emailError;
+      });
+      return;
+    }
+
+    // Validate password
+    final passwordError = Validators.validatePassword(_passwordController.text);
+    if (passwordError != null) {
+      setState(() {
+        _passwordError = passwordError;
+      });
+      return;
+    }
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     try {
@@ -187,6 +236,27 @@ class _LoginscreenState extends State<Loginscreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Login failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  _loginWithGoogle() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    try {
+      final user = await authProvider.signInWithGoogle();
+      
+      if (user != null) {
+        print("User logged in with Google");
+        goToHome(context);
+      }
+    } catch (e) {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google login failed: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
