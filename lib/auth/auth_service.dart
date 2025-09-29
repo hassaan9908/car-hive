@@ -1,6 +1,7 @@
 // In lib/auth/auth_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final _auth = FirebaseAuth.instance;
@@ -107,4 +108,57 @@ class AuthService {
   }
 
   // ... rest of your existing methods
+  signInWithGoogle() async {
+    try {
+      // Configure GoogleSignIn with minimal scopes to avoid People API
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+      );
+      
+      final GoogleSignInAccount? gUser = await googleSignIn.signIn();
+      
+      if (gUser == null) {
+        // User cancelled the sign-in
+        return null;
+      }
+
+      final GoogleSignInAuthentication gAuth = await gUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: gAuth.accessToken,
+        idToken: gAuth.idToken,
+      );
+
+      final result = await _auth.signInWithCredential(credential);
+      
+      // Create or update user document in Firestore
+      if (result.user != null) {
+        final userDoc = await _firestore.collection('users').doc(result.user!.uid).get();
+        if (!userDoc.exists) {
+          // Create user document if it doesn't exist
+          await _firestore.collection('users').doc(result.user!.uid).set({
+            'email': result.user!.email,
+            'displayName': result.user!.displayName ?? 'User',
+            'role': 'user',
+            'createdAt': FieldValue.serverTimestamp(),
+            'lastLoginAt': FieldValue.serverTimestamp(),
+            'isActive': true,
+            'totalAdsPosted': 0,
+            'activeAdsCount': 0,
+            'rejectedAdsCount': 0,
+          });
+        } else {
+          // Update last login time if document exists
+          await _firestore.collection('users').doc(result.user!.uid).update({
+            'lastLoginAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+      
+      return result;
+    } catch (e) {
+      print("Google sign-in error: $e");
+      rethrow;
+    }
+  }
+
 }

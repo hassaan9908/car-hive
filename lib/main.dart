@@ -1,4 +1,5 @@
 import 'package:carhive/pages/homepage.dart';
+import 'package:carhive/pages/startup_page.dart';
 import 'package:carhive/auth/loginscreen.dart';
 import 'package:carhive/pages/mutualinvestment.dart';
 import 'package:carhive/pages/myads.dart';
@@ -10,6 +11,7 @@ import 'package:carhive/models/ad_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/light_theme.dart';
 import 'theme/dark_theme.dart';
 import 'theme/theme_provider.dart';
@@ -17,6 +19,7 @@ import 'auth/auth_provider.dart';
 import 'firebase_options.dart';
 import 'pages/admin/admin_main.dart';
 import 'providers/admin_provider.dart';
+import 'providers/search_provider.dart';
 import 'pages/admin/admin_debug_page.dart';
 
 void main() async {
@@ -45,18 +48,21 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-           ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => SearchProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp(
-            title: 'Flutter Demo',
+            title: 'CarHive',
             theme: lightTheme,
             darkTheme: darkTheme,
             themeMode: themeProvider.themeMode,
-            home: const HomepageWithAdminInit(),
+            home: const AppInitializer(),
             debugShowCheckedModeBanner: false,
             routes: {
+              '/startup': (context) => const StartupPage(),
+              '/home': (context) => const HomepageWithAdminInit(),
               '/myads': (context) => const Myads(),
               '/profile': (context) => const Profilepage(),
               '/notifications': (context) => const Notifications(),
@@ -74,6 +80,64 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+// App Initializer - handles startup page logic
+class AppInitializer extends StatefulWidget {
+  const AppInitializer({super.key});
+
+  @override
+  State<AppInitializer> createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<AppInitializer> {
+  bool _isInitialized = false;
+  bool _hasSeenStartup = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkStartupStatus();
+  }
+
+  Future<void> _checkStartupStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _hasSeenStartup = prefs.getBool('has_seen_startup') ?? false;
+      
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      print('Error checking startup status: $e');
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // If user has seen startup page before, go directly to homepage
+    if (_hasSeenStartup) {
+      return const HomepageWithAdminInit();
+    }
+
+    // Show startup page for first-time users
+    return const StartupPage();
   }
 }
 
