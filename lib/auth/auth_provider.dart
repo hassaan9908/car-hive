@@ -22,12 +22,14 @@ class AuthProvider extends ChangeNotifier {
     });
   }
 
-  Future<User?> loginUserWithEmailAndPassword(String email, String password) async {
+  Future<User?> loginUserWithEmailAndPassword(
+      String email, String password) async {
     _isLoading = true;
     notifyListeners();
-    
+
     try {
-      final user = await _authService.loginUserWithEmailAndPassword(email, password);
+      final user =
+          await _authService.loginUserWithEmailAndPassword(email, password);
       _user = user;
       return user;
     } finally {
@@ -36,12 +38,26 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<User?> createUserWithEmailAndPassword(String email, String password) async {
+  Future<User?> createUserWithEmailAndPassword(
+    String email,
+    String password, {
+    String? fullName,
+    String? username,
+    String? birthday,
+    String? gender,
+  }) async {
     _isLoading = true;
     notifyListeners();
-    
+
     try {
-      final user = await _authService.createUserWithEmailAndPassword(email, password);
+      final user = await _authService.createUserWithEmailAndPassword(
+        email,
+        password,
+        fullName: fullName,
+        username: username,
+        birthday: birthday,
+        gender: gender,
+      );
       _user = user;
       return user;
     } finally {
@@ -53,7 +69,7 @@ class AuthProvider extends ChangeNotifier {
   Future<User?> signInWithGoogle() async {
     _isLoading = true;
     notifyListeners();
-    
+
     try {
       final result = await _authService.signInWithGoogle();
       if (result != null) {
@@ -70,7 +86,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> signOut() async {
     _isLoading = true;
     notifyListeners();
-    
+
     try {
       await _authService.signout();
       _user = null;
@@ -82,22 +98,22 @@ class AuthProvider extends ChangeNotifier {
 
   String getDisplayName() {
     if (_user == null) return '';
-    
+
     // Try to get display name from Firebase user
     if (_user!.displayName != null && _user!.displayName!.isNotEmpty) {
       return _user!.displayName!;
     }
-    
+
     // Fallback to email (remove domain part)
     if (_user!.email != null) {
       String email = _user!.email!;
       return email.split('@')[0];
     }
-    
+
     return 'User';
   }
 
   String getEmail() {
     return _user?.email ?? '';
   }
-} 
+}

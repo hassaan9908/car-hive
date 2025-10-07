@@ -1,21 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/store/global_ads.dart';
 
+// Simple cache for trust levels to persist across account switches
+class TrustLevelCache {
+  static final Map<String, String> _cache = {};
+
+  static void setTrustLevel(String userId, String trustLevel) {
+    _cache[userId] = trustLevel;
+  }
+
+  static String? getTrustLevel(String userId) {
+    return _cache[userId];
+  }
+
+  static void clearCache() {
+    _cache.clear();
+  }
+}
+
 class CarTabs extends StatelessWidget {
   final int initialTab;
-  
+
   const CarTabs({Key? key, this.initialTab = 0}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return DefaultTabController(
       length: 2,
       initialIndex: initialTab,
       child: Column(
         children: [
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TabBar(
@@ -27,13 +46,16 @@ class CarTabs extends StatelessWidget {
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
+
                 textBaseline: TextBaseline.alphabetic,
                 inherit: false,
               ),
-              unselectedLabelColor: colorScheme.onSurfaceVariant,
+              unselectedLabelColor: Colors.white,
               unselectedLabelStyle: const TextStyle(
                 fontWeight: FontWeight.w500,
+
                 fontSize: 14,
+                
                 textBaseline: TextBaseline.alphabetic,
                 inherit: false,
               ),
@@ -67,8 +89,8 @@ class CarTabs extends StatelessWidget {
                       Text(
                         'Stay tuned for new car listings',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                       ),
                     ],
                   ),
@@ -95,29 +117,31 @@ class _UsedCarsTab extends StatelessWidget {
         if (snapshot.hasError) {
           String errorMessage = 'Error loading ads';
           String errorDetails = '';
-          
+
           if (snapshot.error.toString().contains('failed-precondition')) {
             errorMessage = 'Database configuration required';
-            errorDetails = 'Please contact support to set up the database properly.';
+            errorDetails =
+                'Please contact support to set up the database properly.';
           } else if (snapshot.error.toString().contains('permission-denied')) {
             errorMessage = 'Access denied';
             errorDetails = 'You may not have permission to view ads.';
           } else {
             errorDetails = snapshot.error.toString();
           }
-          
+
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.error_outline, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text(errorMessage, style: TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  textBaseline: TextBaseline.alphabetic,
-                  inherit: false,
-                )),
+                Text(errorMessage,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
                 SizedBox(height: 8),
                 if (errorDetails.isNotEmpty)
                   Padding(
@@ -125,7 +149,7 @@ class _UsedCarsTab extends StatelessWidget {
                     child: Text(
                       errorDetails,
                       style: TextStyle(
-                        fontSize: 14, 
+                        fontSize: 14,
                         color: Colors.grey[600],
                         textBaseline: TextBaseline.alphabetic,
                         inherit: false,
@@ -147,29 +171,34 @@ class _UsedCarsTab extends StatelessWidget {
               children: [
                 Icon(Icons.car_rental, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text('No cars available', style: TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  textBaseline: TextBaseline.alphabetic,
-                  inherit: false,
-                )),
+                Text('No cars available',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
                 SizedBox(height: 8),
-                Text('Check back later for new listings', style: TextStyle(
-                  color: Colors.grey,
-                  textBaseline: TextBaseline.alphabetic,
-                  inherit: false,
-                )),
+                Text('Check back later for new listings',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
               ],
             ),
           );
         }
 
+
         return ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
           itemCount: ads.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final ad = ads[index];
+
             return _buildAdListItem(context, ad);
           },
         );
@@ -179,16 +208,17 @@ class _UsedCarsTab extends StatelessWidget {
 
   Widget _buildAdListItem(BuildContext context, AdModel ad) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return GestureDetector(
       onTap: () {
         // Navigate to detailed car page
         Navigator.pushNamed(
-          context, 
-          '/car-details', 
+          context,
+          '/car-details',
           arguments: ad,
         );
       },
+
       child: Card(
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -228,10 +258,10 @@ class _UsedCarsTab extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: Theme.of(context).colorScheme.onSurface,
+
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
+
                     const SizedBox(height: 8),
                     Text(
                       'PKR ${ad.price}',
@@ -247,5 +277,6 @@ class _UsedCarsTab extends StatelessWidget {
     );
   }
 
-  // removed old grid detail chip as UI switched to list layout
+  
 } 
+

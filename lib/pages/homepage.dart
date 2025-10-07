@@ -8,7 +8,7 @@ import '../providers/search_provider.dart';
 
 class Homepage extends StatefulWidget {
   final int initialTab;
-  
+
   const Homepage({super.key, this.initialTab = 0});
 
   @override
@@ -56,7 +56,7 @@ class _HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Consumer<SearchProvider>(
       builder: (context, searchProvider, _) {
         return Scaffold(
@@ -136,7 +136,7 @@ class _HomepageState extends State<Homepage> {
                     },
                   ),
                 ),
-                
+
                 // Search Results or Car Tabs
                 Expanded(
                   child: _isSearchActive
@@ -182,8 +182,8 @@ class _HomepageState extends State<Homepage> {
             Text(
               searchProvider.error!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+                    color: Colors.grey[600],
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -210,37 +210,42 @@ class _HomepageState extends State<Homepage> {
             Text(
               'Try searching with different keywords',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+                    color: Colors.grey[600],
+                  ),
             ),
           ],
         ),
       );
     }
 
+
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
       itemCount: searchProvider.filteredAds.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final ad = searchProvider.filteredAds[index];
+
         return _buildAdListItem(context, ad);
+
       },
     );
   }
 
   Widget _buildAdListItem(BuildContext context, dynamic ad) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(
-          context, 
-          '/car-details', 
+          context,
+          '/car-details',
           arguments: ad,
         );
       },
       child: Card(
+
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         clipBehavior: Clip.antiAlias,
@@ -264,10 +269,13 @@ class _HomepageState extends State<Homepage> {
               ),
               const SizedBox(width: 12),
               // Details
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+
                     Text(ad.year, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
                     const SizedBox(height: 6),
                     Text(
@@ -298,5 +306,6 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
-  // Removed _buildDetailChip as search results now use list layout
+  
+
 }
