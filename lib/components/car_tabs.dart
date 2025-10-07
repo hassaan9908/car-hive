@@ -16,30 +16,24 @@ class CarTabs extends StatelessWidget {
       initialIndex: initialTab,
       child: Column(
         children: [
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colorScheme.outline),
-            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TabBar(
-              indicator: BoxDecoration(
-                color: colorScheme.primary,
-                borderRadius: BorderRadius.circular(8),
+              isScrollable: false,
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(color: colorScheme.primary, width: 2),
               ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: Colors.white,
+              labelColor: colorScheme.primary,
               labelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
                 textBaseline: TextBaseline.alphabetic,
                 inherit: false,
               ),
               unselectedLabelColor: colorScheme.onSurfaceVariant,
               unselectedLabelStyle: const TextStyle(
                 fontWeight: FontWeight.w500,
-                fontSize: 16,
+                fontSize: 14,
                 textBaseline: TextBaseline.alphabetic,
                 inherit: false,
               ),
@@ -50,7 +44,7 @@ class CarTabs extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Expanded(
             child: TabBarView(
               children: [
@@ -170,25 +164,20 @@ class _UsedCarsTab extends StatelessWidget {
           );
         }
 
-        return GridView.builder(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.75,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: ads.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final ad = ads[index];
-            return _buildAdCard(context, ad);
+            return _buildAdListItem(context, ad);
           },
         );
       },
     );
   }
 
-  Widget _buildAdCard(BuildContext context, AdModel ad) {
+  Widget _buildAdListItem(BuildContext context, AdModel ad) {
     final colorScheme = Theme.of(context).colorScheme;
     
     return GestureDetector(
@@ -201,143 +190,62 @@ class _UsedCarsTab extends StatelessWidget {
         );
       },
       child: Card(
-        elevation: 2,
+        elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Car image placeholder
-            Expanded(
-              flex: 3,
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
+        clipBehavior: Clip.antiAlias,
+        color: Theme.of(context).colorScheme.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Thumbnail
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 100,
+                  height: 64,
                   color: colorScheme.surfaceVariant,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.car_rental,
-                    size: 32,
-                    color: colorScheme.onSurfaceVariant,
+                  child: Image.asset(
+                    'assets/images/Retro.gif',
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
-            ),
-            
-            // Card content
-            Expanded(
-              flex: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
+              const SizedBox(width: 12),
+              // Details
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title (truncated)
+                    Text(ad.year, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                    const SizedBox(height: 6),
                     Text(
-                      ad.title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Price
-                    Text(
-                      'PKR ${ad.price}',
+                      (ad.title.isNotEmpty
+                          ? ad.title
+                          : (ad.carBrand != null && ad.carBrand!.isNotEmpty
+                              ? ad.carBrand!
+                              : 'Car')),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Location
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            ad.location,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'PKR ${ad.price}',
+                      style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w700),
                     ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Car details (compact)
-                    Row(
-                      children: [
-                        _buildDetailChip('${ad.year}', Icons.calendar_today, context),
-                        const SizedBox(width: 4),
-                        _buildDetailChip('${ad.mileage}k', Icons.speed, context),
-                      ],
-                    ),
-                    
-                    const Spacer(),
-                    
-                    // Brand (if available)
-                    if (ad.carBrand != null && ad.carBrand!.isNotEmpty)
-                      Text(
-                        ad.carBrand!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDetailChip(String text, IconData icon, BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outline),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: 2),
-          Text(
-            text,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // removed old grid detail chip as UI switched to list layout
 } 
