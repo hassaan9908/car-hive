@@ -34,28 +34,28 @@ class CarTabs extends StatelessWidget {
       initialIndex: initialTab,
       child: Column(
         children: [
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TabBar(
+              isScrollable: false,
               indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(
-                  color: colorScheme.primary,
-                  width: 3,
-                ),
-                insets: const EdgeInsets.symmetric(horizontal: 16),
+                borderSide: BorderSide(color: colorScheme.primary, width: 2),
               ),
-              indicatorSize: TabBarIndicatorSize.label,
               labelColor: colorScheme.primary,
               labelStyle: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+
                 textBaseline: TextBaseline.alphabetic,
                 inherit: false,
               ),
               unselectedLabelColor: Colors.white,
               unselectedLabelStyle: const TextStyle(
                 fontWeight: FontWeight.w500,
-                fontSize: 18,
+
+                fontSize: 14,
+                
                 textBaseline: TextBaseline.alphabetic,
                 inherit: false,
               ),
@@ -66,7 +66,7 @@ class CarTabs extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Expanded(
             child: TabBarView(
               children: [
@@ -190,22 +190,23 @@ class _UsedCarsTab extends StatelessWidget {
           );
         }
 
-        return ListView.builder(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
           itemCount: ads.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final ad = ads[index];
-            return Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: _buildAdCard(context, ad),
-            );
+
+            return _buildAdListItem(context, ad);
           },
         );
       },
     );
   }
 
-  Widget _buildAdCard(BuildContext context, AdModel ad) {
+  Widget _buildAdListItem(BuildContext context, AdModel ad) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -217,207 +218,65 @@ class _UsedCarsTab extends StatelessWidget {
           arguments: ad,
         );
       },
-      child: Stack(
-        children: [
-          Card(
-            elevation: 2,
-            color: colorScheme.surfaceVariant,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Container(
-              height: 100,
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  // Car image placeholder (left side)
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.car_rental,
-                        size: 32,
-                        color: colorScheme.onSurfaceVariant,
+
+      child: Card(
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        clipBehavior: Clip.antiAlias,
+        color: Theme.of(context).colorScheme.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Thumbnail
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 100,
+                  height: 64,
+                  color: colorScheme.surfaceVariant,
+                  child: Image.asset(
+                    'assets/images/Retro.gif',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(ad.year, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                    const SizedBox(height: 6),
+                    Text(
+                      (ad.title.isNotEmpty
+                          ? ad.title
+                          : (ad.carBrand != null && ad.carBrand!.isNotEmpty
+                              ? ad.carBrand!
+                              : 'Car')),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+
                       ),
                     ),
-                  ),
 
-                  const SizedBox(width: 12),
-
-                  // Car details (right side)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Year
-                        Text(
-                          '${ad.year}',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                    fontSize: 14,
-                                  ),
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        // Car model/title
-                        Text(
-                          ad.title,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        // Price
-                        Text(
-                          'PKR ${ad.price}',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'PKR ${ad.price}',
+                      style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w700),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-          // Trust badge positioned in top-right corner
-          if (ad.userId != null && ad.userId!.isNotEmpty)
-            Positioned(
-              right: 8,
-              top: 8,
-              child: _buildTrustBadge(ad.userId!),
-            ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildTrustBadge(String userId) {
-    final badgeTextStyle = const TextStyle(
-      color: Colors.white,
-      fontSize: 11,
-      fontWeight: FontWeight.w700,
-    );
+  
+} 
 
-    // Check cache first
-    final cachedLevel = TrustLevelCache.getTrustLevel(userId);
-    if (cachedLevel != null &&
-        ['Bronze', 'Silver', 'Gold'].contains(cachedLevel)) {
-      return _buildBadgeWidget(cachedLevel, badgeTextStyle);
-    }
-
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        // Handle error state - try to use cached value if available
-        if (snapshot.hasError) {
-          print('Trust badge error for user $userId: ${snapshot.error}');
-          final cachedLevel = TrustLevelCache.getTrustLevel(userId);
-          if (cachedLevel != null &&
-              ['Bronze', 'Silver', 'Gold'].contains(cachedLevel)) {
-            return _buildBadgeWidget(cachedLevel, badgeTextStyle);
-          }
-          return const SizedBox.shrink();
-        }
-
-        // Handle loading state - show a subtle loading indicator
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.grey[600],
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const SizedBox(
-              width: 12,
-              height: 12,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ),
-          );
-        }
-
-        // Only show badge if we have valid trust level data
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const SizedBox.shrink();
-        }
-
-        final data = snapshot.data!.data() ?? {};
-        final fetched = (data['trustLevel'] ?? '').toString();
-
-        // Don't show badge if trustLevel is empty or invalid
-        if (fetched.isEmpty ||
-            !['Bronze', 'Silver', 'Gold'].contains(fetched)) {
-          return const SizedBox.shrink();
-        }
-
-        // Cache the trust level for future use
-        TrustLevelCache.setTrustLevel(userId, fetched);
-
-        return _buildBadgeWidget(fetched, badgeTextStyle);
-      },
-    );
-  }
-
-  Widget _buildBadgeWidget(String level, TextStyle badgeTextStyle) {
-    Color bg;
-    switch (level) {
-      case 'Gold':
-        bg = Colors.amber[700] ?? Colors.amber;
-        break;
-      case 'Silver':
-        bg = Colors.blueGrey[400] ?? Colors.blueGrey;
-        break;
-      case 'Bronze':
-      default:
-        bg = Colors.brown[400] ?? Colors.brown;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(color: Colors.black54, blurRadius: 6, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.verified, size: 12, color: Colors.white),
-          const SizedBox(width: 4),
-          Text(
-            level.toUpperCase(),
-            style: badgeTextStyle.copyWith(fontSize: 10),
-          ),
-        ],
-      ),
-    );
-  }
-}

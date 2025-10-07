@@ -65,6 +65,8 @@ class _HomepageState extends State<Homepage> {
               'CarHive',
               style: TextStyle(
                 color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
                 textBaseline: TextBaseline.alphabetic,
                 inherit: false,
               ),
@@ -216,20 +218,22 @@ class _HomepageState extends State<Homepage> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
       itemCount: searchProvider.filteredAds.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final ad = searchProvider.filteredAds[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildAdCard(context, ad),
-        );
+
+        return _buildAdListItem(context, ad);
+
       },
     );
   }
 
-  Widget _buildAdCard(BuildContext context, dynamic ad) {
+  Widget _buildAdListItem(BuildContext context, dynamic ad) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -241,74 +245,56 @@ class _HomepageState extends State<Homepage> {
         );
       },
       child: Card(
-        elevation: 2,
-        color: colorScheme.surfaceVariant,
+
+        elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Container(
-          height: 100,
+        clipBehavior: Clip.antiAlias,
+        color: Theme.of(context).colorScheme.surface,
+        child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Car image placeholder (left side)
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.car_rental,
-                    size: 32,
-                    color: colorScheme.onSurfaceVariant,
+              // Thumbnail
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 100,
+                  height: 64,
+                  color: colorScheme.surfaceVariant,
+                  child: Image.asset(
+                    'assets/images/Retro.gif',
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
-
               const SizedBox(width: 12),
+              // Details
 
-              // Car details (right side)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Year
-                    Text(
-                      '${ad.year}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontSize: 14,
-                          ),
-                    ),
 
-                    const SizedBox(height: 4),
-
-                    // Car model/title
+                    Text(ad.year, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                    const SizedBox(height: 6),
                     Text(
-                      ad.title,
+                      (ad.title.isNotEmpty
+                          ? ad.title
+                          : (ad.carBrand != null && ad.carBrand!.isNotEmpty
+                              ? ad.carBrand!
+                              : 'Car')),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-
-                    const SizedBox(height: 4),
-
-                    // Price
+                    const SizedBox(height: 8),
                     Text(
                       'PKR ${ad.price}',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -319,4 +305,7 @@ class _HomepageState extends State<Homepage> {
       ),
     );
   }
+
+  
+
 }

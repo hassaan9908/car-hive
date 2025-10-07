@@ -130,7 +130,7 @@ class _MyadsState extends State<Myads> {
 
   Widget _buildTopTabs() {
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(_tabs.length, (index) {
@@ -148,18 +148,21 @@ class _MyadsState extends State<Myads> {
                     _tabs[index],
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? Colors.black : Colors.grey[600],
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  height: 3,
-                  width: 40,
+                  height: 2,
+                  width: 60,
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.blue : Colors.transparent,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(50),
                   ),
                 ),
@@ -259,186 +262,213 @@ class _MyadsState extends State<Myads> {
   }
 
   Widget _buildAdCard(AdModel ad) {
-    return Stack(
-      children: [
-        Card(
-          margin: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                leading: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
+
+    final cs = Theme.of(context).colorScheme;
+
+    Color statusColor;
+    String statusLabel;
+    IconData statusIcon;
+    switch (ad.status) {
+      case 'active':
+        statusColor = Colors.green;
+        statusLabel = 'Active';
+        statusIcon = Icons.check_circle;
+        break;
+      case 'pending':
+        statusColor = Colors.amber[700]!;
+        statusLabel = 'Pending Review';
+        statusIcon = Icons.hourglass_bottom;
+        break;
+      case 'removed':
+        statusColor = Colors.red;
+        statusLabel = 'Expired';
+        statusIcon = Icons.cancel;
+        break;
+      default:
+        statusColor = cs.onSurfaceVariant;
+        statusLabel = ad.status;
+        statusIcon = Icons.info_outline;
+    }
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      elevation: 1,
+      color: cs.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top content row (thumbnail + details + price)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 96,
+                    height: 64,
+                    color: cs.surfaceVariant,
+                    child: Icon(Icons.directions_car_filled,
+                        size: 32, color: cs.onSurfaceVariant),
                   ),
-                  child: Icon(Icons.car_rental, color: Colors.grey[400]),
                 ),
-                title: Text(ad.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(
-                  '${ad.location}\n${ad.year} | ${ad.mileage} | ${ad.fuel}',
-                  style: const TextStyle(height: 1.5),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        (ad.title.isNotEmpty
+                            ? ad.title
+                            : (ad.carBrand ?? 'Car')),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${ad.year}  •  ${ad.mileage} km',
+                        style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (value) async {
-                    if (value == 'Edit') {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Edit feature coming soon!')),
-                      );
-                    } else if (value == 'SoldOrRemove') {
-                      // Only valid for active
-                      _showSoldOrRemoveDialog(ad);
-                    } else if (value == 'RemoveOnly') {
-                      // For pending: direct remove with previousStatus tracking
-                      try {
-                        await GlobalAdStore()
-                            .markRemoved(ad.id!, previousStatus: ad.status);
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Ad moved to removed')),
-                        );
-                      } catch (e) {
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to remove ad: $e')),
-                        );
-                      }
-                    } else if (value == 'Delete') {
+                const SizedBox(width: 8),
+                Text(
+                  'PKR ${ad.price}',
+                  style: TextStyle(
+                    color: cs.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Bottom action row (status + actions)
+            Row(
+              children: [
+                // Status pill
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(statusIcon, color: statusColor, size: 14),
+                      const SizedBox(width: 6),
+                      Text(
+                        statusLabel,
+                        style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+
+                // Edit icon
+                _roundIconButton(
+                  icon: Icons.edit,
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Edit feature coming soon!')),
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+                // Delete or Remove depending on status
+                _roundIconButton(
+                  icon: ad.status == 'removed' ? Icons.delete_forever : Icons.delete,
+                  onPressed: () async {
+                    if (ad.status == 'removed') {
                       try {
                         await GlobalAdStore().deleteAd(ad.id!);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Ad deleted permanently')),
+                          const SnackBar(content: Text('Ad deleted permanently')),
                         );
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Failed to delete ad: $e')),
                         );
                       }
+                    } else {
+                      try {
+                        await GlobalAdStore().updateAdStatus(ad.id!, 'removed');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Ad moved to removed')),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to remove ad: $e')),
+                        );
+                      }
                     }
                   },
-                  itemBuilder: (context) {
-                    final List<PopupMenuEntry<String>> items = [];
-                    items.add(const PopupMenuItem(
-                        value: 'Edit', child: Text('Edit')));
-                    if (ad.status == 'active') {
-                      items.add(const PopupMenuItem(
-                          value: 'SoldOrRemove', child: Text('Sold / Remove')));
-                    } else if (ad.status == 'pending') {
-                      items.add(const PopupMenuItem(
-                          value: 'RemoveOnly', child: Text('Remove')));
+                ),
+                const SizedBox(width: 8),
+
+                // Promote / Relist CTA
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    if (ad.status == 'removed') {
+                      try {
+                        await GlobalAdStore().updateAdStatus(ad.id!, 'active');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Ad relisted')),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to relist ad: $e')),
+                        );
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Promote functionality coming soon!')),
+                      );
                     }
-                    items.add(const PopupMenuItem(
-                        value: 'Delete', child: Text('Delete Permanently')));
-                    return items;
                   },
+                  icon: Icon(ad.status == 'removed' ? Icons.refresh : Icons.rocket_launch, size: 16),
+                  label: Text(ad.status == 'removed' ? 'Relist' : 'Promote'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ad.status == 'removed' ? Colors.green : cs.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'PKR ${ad.price}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue[700],
-                        ),
-                      ),
-                    ),
-                    if (ad.status == 'removed')
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          try {
-                            final previous = ad.previousStatus ?? 'active';
-                            await GlobalAdStore()
-                                .reactivateAd(ad.id!, previousStatus: previous);
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Ad reactivated')),
-                            );
-                          } catch (e) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('Failed to reactivate ad: $e')),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.replay, size: 18),
-                        label: const Text('Reactivate'),
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
-        if ((ad.userId ?? '').isNotEmpty)
-          Positioned(
-            right: 20,
-            top: 8,
-            child: _buildTrustBadge(ad.userId!),
-          ),
-      ],
+      ),
     );
   }
 
-  void _showSoldOrRemoveDialog(AdModel ad) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Mark as Sold or Remove?'),
-          content: const Text('Choose an option for this ad.'),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                try {
-                  await GlobalAdStore()
-                      .markRemoved(ad.id!, previousStatus: ad.status);
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Ad moved to removed')),
-                  );
-                } catch (e) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to remove ad: $e')),
-                  );
-                }
-              },
-              child: const Text('Remove'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                try {
-                  await GlobalAdStore().markSold(ad.id!);
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Ad marked as sold')),
-                  );
-                } catch (e) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to mark sold: $e')),
-                  );
-                }
-              },
-              child: const Text('Sold'),
-            ),
-          ],
-        );
-      },
+  Widget _roundIconButton({required IconData icon, required VoidCallback onPressed}) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.surfaceVariant,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Icon(icon, size: 18, color: cs.onSurfaceVariant),
+        ),
+      ),
+
     );
   }
 
