@@ -61,11 +61,11 @@ class _SignupscreenState extends State<Signupscreen> {
                 children: [
                   // Logo or App Title
                  Image.asset(
-                    'assets/images/car-image.png',
-                    width: 100,
-                    height: 100,
-                    ),
-                  const SizedBox(height: 24),
+                    'assets/images/Retro.gif',
+                     width: 140,
+                     height: 140,
+                  ),
+                  const SizedBox(height: 20),
 
                   // Title
                   Text(

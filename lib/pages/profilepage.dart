@@ -37,75 +37,116 @@ class Profilepage extends StatelessWidget {
         return false;
       },
       child: Scaffold(
-       
+        appBar: AppBar(
+          title: const Text(
+            'Profile',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+        ),
         body: SafeArea(
-          child: Column(
-            children: [
-              // Gradient header with login button or greeting
-              Container(
-                height: 160,
-                color: Theme.of(context).colorScheme.primary,
-                child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header: user info or login CTA
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
                   child: authProvider.isLoggedIn
                       ? _buildGreetingMessage(context, authProvider, colorScheme)
                       : _buildLoginButton(context, colorScheme),
                 ),
-              ),
-              
-              // Scrollable content area
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    // Section: Personal
-                    _sectionHeader(context, "Personal"),
-                    _profileTile(context, Icons.settings, "Theme"),
-                    _profileTile(context, Icons.language, "Choose Language"),
-                    const Divider(),
-                    
-                    // Section: Products
-                    _sectionHeader(context, "Products"),
-                    _profileTile(context, Icons.directions_car, "Sell My Car"),
-                    _profileTile(context, Icons.directions_car_filled, "Buy Used Car"),
-                    _profileTile(context, Icons.car_rental, "Buy New Car"),
-                    const Divider(),
-                    
-                    // Section: Explore
-                    _sectionHeader(context, "Explore"),
-                    _profileTile(context, Icons.article, "Blog"),
-                    _profileTile(context, Icons.ondemand_video, "Videos"),
-                    _profileTile(context, Icons.directions_car, "Cool Rides"),
 
-                    // Logout button (only show when logged in)
-                    if (authProvider.isLoggedIn)
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: ElevatedButton(
-                          onPressed: () => _showLogoutDialog(context, authProvider),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            "Log out",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                // Premium banner
+                _buildPremiumBanner(context),
+                const SizedBox(height: 16),
+
+                // Settings section
+                _sectionHeader(context, 'Settings'),
+                _settingsCard(context, [
+                  // Theme with current mode subtitle
+                  Builder(builder: (context) {
+                    final themeProvider = Provider.of<ThemeProvider>(context);
+                    String subtitle;
+                    switch (themeProvider.themeMode) {
+                      case ThemeMode.light:
+                        subtitle = 'Light';
+                        break;
+                      case ThemeMode.dark:
+                        subtitle = 'Dark';
+                        break;
+                      default:
+                        subtitle = 'System Default';
+                    }
+                    return _settingsTile(
+                      context,
+                      Icons.settings,
+                      'Theme',
+                      subtitle: subtitle,
+                      onTap: () => _showThemeBottomSheet(context),
+                    );
+                  }),
+                  _dividerInset(context),
+                  _settingsTile(context, Icons.language, 'Choose Language', onTap: () {}),
+                  _dividerInset(context),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // Products section (Sell/Buy)
+                _sectionHeader(context, 'Products'),
+                _settingsCard(context, [
+                  _settingsTile(context, Icons.directions_car, 'Sell My Car', onTap: () => _navigateToUpload(context)),
+                  _dividerInset(context),
+                  _settingsTile(context, Icons.directions_car_filled, 'Buy Used Car', onTap: () => _navigateToUsedCars(context)),
+                  _dividerInset(context),
+                  _settingsTile(context, Icons.car_rental, 'Buy New Car', onTap: () => _navigateToNewCars(context)),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // Explore section
+                _sectionHeader(context, 'Explore'),
+                _settingsCard(context, [
+                  _settingsTile(context, Icons.article, 'Blog', onTap: () {}),
+                  _dividerInset(context),
+                  _settingsTile(context, Icons.ondemand_video, 'Videos', onTap: () {}),
+                  _dividerInset(context),
+                  _settingsTile(context, Icons.directions_car, 'Cool Rides', onTap: () {}),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // More section
+                _sectionHeader(context, 'More'),
+                _settingsCard(context, [
+                  _settingsTile(context, Icons.reviews_outlined, 'Rate & Review', onTap: () {}),
+                  _dividerInset(context),
+                  _settingsTile(context, Icons.help_outline, 'Help', onTap: () {}),
+                ]),
+
+                const SizedBox(height: 20),
+
+                if (authProvider.isLoggedIn)
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () => _showLogoutDialog(context, authProvider),
+                      icon: const Icon(Icons.logout, size: 18),
+                      label: const Text('Log out'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: colorScheme.error,
+                        textStyle: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                    
-                    // Add bottom padding to ensure content doesn't get cut off
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ],
+                    ),
+                  ),
+
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
         bottomNavigationBar: CustomBottomNav(
@@ -133,16 +174,16 @@ class Profilepage extends StatelessWidget {
         height: 45,
         margin: const EdgeInsets.symmetric(horizontal: 17),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.primary,
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Center(
           child: Text(
             'Log in / Sign up',
             style: TextStyle(
-              color: Color.fromARGB(255, 35, 38, 68),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -154,59 +195,63 @@ class Profilepage extends StatelessWidget {
     final displayName = authProvider.getDisplayName();
     final email = authProvider.getEmail();
     
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 17),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // User avatar
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: Colors.white,
-            child: Text(
-              displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color.fromARGB(255, 35, 38, 68),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          
-          // Greeting message
-          Text(
-            'Welcome',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 2),
-          
-          // Username
-          Text(
-            displayName.isNotEmpty ? displayName : 'User',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          
-          // Email (if different from display name)
-          if (email.isNotEmpty && email != displayName)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 17),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // User avatar
+            CircleAvatar(
+              radius: 26,
+              backgroundColor: colorScheme.primary.withOpacity(0.12),
               child: Text(
-                email,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11,
+                displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
                 ),
               ),
             ),
-        ],
+            const SizedBox(height: 10),
+            
+            // Greeting message
+            Text(
+              'Welcome',
+              style: TextStyle(
+                color: colorScheme.onSurface.withOpacity(0.6),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 2),
+            
+            // Username
+            Text(
+              displayName.isNotEmpty ? displayName : 'User',
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            
+            // Email (if different from display name)
+            if (email.isNotEmpty && email != displayName)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  email,
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -251,62 +296,81 @@ class Profilepage extends StatelessWidget {
         ),
       );
 
-  Widget _profileTile(BuildContext context, IconData icon, String title) {
-    if (title == "Theme") {
-      final themeProvider = Provider.of<ThemeProvider>(context);
-      String subtitle;
-      switch (themeProvider.themeMode) {
-        case ThemeMode.light:
-          subtitle = "Light";
-          break;
-        case ThemeMode.dark:
-          subtitle = "Dark";
-          break;
-        default:
-          subtitle = "System Default";
-      }
-      return ListTile(
-        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(title, style: const TextStyle(fontSize: 16)),
-        subtitle: Text(subtitle),
-        onTap: () => _showThemeBottomSheet(context),
-        dense: true,
-      );
-    }
-    
-    // Handle Products section navigation
-    if (title == "Sell My Car") {
-      return ListTile(
-        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(title, style: const TextStyle(fontSize: 16)),
-        onTap: () => _navigateToUpload(context),
-        dense: true,
-      );
-    }
-    
-    if (title == "Buy Used Car") {
-      return ListTile(
-        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(title, style: const TextStyle(fontSize: 16)),
-        onTap: () => _navigateToUsedCars(context),
-        dense: true,
-      );
-    }
-    
-    if (title == "Buy New Car") {
-      return ListTile(
-        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(title, style: const TextStyle(fontSize: 16)),
-        onTap: () => _navigateToNewCars(context),
-        dense: true,
-      );
-    }
-    
+  // Modern card container for grouped settings
+  Widget _settingsCard(BuildContext context, List<Widget> children) {
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(children: children),
+      ),
+    );
+  }
+
+  // Single settings tile with trailing chevron
+  Widget _settingsTile(BuildContext context, IconData icon, String title, {String? subtitle, VoidCallback? onTap}) {
     return ListTile(
-      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      title: Text(title, style: const TextStyle(fontSize: 16)),
-      onTap: () {},
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: Theme.of(context).colorScheme.primary),
+      ),
+      title: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+      subtitle: subtitle != null ? Text(subtitle) : null,
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
       dense: true,
+      visualDensity: const VisualDensity(vertical: -1),
+    );
+  }
+
+  // Thin divider with left inset to align with text
+  Widget _dividerInset(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 68),
+      child: Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.3)),
+    );
+  }
+
+  // Premium banner like the screenshot
+  Widget _buildPremiumBanner(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [
+          cs.primary,
+          cs.primaryContainer,
+        ]),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: const [
+          Icon(Icons.workspace_premium, color: Colors.white, size: 28),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Premium Membership',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                SizedBox(height: 2),
+                Text('Upgrade for more features',
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -360,7 +424,7 @@ class Profilepage extends StatelessWidget {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (context) => const Homepage(initialTab: 0), // Used Cars tab
+        builder: (context) => const Homepage(initialTab: 0),
       ),
       (route) => false,
     );
@@ -370,7 +434,7 @@ class Profilepage extends StatelessWidget {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (context) => const Homepage(initialTab: 1), // New Cars tab
+        builder: (context) => const Homepage(initialTab: 1),
       ),
       (route) => false,
     );

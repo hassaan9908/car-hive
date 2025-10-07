@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Primary brand colors (CarHive blue)
-  static const Color primaryBlue = Color(0xFF1E3A8A);
+  static const Color primaryBlue = Color.fromARGB(255, 43, 128, 207);
   static const Color primaryBlueLight = Color(0xFF3B82F6);
   static const Color primaryBlueDark = Color(0xFF1E40AF);
   
