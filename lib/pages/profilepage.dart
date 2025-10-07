@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import '../components/custom_bottom_nav.dart';
 import 'package:provider/provider.dart';
 import '../theme/theme_provider.dart';
 import '../auth/loginscreen.dart';
 import '../auth/auth_provider.dart';
 import 'homepage.dart';
-
-
+import 'edit_profile_page.dart';
 
 class Profilepage extends StatelessWidget {
   const Profilepage({super.key});
 
   static const int _selectedIndex = 4;
   static const List<String> _navRoutes = [
-    '/', '/myads', '/upload', '/investment', '/profile'
+    '/',
+    '/myads',
+    '/upload',
+    '/investment',
+    '/profile'
   ];
 
   void _onTabSelected(BuildContext context, int index) {
     if (_selectedIndex == index) return;
     if (index == 0) {
-      Navigator.pushNamedAndRemoveUntil(context, _navRoutes[0], (route) => false);
+      Navigator.pushNamedAndRemoveUntil(
+          context, _navRoutes[0], (route) => false);
     } else {
       Navigator.pushReplacementNamed(context, _navRoutes[index]);
     }
@@ -37,6 +43,7 @@ class Profilepage extends StatelessWidget {
         return false;
       },
       child: Scaffold(
+
         appBar: AppBar(
           title: const Text(
             'Profile',
@@ -47,6 +54,7 @@ class Profilepage extends StatelessWidget {
           ),
           centerTitle: true,
         ),
+
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -57,9 +65,11 @@ class Profilepage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: authProvider.isLoggedIn
-                      ? _buildGreetingMessage(context, authProvider, colorScheme)
+                      ? _buildGreetingMessage(
+                          context, authProvider, colorScheme)
                       : _buildLoginButton(context, colorScheme),
                 ),
+
 
                 // Premium banner
                 _buildPremiumBanner(context),
@@ -147,6 +157,7 @@ class Profilepage extends StatelessWidget {
                 const SizedBox(height: 12),
               ],
             ),
+
           ),
         ),
         bottomNavigationBar: CustomBottomNav(
@@ -159,6 +170,152 @@ class Profilepage extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildTrustSection(BuildContext context) {
+    final user = fb_auth.FirebaseAuth.instance.currentUser;
+    if (user == null) return const SizedBox.shrink();
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        // Handle loading state to prevent flicker
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final data = snapshot.data?.data() ?? <String, dynamic>{};
+        double asDouble(dynamic v) {
+          if (v is num) return v.toDouble();
+          if (v is String) return double.tryParse(v) ?? 0;
+          return 0;
+        }
+
+        int asInt(dynamic v) {
+          if (v is int) return v;
+          if (v is num) return v.toInt();
+          if (v is String) return int.tryParse(v) ?? 0;
+          return 0;
+        }
+
+        final String level = (data['trustLevel'] ?? 'Bronze').toString();
+        final double score = asDouble(data['trustScore']);
+        final double profileCompleteness =
+            asDouble(data['profileCompleteness']);
+        final double responsiveness = asDouble(data['responsivenessScore']);
+        final double avgRating = asDouble(data['averageRating']);
+        final int totalSales = asInt(data['totalSales']);
+
+        final List<String> tips = [];
+        if ((data['displayName'] ?? '').toString().isEmpty)
+          tips.add('Add your display name');
+        if ((data['phoneNumber'] ?? '').toString().isEmpty)
+          tips.add('Add your phone number');
+        if (profileCompleteness < 100) tips.add('Complete your profile');
+        if (avgRating <= 0) tips.add('Invite buyers to leave reviews');
+        if (totalSales <= 0) tips.add('Complete your first sale');
+        if (responsiveness < 80) tips.add('Respond to messages quickly');
+
+        Color badgeColor;
+        switch (level) {
+          case 'Gold':
+            badgeColor = Colors.amber[700] ?? Colors.amber;
+            break;
+          case 'Silver':
+            badgeColor = Colors.blueGrey[400] ?? Colors.blueGrey;
+            break;
+          default:
+            badgeColor = Colors.brown[400] ?? Colors.brown;
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.verified, size: 14, color: Colors.white),
+                          SizedBox(width: 6),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      (level).toUpperCase(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Text('Score: ${score.toStringAsFixed(0)}'),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    _metricChip(context,
+                        'Profile ${profileCompleteness.toStringAsFixed(0)}%'),
+                    _metricChip(
+                        context, 'Rating ${avgRating.toStringAsFixed(1)}/5'),
+                    _metricChip(context, 'Sales $totalSales'),
+                    _metricChip(context,
+                        'Response ${responsiveness.toStringAsFixed(0)}%'),
+                  ],
+                ),
+                if (tips.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Text('Improve your TrustRank:',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  for (final tip in tips.take(4))
+                    Row(
+                      children: [
+                        const Icon(Icons.arrow_right, size: 18),
+                        const SizedBox(width: 4),
+                        Expanded(child: Text(tip)),
+                      ],
+                    ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _metricChip(BuildContext context, String text) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceVariant,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outline),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 12)),
     );
   }
 
@@ -190,6 +347,7 @@ class Profilepage extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _buildGreetingMessage(BuildContext context, AuthProvider authProvider, ColorScheme colorScheme) {
     final displayName = authProvider.getDisplayName();
@@ -253,6 +411,7 @@ class Profilepage extends StatelessWidget {
           ],
         ),
       ),
+
     );
   }
 
@@ -296,6 +455,7 @@ class Profilepage extends StatelessWidget {
         ),
       );
 
+
   // Modern card container for grouped settings
   Widget _settingsCard(BuildContext context, List<Widget> children) {
     return Card(
@@ -314,6 +474,7 @@ class Profilepage extends StatelessWidget {
 
   // Single settings tile with trailing chevron
   Widget _settingsTile(BuildContext context, IconData icon, String title, {String? subtitle, VoidCallback? onTap}) {
+
     return ListTile(
       leading: Container(
         width: 36,

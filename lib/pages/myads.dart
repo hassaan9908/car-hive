@@ -3,6 +3,7 @@ import 'package:carhive/store/global_ads.dart';
 import 'package:flutter/material.dart';
 import '../components/custom_bottom_nav.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Myads extends StatefulWidget {
   const Myads({super.key});
@@ -20,15 +21,15 @@ class Myads extends StatefulWidget {
 }
 
 class _MyadsState extends State<Myads> {
-  int _selectedTabIndex = 0; // 0 = Active, 1 = Pending, 2 = Removed
+  int _selectedTabIndex = 0; // 0 = Active, 1 = Pending, 2 = Sold, 3 = Removed
   final int _selectedIndex = 1;
 
-  final List<String> _tabs = ['Active', 'Pending', 'Removed'];
+  final List<String> _tabs = ['Active', 'Pending', 'Sold', 'Removed'];
 
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    
+
     if (currentUser == null) {
       return WillPopScope(
         onWillPop: () async {
@@ -50,7 +51,8 @@ class _MyadsState extends State<Myads> {
               children: [
                 Icon(Icons.login, size: 64, color: Colors.grey),
                 SizedBox(height: 16),
-                Text('Please login to view your ads', style: TextStyle(fontSize: 18)),
+                Text('Please login to view your ads',
+                    style: TextStyle(fontSize: 18)),
                 SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
@@ -182,14 +184,19 @@ class _MyadsState extends State<Myads> {
         status = 'pending';
         break;
       case 2:
+        status = 'sold';
+        break;
+      case 3:
         status = 'removed';
         break;
       default:
         status = 'active';
     }
 
+    final stream = GlobalAdStore().getUserAdsByStatus(userId, status);
+
     return StreamBuilder<List<AdModel>>(
-      stream: GlobalAdStore().getUserAdsByStatus(userId, status),
+      stream: stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -198,24 +205,27 @@ class _MyadsState extends State<Myads> {
         if (snapshot.hasError) {
           String errorMessage = 'Error loading ads';
           String errorDetails = '';
-          
+
           if (snapshot.error.toString().contains('failed-precondition')) {
             errorMessage = 'Database configuration required';
-            errorDetails = 'Please contact support to set up the database properly.';
+            errorDetails =
+                'Please contact support to set up the database properly.';
           } else if (snapshot.error.toString().contains('permission-denied')) {
             errorMessage = 'Access denied';
             errorDetails = 'You may not have permission to view ads.';
           } else {
             errorDetails = snapshot.error.toString();
           }
-          
+
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.error_outline, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text(errorMessage, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(errorMessage,
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 SizedBox(height: 8),
                 if (errorDetails.isNotEmpty)
                   Padding(
@@ -233,18 +243,18 @@ class _MyadsState extends State<Myads> {
 
         final ads = snapshot.data ?? [];
 
-    if (ads.isEmpty) {
-      return _buildAdPlaceholder(
-        'No ${_tabs[_selectedTabIndex]} Ads',
+        if (ads.isEmpty) {
+          return _buildAdPlaceholder(
+            'No ${_tabs[_selectedTabIndex]} Ads',
             'You haven\'t posted anything yet.',
-      );
-    }
+          );
+        }
 
-    return ListView.builder(
-      itemCount: ads.length,
-      itemBuilder: (context, index) {
-        final ad = ads[index];
-        return _buildAdCard(ad);
+        return ListView.builder(
+          itemCount: ads.length,
+          itemBuilder: (context, index) {
+            final ad = ads[index];
+            return _buildAdCard(ad);
           },
         );
       },
@@ -252,6 +262,7 @@ class _MyadsState extends State<Myads> {
   }
 
   Widget _buildAdCard(AdModel ad) {
+
     final cs = Theme.of(context).colorScheme;
 
     Color statusColor;
@@ -457,21 +468,105 @@ class _MyadsState extends State<Myads> {
           child: Icon(icon, size: 18, color: cs.onSurfaceVariant),
         ),
       ),
+
     );
   }
 
   Widget _buildAdPlaceholder(String title, String subtitle) {
     return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
           Icon(Icons.car_rental, size: 64, color: Colors.grey),
           SizedBox(height: 16),
-          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(title,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
           Text(subtitle, style: TextStyle(color: Colors.grey)),
         ],
       ),
+    );
+  }
+
+  Widget _buildTrustBadge(String userId) {
+    final badgeTextStyle = const TextStyle(
+      color: Colors.white,
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+    );
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        // Handle error state - show nothing if there's an error
+        if (snapshot.hasError) {
+          print('Trust badge error for user $userId: ${snapshot.error}');
+          return const SizedBox.shrink();
+        }
+
+        // Handle loading state - show a subtle loading indicator
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey[600],
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const SizedBox.shrink();
+        }
+
+        final data = snapshot.data!.data() ?? {};
+        final String level = (data['trustLevel'] ?? '').toString();
+        if (level.isEmpty) return const SizedBox.shrink();
+
+        Color bg;
+        switch (level) {
+          case 'Gold':
+            bg = Colors.amber[700] ?? Colors.amber;
+            break;
+          case 'Silver':
+            bg = Colors.blueGrey[400] ?? Colors.blueGrey;
+            break;
+          case 'Bronze':
+          default:
+            bg = Colors.brown[400] ?? Colors.brown;
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: const [
+              BoxShadow(
+                  color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.verified, size: 14, color: Colors.white),
+              const SizedBox(width: 6),
+              Text(level.toUpperCase(), style: badgeTextStyle),
+            ],
+          ),
+        );
+      },
     );
   }
 }

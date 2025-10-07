@@ -2,19 +2,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../services/trust_rank_service.dart';
+import '../components/car_tabs.dart';
 
 class AuthService {
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
 
-  Future<User?> createUserWithEmailAndPassword(String email, String password) async {
+  Future<User?> createUserWithEmailAndPassword(
+    String email,
+    String password, {
+    String? fullName,
+    String? username,
+    String? birthday,
+    String? gender,
+  }) async {
     try {
-      final cred = await _auth.createUserWithEmailAndPassword(email: email, password: password);
-      
-      // Create user document in Firestore
+      final cred = await _auth.createUserWithEmailAndPassword(
+          email: email, password: password);
+
+      // Create user document in Firestore with all the new fields
       await _firestore.collection('users').doc(cred.user!.uid).set({
         'email': email,
-        'displayName': cred.user!.displayName ?? 'User',
+        'displayName': fullName ?? cred.user!.displayName ?? 'User',
+        'fullName': fullName,
+        'username': username?.toLowerCase(),
+        'birthday': birthday,
+        'gender': gender,
         'role': 'user', // Default role
         'createdAt': FieldValue.serverTimestamp(),
         'lastLoginAt': FieldValue.serverTimestamp(),
@@ -24,6 +38,25 @@ class AuthService {
         'rejectedAdsCount': 0,
       });
 
+      // Create username document for availability checking
+      if (username != null && username.isNotEmpty) {
+        await _firestore
+            .collection('usernames')
+            .doc(username.toLowerCase())
+            .set({
+          'userId': cred.user!.uid,
+          'username': username.toLowerCase(),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Compute initial trust rank for new user
+      try {
+        await TrustRankService().recomputeAndSave(cred.user!.uid);
+      } catch (e) {
+        print('Error computing initial trust rank: $e');
+      }
+
       // Create activity log for new user registration
       await _createActivityLog(
         type: 'userRegistered',
@@ -32,10 +65,11 @@ class AuthService {
         userId: cred.user!.uid,
         metadata: {
           'userEmail': email,
-          'displayName': cred.user!.displayName ?? 'User',
+          'displayName': fullName ?? cred.user!.displayName ?? 'User',
+          'username': username,
         },
       );
-      
+
       return cred.user;
     } catch (e) {
       print("Registration error: $e");
@@ -65,17 +99,24 @@ class AuthService {
     }
   }
 
-  Future<User?> loginUserWithEmailAndPassword(String email, String password) async {
+  Future<User?> loginUserWithEmailAndPassword(
+      String email, String password) async {
     try {
-      final cred = await _auth.signInWithEmailAndPassword(email: email, password: password);
-      
+      final cred = await _auth.signInWithEmailAndPassword(
+          email: email, password: password);
+
       // Check if user document exists, create it if it doesn't
-      final userDoc = await _firestore.collection('users').doc(cred.user!.uid).get();
+      final userDoc =
+          await _firestore.collection('users').doc(cred.user!.uid).get();
       if (!userDoc.exists) {
         // Create user document if it doesn't exist
         await _firestore.collection('users').doc(cred.user!.uid).set({
           'email': email,
           'displayName': cred.user!.displayName ?? 'User',
+          'fullName': cred.user!.displayName,
+          'username': null, // Will be set later when user completes profile
+          'birthday': null, // Will be set later when user completes profile
+          'gender': null, // Will be set later when user completes profile
           'role': 'user', // Default role
           'createdAt': FieldValue.serverTimestamp(),
           'lastLoginAt': FieldValue.serverTimestamp(),
@@ -90,7 +131,7 @@ class AuthService {
           'lastLoginAt': FieldValue.serverTimestamp(),
         });
       }
-      
+
       return cred.user;
     } catch (e) {
       print("Login error: $e");
@@ -101,6 +142,8 @@ class AuthService {
   Future<void> signout() async {
     try {
       await _auth.signOut();
+      // Clear trust level cache when user signs out
+      TrustLevelCache.clearCache();
     } catch (e) {
       print("Sign out error: $e");
       rethrow;
@@ -114,9 +157,9 @@ class AuthService {
       final GoogleSignIn googleSignIn = GoogleSignIn(
         scopes: ['email', 'profile'],
       );
-      
+
       final GoogleSignInAccount? gUser = await googleSignIn.signIn();
-      
+
       if (gUser == null) {
         // User cancelled the sign-in
         return null;
@@ -129,15 +172,20 @@ class AuthService {
       );
 
       final result = await _auth.signInWithCredential(credential);
-      
+
       // Create or update user document in Firestore
       if (result.user != null) {
-        final userDoc = await _firestore.collection('users').doc(result.user!.uid).get();
+        final userDoc =
+            await _firestore.collection('users').doc(result.user!.uid).get();
         if (!userDoc.exists) {
           // Create user document if it doesn't exist
           await _firestore.collection('users').doc(result.user!.uid).set({
             'email': result.user!.email,
             'displayName': result.user!.displayName ?? 'User',
+            'fullName': result.user!.displayName,
+            'username': null, // Will be set later when user completes profile
+            'birthday': null, // Will be set later when user completes profile
+            'gender': null, // Will be set later when user completes profile
             'role': 'user',
             'createdAt': FieldValue.serverTimestamp(),
             'lastLoginAt': FieldValue.serverTimestamp(),
@@ -152,13 +200,19 @@ class AuthService {
             'lastLoginAt': FieldValue.serverTimestamp(),
           });
         }
+
+        // Compute trust rank for user (new or existing)
+        try {
+          await TrustRankService().recomputeAndSave(result.user!.uid);
+        } catch (e) {
+          print('Error computing trust rank: $e');
+        }
       }
-      
+
       return result;
     } catch (e) {
       print("Google sign-in error: $e");
       rethrow;
     }
   }
-
 }
