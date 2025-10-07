@@ -29,7 +29,7 @@ class Upload extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    
+
     return WillPopScope(
       onWillPop: () async {
         Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
@@ -41,7 +41,9 @@ class Upload extends StatelessWidget {
           foregroundColor: Colors.white,
           title: const Text("Choose a plan"),
         ),
-        body: currentUser == null ? _buildLoginPrompt(context) : _buildUploadOptions(context),
+        body: currentUser == null
+            ? _buildLoginPrompt(context)
+            : _buildUploadOptions(context),
         bottomNavigationBar: CustomBottomNav(
           selectedIndex: _selectedIndex,
           onTabSelected: (index) => _onTabSelected(context, index),
@@ -57,7 +59,7 @@ class Upload extends StatelessWidget {
 
   Widget _buildLoginPrompt(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -65,7 +67,7 @@ class Upload extends StatelessWidget {
           Icon(Icons.login, size: 64, color: colorScheme.onSurfaceVariant),
           SizedBox(height: 16),
           Text(
-            'Please login to upload ads', 
+            'Please login to upload ads',
             style: TextStyle(
               fontSize: 18,
               color: colorScheme.onSurface,
@@ -85,7 +87,7 @@ class Upload extends StatelessWidget {
 
   Widget _buildUploadOptions(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
       child: Column(
@@ -134,8 +136,7 @@ class Upload extends StatelessWidget {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text(
                               "Post an ad in 2 minutes",
@@ -145,8 +146,7 @@ class Upload extends StatelessWidget {
                         ),
                         Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text(
                               "20 million users",
@@ -156,8 +156,7 @@ class Upload extends StatelessWidget {
                         ),
                         Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text(
                               "Connect directly with buyers",
@@ -182,8 +181,7 @@ class Upload extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
                           ),
                           child: const Text("Post Your Ad"),
                         ),
@@ -202,7 +200,7 @@ class Upload extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                         color: colorScheme.surfaceVariant,
                         image: const DecorationImage(
-                          image: AssetImage('assets/your_image.png'),
+                          image: AssetImage('assets/images/car-image.png'),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -245,8 +243,7 @@ class Upload extends StatelessWidget {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text(
                               "Post an ad in 2 minutes",
@@ -256,8 +253,7 @@ class Upload extends StatelessWidget {
                         ),
                         Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text(
                               "20 million users",
@@ -267,8 +263,7 @@ class Upload extends StatelessWidget {
                         ),
                         Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text(
                               "Connect directly with buyers",
@@ -294,8 +289,7 @@ class Upload extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
                           ),
                           child: const Text("Help to sell car!"),
                         ),
@@ -314,7 +308,7 @@ class Upload extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                         color: colorScheme.surfaceVariant,
                         image: const DecorationImage(
-                          image: AssetImage('assets/your_image.png'),
+                          image: AssetImage('assets/images/car-image.png'),
                           fit: BoxFit.cover,
                         ),
                       ),

@@ -1,11 +1,11 @@
 import 'package:carhive/models/ad_model.dart' show AdModel;
 import 'package:carhive/store/global_ads.dart' show GlobalAdStore;
+import 'package:carhive/components/searchable_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -23,8 +23,41 @@ class _PostAdCarState extends State<PostAdCar> {
   String? selectedCarModel;
   String? selectedRegisteredIn;
 
-// cont4oeller of ads
-  final formKey = GlobalKey<FormState>();
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (userDoc.exists) {
+          final data = userDoc.data()!;
+          setState(() {
+            _userName = data['fullName'] ?? data['displayName'] ?? '';
+            _userPhone = data['phoneNumber'] ?? '';
+            _userEmail = data['email'] ?? '';
+            _userCity = data['city'] ?? '';
+            _userUsername = data['username'] ?? '';
+            _isLoadingProfile = false;
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isLoadingProfile = false;
+      });
+    }
+  }
+
+// Controllers for ads
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _priceadController = TextEditingController();
@@ -54,6 +87,61 @@ class _PostAdCarState extends State<PostAdCar> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _carbrandController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+
+  // User profile data
+  String? _userName;
+  String? _userPhone;
+  String? _userEmail;
+  String? _userCity;
+  String? _userUsername;
+  bool _isLoadingProfile = true;
+
+  // Cities list for location selection
+  final List<String> _cities = [
+    'Karachi',
+    'Lahore',
+    'Islamabad',
+    'Rawalpindi',
+    'Faisalabad',
+    'Multan',
+    'Gujranwala',
+    'Peshawar',
+    'Quetta',
+    'Sialkot',
+    'Sargodha',
+    'Bahawalpur',
+    'Sukkur',
+    'Jhang',
+    'Sheikhupura',
+    'Larkana',
+    'Gujrat',
+    'Mardan',
+    'Kasur',
+    'Dera Ghazi Khan',
+    'Nawabshah',
+    'Sahiwal',
+    'Mirpur Khas',
+    'Chiniot',
+    'Kotri',
+    'Kamoke',
+    'Hafizabad',
+    'Kohat',
+    'Jacobabad',
+    'Shikarpur',
+    'Muzaffargarh',
+    'Khanpur',
+    'Gojra',
+    'Bahawalnagar',
+    'Muridke',
+    'Pakpattan',
+    'Abottabad',
+    'Tando Adam',
+    'Jhelum',
+    'Sanghar',
+    'Chishtian',
+    'Kot Addu',
+    'Khanewal'
+  ];
 
   final List<String> chipOptions = [
     "Alloy Rims",
@@ -291,24 +379,32 @@ class _PostAdCarState extends State<PostAdCar> {
         selectedCarModel == null ||
         selectedRegisteredIn == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select location, car model year, and registration city.")),
+        const SnackBar(
+            content: Text(
+                "Please select location, car model year, and registration city.")),
       );
       return;
     }
 
-    if (_formKey.currentState!.validate()) {
+    // Check if form key and current state are valid before validating
+    if (_formKey.currentState != null && _formKey.currentState!.validate()) {
       // Form is valid and dropdowns/images are selected
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Posting Ad...")),
       );
       // Your submission logic here
+    } else {
+      // Form validation failed
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fix the validation errors.")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    
+
     if (currentUser == null) {
       return Scaffold(
         appBar: AppBar(
@@ -322,7 +418,8 @@ class _PostAdCarState extends State<PostAdCar> {
             children: [
               Icon(Icons.login, size: 64, color: Colors.grey),
               SizedBox(height: 16),
-              Text('Please login to post an ad', style: TextStyle(fontSize: 18)),
+              Text('Please login to post an ad',
+                  style: TextStyle(fontSize: 18)),
               SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
@@ -446,10 +543,21 @@ class _PostAdCarState extends State<PostAdCar> {
                 ),
               ),
 
-              _buildFormTile(
-                  "Location${selectedLocation != null ? " ($selectedLocation)" : ""}",
-                  Icons.location_city,
-                  _openLocationSelector),
+              // Location searchable dropdown
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: SearchableDropdown<String>(
+                  labelText: 'Location',
+                  hintText: 'Search and select your location',
+                  value: selectedLocation,
+                  items: _cities,
+                  itemAsString: (city) => city,
+                  onChanged: (value) =>
+                      setState(() => selectedLocation = value),
+                  validator: (value) =>
+                      value == null ? 'Please select a location' : null,
+                ),
+              ),
               _buildFormTile(
                   "Car model${selectedCarModel != null ? " ($selectedCarModel)" : ""}",
                   Icons.directions_car,
@@ -467,23 +575,79 @@ class _PostAdCarState extends State<PostAdCar> {
                 label: "Body Color",
                 icon: Icons.color_lens,
                 controller: _bodyColorController,
+                validator: (value) {
+                  try {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Body color is required';
+                    }
+                    final trimmedValue = value.trim();
+                    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(trimmedValue)) {
+                      return 'Body color should contain only alphabets';
+                    }
+                    return null;
+                  } catch (e) {
+                    return 'Body color validation error';
+                  }
+                },
               ),
               _buildTextFieldTile(
                 label: "Mileage (KMs)",
                 icon: Icons.speed,
                 controller: _mileageController,
                 hint: "50000",
+                validator: (value) {
+                  try {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Mileage is required';
+                    }
+                    final trimmedValue = value.trim();
+                    if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
+                      return 'Mileage should contain only numbers';
+                    }
+                    return null;
+                  } catch (e) {
+                    return 'Mileage validation error';
+                  }
+                },
               ),
               _buildTextFieldTile(
                 label: "Fuel Type",
                 icon: Icons.local_gas_station,
                 controller: _fuelController,
                 hint: "Petrol",
+                validator: (value) {
+                  try {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Fuel type is required';
+                    }
+                    final trimmedValue = value.trim();
+                    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(trimmedValue)) {
+                      return 'Fuel type should contain only alphabets';
+                    }
+                    return null;
+                  } catch (e) {
+                    return 'Fuel type validation error';
+                  }
+                },
               ),
               _buildTextFieldTile(
                 label: "Price (PKR)",
                 icon: Icons.local_offer,
                 controller: _priceController,
+                validator: (value) {
+                  try {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Price is required';
+                    }
+                    final trimmedValue = value.trim();
+                    if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
+                      return 'Price should contain only numbers';
+                    }
+                    return null;
+                  } catch (e) {
+                    return 'Price validation error';
+                  }
+                },
               ),
               _buildTextFieldTile(
                 label: "Description",
@@ -506,16 +670,24 @@ class _PostAdCarState extends State<PostAdCar> {
                   ),
                 ),
               ),
-              _buildTextFieldTile(
-                label: "Name",
-                icon: Icons.person,
-                controller: _nameController,
-              ),
-              _buildTextFieldTile(
-                label: "Phone Number",
-                icon: Icons.phone,
-                controller: _phoneController,
-              ),
+              // User profile information display
+              if (_isLoadingProfile)
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else ...[
+                _buildProfileInfoTile(
+                    "Name", Icons.person, _userName ?? 'Not set'),
+                _buildProfileInfoTile(
+                    "Phone Number", Icons.phone, _userPhone ?? 'Not set'),
+                _buildProfileInfoTile(
+                    "Email", Icons.email, _userEmail ?? 'Not set'),
+                _buildProfileInfoTile(
+                    "City", Icons.location_city, _userCity ?? 'Not set'),
+                _buildProfileInfoTile("Username", Icons.alternate_email,
+                    _userUsername ?? 'Not set'),
+              ],
               const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -531,14 +703,16 @@ class _PostAdCarState extends State<PostAdCar> {
                         final newAd = AdModel(
                           title: _titleController.text,
                           price: _priceController.text,
-                          location: selectedLocation ?? _locationController.text,
+                          location:
+                              selectedLocation ?? _locationController.text,
                           year: selectedCarModel ?? '',
                           mileage: _mileageController.text,
                           fuel: _fuelController.text,
                           description: _descriptionController.text,
                           carBrand: _carbrandController.text,
                           bodyColor: _bodyColorController.text,
-                          kmsDriven: _mileageController.text, // Use mileage for kmsDriven
+                          kmsDriven: _mileageController
+                              .text, // Use mileage for kmsDriven
                           registeredIn: selectedRegisteredIn,
                           name: _nameController.text,
                           phone: _phoneController.text,
@@ -549,8 +723,8 @@ class _PostAdCarState extends State<PostAdCar> {
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content:
-                                    Text('Your ad has been submitted for review. You will be notified once it\'s approved.')),
+                                content: Text(
+                                    'Your ad has been submitted for review. You will be notified once it\'s approved.')),
                           );
 
                           await Future.delayed(const Duration(seconds: 1));
@@ -582,13 +756,23 @@ class _PostAdCarState extends State<PostAdCar> {
     required IconData icon,
     required TextEditingController controller,
     String? hint,
+    String? Function(String?)? validator,
   }) {
     return ListTile(
       leading: Icon(icon, color: Colors.grey.shade700),
       title: TextFormField(
         controller: controller,
-        validator: (value) =>
-            value == null || value.trim().isEmpty ? 'Required' : null,
+        validator: validator ??
+            ((value) {
+              try {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Required';
+                }
+                return null;
+              } catch (e) {
+                return 'Validation error';
+              }
+            }),
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
@@ -611,6 +795,23 @@ class _PostAdCarState extends State<PostAdCar> {
       subtitle: subtitle != null ? Text(subtitle) : null,
       trailing: const Icon(Icons.keyboard_arrow_right),
       onTap: onTap,
+    );
+  }
+
+  Widget _buildProfileInfoTile(String label, IconData icon, String value) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.grey.shade700),
+      title: Text(label),
+      subtitle: Text(
+        value,
+        style: TextStyle(
+          color: value == 'Not set' ? Colors.grey : null,
+          fontStyle: value == 'Not set' ? FontStyle.italic : null,
+        ),
+      ),
+      trailing: value == 'Not set'
+          ? const Icon(Icons.warning, color: Colors.orange)
+          : const Icon(Icons.check_circle, color: Colors.green),
     );
   }
 }

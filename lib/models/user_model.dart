@@ -12,6 +12,8 @@ class UserModel {
   final int totalAdsPosted;
   final int activeAdsCount;
   final int rejectedAdsCount;
+  final int totalSales;
+  final DateTime? lastSaleAt;
 
   UserModel({
     required this.id,
@@ -25,25 +27,32 @@ class UserModel {
     this.totalAdsPosted = 0,
     this.activeAdsCount = 0,
     this.rejectedAdsCount = 0,
+    this.totalSales = 0,
+    this.lastSaleAt,
   });
 
-  factory UserModel.fromFirestore(Map<String, dynamic> data, String documentId) {
+  factory UserModel.fromFirestore(
+      Map<String, dynamic> data, String documentId) {
     return UserModel(
       id: documentId,
       email: data['email'] ?? '',
       displayName: data['displayName'],
       phoneNumber: data['phoneNumber'],
       role: data['role'] ?? 'user',
-      createdAt: data['createdAt'] != null 
-          ? (data['createdAt'] as Timestamp).toDate() 
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
-      lastLoginAt: data['lastLoginAt'] != null 
-          ? (data['lastLoginAt'] as Timestamp).toDate() 
+      lastLoginAt: data['lastLoginAt'] != null
+          ? (data['lastLoginAt'] as Timestamp).toDate()
           : DateTime.now(),
       isActive: data['isActive'] ?? true,
       totalAdsPosted: data['totalAdsPosted'] ?? 0,
       activeAdsCount: data['activeAdsCount'] ?? 0,
       rejectedAdsCount: data['rejectedAdsCount'] ?? 0,
+      totalSales: data['totalSales'] ?? 0,
+      lastSaleAt: data['lastSaleAt'] != null
+          ? (data['lastSaleAt'] as Timestamp).toDate()
+          : null,
     );
   }
 
@@ -59,6 +68,8 @@ class UserModel {
       'totalAdsPosted': totalAdsPosted,
       'activeAdsCount': activeAdsCount,
       'rejectedAdsCount': rejectedAdsCount,
+      'totalSales': totalSales,
+      'lastSaleAt': lastSaleAt != null ? Timestamp.fromDate(lastSaleAt!) : null,
     };
   }
 
@@ -74,6 +85,8 @@ class UserModel {
     int? totalAdsPosted,
     int? activeAdsCount,
     int? rejectedAdsCount,
+    int? totalSales,
+    DateTime? lastSaleAt,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -87,8 +100,8 @@ class UserModel {
       totalAdsPosted: totalAdsPosted ?? this.totalAdsPosted,
       activeAdsCount: activeAdsCount ?? this.activeAdsCount,
       rejectedAdsCount: rejectedAdsCount ?? this.rejectedAdsCount,
+      totalSales: totalSales ?? this.totalSales,
+      lastSaleAt: lastSaleAt ?? this.lastSaleAt,
     );
   }
 }
-
-
