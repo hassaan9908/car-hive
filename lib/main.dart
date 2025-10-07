@@ -3,7 +3,7 @@ import 'package:carhive/pages/startup_page.dart';
 import 'package:carhive/auth/loginscreen.dart';
 import 'package:carhive/pages/mutualinvestment.dart';
 import 'package:carhive/pages/myads.dart';
-import 'package:carhive/pages/notifications.dart';
+import 'package:carhive/pages/chat.dart';
 import 'package:carhive/pages/profilepage.dart';
 import 'package:carhive/pages/upload.dart';
 import 'package:carhive/pages/car_details_page.dart';
@@ -65,7 +65,7 @@ class MyApp extends StatelessWidget {
               '/home': (context) => const HomepageWithAdminInit(),
               '/myads': (context) => const Myads(),
               '/profile': (context) => const Profilepage(),
-              '/notifications': (context) => const Notifications(),
+              '/notifications': (context) => const Chat(),
               '/investment': (context) => const Mutualinvestment(),
               '/upload': (context) => const Upload(),
               'loginscreen': (context) => const Loginscreen(),

@@ -4,7 +4,6 @@ import 'package:carhive/pages/homepage.dart';
 import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart';
 import 'package:carhive/components/custom_textfield.dart';
-import 'package:carhive/utils/validators.dart';
 
 class Loginscreen extends StatefulWidget {
   const Loginscreen({super.key});
@@ -17,7 +16,6 @@ class _LoginscreenState extends State<Loginscreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
-  final _formKey = GlobalKey<FormState>();
   String? _emailError;
   String? _passwordError;
 
@@ -47,11 +45,13 @@ class _LoginscreenState extends State<Loginscreen> {
                 children: [
                   // Logo or App Title
                   Image.asset(
-                    'assets/images/car-image.png',
-                    width: 100,
-                    height: 100,
+
+                    'assets/images/Retro.gif',
+                     width: 140,
+                     height: 140,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
+                  
 
                   // Title
                   Text(
@@ -193,29 +193,11 @@ class _LoginscreenState extends State<Loginscreen> {
   }
 
   _login() async {
-    // Clear previous errors
+    // Clear any previous inline errors (we don't block on validations in login)
     setState(() {
       _emailError = null;
       _passwordError = null;
     });
-
-    // Validate email
-    final emailError = Validators.validateEmail(_emailController.text);
-    if (emailError != null) {
-      setState(() {
-        _emailError = emailError;
-      });
-      return;
-    }
-
-    // Validate password
-    final passwordError = Validators.validatePassword(_passwordController.text);
-    if (passwordError != null) {
-      setState(() {
-        _passwordError = passwordError;
-      });
-      return;
-    }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -226,7 +208,6 @@ class _LoginscreenState extends State<Loginscreen> {
       );
 
       if (user != null) {
-        print("User logged In");
         goToHome(context);
       }
     } catch (e) {
@@ -247,7 +228,6 @@ class _LoginscreenState extends State<Loginscreen> {
       final user = await authProvider.signInWithGoogle();
 
       if (user != null) {
-        print("User logged in with Google");
         goToHome(context);
       }
     } catch (e) {

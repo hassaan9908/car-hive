@@ -14,12 +14,13 @@ class CustomBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color selectedColor = Color.fromARGB(255, 94, 98, 135);
-    final Color unselectedColor =
-        Theme.of(context).brightness == Brightness.dark
-            ? Colors.white70
-            : Colors.black54;
-    final Color fabColor = Color.fromARGB(255, 35, 38, 68);
+
+    final Color selectedColor = Color.fromARGB(255, 43, 128, 207);
+    final Color unselectedColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white70
+        : Colors.black54;
+    final Color fabColor = Color.fromARGB(255, 43, 128, 207);
+
     return Stack(
       alignment: Alignment.bottomCenter,
       children: [

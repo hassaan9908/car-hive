@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class Notifications extends StatefulWidget {
-  const Notifications({super.key});
+class Chat extends StatefulWidget {
+  const Chat({super.key});
 
   @override
-  State<Notifications> createState() => _NotificationsState();
+  State<Chat> createState() => _ChatState();
 }
 
-class _NotificationsState extends State<Notifications> {
+class _ChatState extends State<Chat> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,6 +24,6 @@ class _NotificationsState extends State<Notifications> {
       body: Center(
         child: Text('Chats'),
       ),
-    );
+    );;
   }
 }
