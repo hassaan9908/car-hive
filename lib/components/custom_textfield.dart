@@ -15,6 +15,8 @@ class CustomTextField extends StatelessWidget {
   final int? minLines;
   final TextStyle? style;
   final bool enabled;
+  final bool readOnly;
+  final VoidCallback? onTap;
   final EdgeInsetsGeometry? contentPadding;
   final String? errorText;
 
@@ -34,6 +36,8 @@ class CustomTextField extends StatelessWidget {
     this.minLines,
     this.style,
     this.enabled = true,
+    this.readOnly = false,
+    this.onTap,
     this.contentPadding,
     this.errorText,
   });
@@ -53,15 +57,16 @@ class CustomTextField extends StatelessWidget {
       maxLines: maxLines,
       minLines: minLines,
       enabled: enabled,
-
-      style: style ?? TextStyle(
-        color: colorScheme.onSurface,
-        fontWeight: FontWeight.w500,
-        fontSize: 16,
-        textBaseline: TextBaseline.alphabetic,
-        inherit: false,
-      ),
-
+      readOnly: readOnly,
+      onTap: onTap,
+      style: style ??
+          TextStyle(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w500,
+            fontSize: 16,
+            textBaseline: TextBaseline.alphabetic,
+            inherit: false,
+          ),
       decoration: InputDecoration(
         hintText: hintText,
         labelText: labelText,
@@ -69,8 +74,7 @@ class CustomTextField extends StatelessWidget {
         suffixIcon: suffixIcon,
         errorText: errorText,
         filled: true,
-
-        fillColor: colorScheme.surfaceVariant,
+        fillColor: colorScheme.surfaceContainerHighest,
         hintStyle: TextStyle(
           color: colorScheme.onSurfaceVariant,
           fontSize: 16,
@@ -90,19 +94,17 @@ class CustomTextField extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.outline),
-
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
-
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.error),
         ),
-        contentPadding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-
+        contentPadding: contentPadding ??
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }

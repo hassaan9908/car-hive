@@ -8,7 +8,7 @@ import '../providers/search_provider.dart';
 
 class Homepage extends StatefulWidget {
   final int initialTab;
-  
+
   const Homepage({super.key, this.initialTab = 0});
 
   @override
@@ -56,7 +56,7 @@ class _HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Consumer<SearchProvider>(
       builder: (context, searchProvider, _) {
         return Scaffold(
@@ -134,7 +134,7 @@ class _HomepageState extends State<Homepage> {
                     },
                   ),
                 ),
-                
+
                 // Search Results or Car Tabs
                 Expanded(
                   child: _isSearchActive
@@ -180,8 +180,8 @@ class _HomepageState extends State<Homepage> {
             Text(
               searchProvider.error!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+                    color: Colors.grey[600],
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -208,55 +208,54 @@ class _HomepageState extends State<Homepage> {
             Text(
               'Try searching with different keywords',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+                    color: Colors.grey[600],
+                  ),
             ),
           ],
         ),
       );
     }
 
-    return GridView.builder(
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.75,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
       itemCount: searchProvider.filteredAds.length,
       itemBuilder: (context, index) {
         final ad = searchProvider.filteredAds[index];
-        return _buildAdCard(context, ad);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildAdCard(context, ad),
+        );
       },
     );
   }
 
   Widget _buildAdCard(BuildContext context, dynamic ad) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(
-          context, 
-          '/car-details', 
+          context,
+          '/car-details',
           arguments: ad,
         );
       },
       child: Card(
         elevation: 2,
+        color: colorScheme.surfaceVariant,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Car image placeholder
-            Expanded(
-              flex: 3,
-              child: Container(
-                width: double.infinity,
+        child: Container(
+          height: 100,
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Car image placeholder (left side)
+              Container(
+                width: 80,
+                height: 80,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
                   child: Icon(
@@ -266,120 +265,57 @@ class _HomepageState extends State<Homepage> {
                   ),
                 ),
               ),
-            ),
-            
-            // Card content
-            Expanded(
-              flex: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
+
+              const SizedBox(width: 12),
+
+              // Car details (right side)
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Title (truncated)
+                    // Year
+                    Text(
+                      '${ad.year}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 14,
+                          ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    // Car model/title
                     Text(
                       ad.title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const SizedBox(height: 4),
-                    
+
                     // Price
                     Text(
                       'PKR ${ad.price}',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Location
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            ad.location,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Car details (compact)
-                    Row(
-                      children: [
-                        _buildDetailChip('${ad.year}', Icons.calendar_today, context),
-                        const SizedBox(width: 4),
-                        _buildDetailChip('${ad.mileage}k', Icons.speed, context),
-                      ],
-                    ),
-                    
-                    const Spacer(),
-                    
-                    // Brand (if available)
-                    if (ad.carBrand != null && ad.carBrand!.isNotEmpty)
-                      Text(
-                        ad.carBrand!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailChip(String text, IconData icon, BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outline),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: 2),
-          Text(
-            text,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 10,
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

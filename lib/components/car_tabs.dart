@@ -1,16 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/store/global_ads.dart';
 
+// Simple cache for trust levels to persist across account switches
+class TrustLevelCache {
+  static final Map<String, String> _cache = {};
+
+  static void setTrustLevel(String userId, String trustLevel) {
+    _cache[userId] = trustLevel;
+  }
+
+  static String? getTrustLevel(String userId) {
+    return _cache[userId];
+  }
+
+  static void clearCache() {
+    _cache.clear();
+  }
+}
+
 class CarTabs extends StatelessWidget {
   final int initialTab;
-  
+
   const CarTabs({Key? key, this.initialTab = 0}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return DefaultTabController(
       length: 2,
       initialIndex: initialTab,
@@ -18,28 +36,26 @@ class CarTabs extends StatelessWidget {
         children: [
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: colorScheme.outline),
-            ),
             child: TabBar(
-              indicator: BoxDecoration(
-                color: colorScheme.primary,
-                borderRadius: BorderRadius.circular(8),
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(
+                  color: colorScheme.primary,
+                  width: 3,
+                ),
+                insets: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: Colors.white,
+              indicatorSize: TabBarIndicatorSize.label,
+              labelColor: colorScheme.primary,
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 16,
+                fontSize: 18,
                 textBaseline: TextBaseline.alphabetic,
                 inherit: false,
               ),
-              unselectedLabelColor: colorScheme.onSurfaceVariant,
+              unselectedLabelColor: Colors.white,
               unselectedLabelStyle: const TextStyle(
                 fontWeight: FontWeight.w500,
-                fontSize: 16,
+                fontSize: 18,
                 textBaseline: TextBaseline.alphabetic,
                 inherit: false,
               ),
@@ -73,8 +89,8 @@ class CarTabs extends StatelessWidget {
                       Text(
                         'Stay tuned for new car listings',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                       ),
                     ],
                   ),
@@ -101,29 +117,31 @@ class _UsedCarsTab extends StatelessWidget {
         if (snapshot.hasError) {
           String errorMessage = 'Error loading ads';
           String errorDetails = '';
-          
+
           if (snapshot.error.toString().contains('failed-precondition')) {
             errorMessage = 'Database configuration required';
-            errorDetails = 'Please contact support to set up the database properly.';
+            errorDetails =
+                'Please contact support to set up the database properly.';
           } else if (snapshot.error.toString().contains('permission-denied')) {
             errorMessage = 'Access denied';
             errorDetails = 'You may not have permission to view ads.';
           } else {
             errorDetails = snapshot.error.toString();
           }
-          
+
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.error_outline, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text(errorMessage, style: TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  textBaseline: TextBaseline.alphabetic,
-                  inherit: false,
-                )),
+                Text(errorMessage,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
                 SizedBox(height: 8),
                 if (errorDetails.isNotEmpty)
                   Padding(
@@ -131,7 +149,7 @@ class _UsedCarsTab extends StatelessWidget {
                     child: Text(
                       errorDetails,
                       style: TextStyle(
-                        fontSize: 14, 
+                        fontSize: 14,
                         color: Colors.grey[600],
                         textBaseline: TextBaseline.alphabetic,
                         inherit: false,
@@ -153,35 +171,34 @@ class _UsedCarsTab extends StatelessWidget {
               children: [
                 Icon(Icons.car_rental, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text('No cars available', style: TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  textBaseline: TextBaseline.alphabetic,
-                  inherit: false,
-                )),
+                Text('No cars available',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
                 SizedBox(height: 8),
-                Text('Check back later for new listings', style: TextStyle(
-                  color: Colors.grey,
-                  textBaseline: TextBaseline.alphabetic,
-                  inherit: false,
-                )),
+                Text('Check back later for new listings',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
               ],
             ),
           );
         }
 
-        return GridView.builder(
+        return ListView.builder(
           padding: EdgeInsets.symmetric(horizontal: 16),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.75,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-          ),
           itemCount: ads.length,
           itemBuilder: (context, index) {
             final ad = ads[index];
-            return _buildAdCard(context, ad);
+            return Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: _buildAdCard(context, ad),
+            );
           },
         );
       },
@@ -190,154 +207,217 @@ class _UsedCarsTab extends StatelessWidget {
 
   Widget _buildAdCard(BuildContext context, AdModel ad) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return GestureDetector(
       onTap: () {
         // Navigate to detailed car page
         Navigator.pushNamed(
-          context, 
-          '/car-details', 
+          context,
+          '/car-details',
           arguments: ad,
         );
       },
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Car image placeholder
-            Expanded(
-              flex: 3,
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.car_rental,
-                    size: 32,
-                    color: colorScheme.onSurfaceVariant,
+      child: Stack(
+        children: [
+          Card(
+            elevation: 2,
+            color: colorScheme.surfaceVariant,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Container(
+              height: 100,
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  // Car image placeholder (left side)
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.car_rental,
+                        size: 32,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-            
-            // Card content
-            Expanded(
-              flex: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title (truncated)
-                    Text(
-                      ad.title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Price
-                    Text(
-                      'PKR ${ad.price}',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Location
-                    Row(
+
+                  const SizedBox(width: 12),
+
+                  // Car details (right side)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 12,
-                          color: colorScheme.onSurfaceVariant,
+                        // Year
+                        Text(
+                          '${ad.year}',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontSize: 14,
+                                  ),
                         ),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            ad.location,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+
+                        const SizedBox(height: 4),
+
+                        // Car model/title
+                        Text(
+                          ad.title,
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        // Price
+                        Text(
+                          'PKR ${ad.price}',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Car details (compact)
-                    Row(
-                      children: [
-                        _buildDetailChip('${ad.year}', Icons.calendar_today, context),
-                        const SizedBox(width: 4),
-                        _buildDetailChip('${ad.mileage}k', Icons.speed, context),
-                      ],
-                    ),
-                    
-                    const Spacer(),
-                    
-                    // Brand (if available)
-                    if (ad.carBrand != null && ad.carBrand!.isNotEmpty)
-                      Text(
-                        ad.carBrand!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          // Trust badge positioned in top-right corner
+          if (ad.userId != null && ad.userId!.isNotEmpty)
+            Positioned(
+              right: 8,
+              top: 8,
+              child: _buildTrustBadge(ad.userId!),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _buildDetailChip(String text, IconData icon, BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
+  Widget _buildTrustBadge(String userId) {
+    final badgeTextStyle = const TextStyle(
+      color: Colors.white,
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+    );
+
+    // Check cache first
+    final cachedLevel = TrustLevelCache.getTrustLevel(userId);
+    if (cachedLevel != null &&
+        ['Bronze', 'Silver', 'Gold'].contains(cachedLevel)) {
+      return _buildBadgeWidget(cachedLevel, badgeTextStyle);
+    }
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        // Handle error state - try to use cached value if available
+        if (snapshot.hasError) {
+          print('Trust badge error for user $userId: ${snapshot.error}');
+          final cachedLevel = TrustLevelCache.getTrustLevel(userId);
+          if (cachedLevel != null &&
+              ['Bronze', 'Silver', 'Gold'].contains(cachedLevel)) {
+            return _buildBadgeWidget(cachedLevel, badgeTextStyle);
+          }
+          return const SizedBox.shrink();
+        }
+
+        // Handle loading state - show a subtle loading indicator
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey[600],
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          );
+        }
+
+        // Only show badge if we have valid trust level data
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const SizedBox.shrink();
+        }
+
+        final data = snapshot.data!.data() ?? {};
+        final fetched = (data['trustLevel'] ?? '').toString();
+
+        // Don't show badge if trustLevel is empty or invalid
+        if (fetched.isEmpty ||
+            !['Bronze', 'Silver', 'Gold'].contains(fetched)) {
+          return const SizedBox.shrink();
+        }
+
+        // Cache the trust level for future use
+        TrustLevelCache.setTrustLevel(userId, fetched);
+
+        return _buildBadgeWidget(fetched, badgeTextStyle);
+      },
+    );
+  }
+
+  Widget _buildBadgeWidget(String level, TextStyle badgeTextStyle) {
+    Color bg;
+    switch (level) {
+      case 'Gold':
+        bg = Colors.amber[700] ?? Colors.amber;
+        break;
+      case 'Silver':
+        bg = Colors.blueGrey[400] ?? Colors.blueGrey;
+        break;
+      case 'Bronze':
+      default:
+        bg = Colors.brown[400] ?? Colors.brown;
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outline),
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(color: Colors.black54, blurRadius: 6, offset: Offset(0, 2)),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 10, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: 2),
+          const Icon(Icons.verified, size: 12, color: Colors.white),
+          const SizedBox(width: 4),
           Text(
-            text,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 10,
-            ),
+            level.toUpperCase(),
+            style: badgeTextStyle.copyWith(fontSize: 10),
           ),
         ],
       ),
     );
   }
-} 
+}

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart';
 import 'package:carhive/components/custom_textfield.dart';
 import 'package:carhive/utils/validators.dart';
+import 'package:carhive/services/username_service.dart';
 
 class Signupscreen extends StatefulWidget {
   const Signupscreen({super.key});
@@ -14,24 +15,74 @@ class Signupscreen extends StatefulWidget {
 
 class _SignupscreenState extends State<Signupscreen> {
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _birthdayController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-  final _formKey = GlobalKey<FormState>();
   String? _nameError;
+  String? _usernameError;
   String? _emailError;
   String? _passwordError;
   String? _confirmPasswordError;
+  String? _birthdayError;
+  String? _genderError;
+  String? _selectedGender;
+  PasswordStrength? _passwordStrength;
+  bool _isCheckingUsername = false;
+
+  final List<String> _genders = [
+    'Male',
+    'Female',
+    'Other',
+    'Prefer not to say'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_onPasswordChanged);
+    _usernameController.addListener(_onUsernameChanged);
+  }
 
   @override
   void dispose() {
     super.dispose();
     _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _birthdayController.dispose();
+  }
+
+  void _onPasswordChanged() {
+    setState(() {
+      _passwordStrength =
+          Validators.calculatePasswordStrength(_passwordController.text);
+    });
+  }
+
+  void _onUsernameChanged() {
+    if (_usernameController.text.length >= 3) {
+      setState(() {
+        _isCheckingUsername = true;
+      });
+      _checkUsernameAvailability();
+    }
+  }
+
+  Future<void> _checkUsernameAvailability() async {
+    final username = _usernameController.text.trim();
+    if (username.isEmpty) return;
+
+    final error = await UsernameService.validateUsernameAvailability(username);
+    setState(() {
+      _usernameError = error;
+      _isCheckingUsername = false;
+    });
   }
 
   @override
@@ -60,11 +111,11 @@ class _SignupscreenState extends State<Signupscreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Logo or App Title
-                 Image.asset(
+                  Image.asset(
                     'assets/images/car-image.png',
                     width: 100,
                     height: 100,
-                    ),
+                  ),
                   const SizedBox(height: 24),
 
                   // Title
@@ -93,6 +144,23 @@ class _SignupscreenState extends State<Signupscreen> {
                     keyboardType: TextInputType.name,
                     prefixIcon: const Icon(Icons.person),
                     errorText: _nameError,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Username Field
+                  CustomTextField(
+                    controller: _usernameController,
+                    hintText: 'Username',
+                    keyboardType: TextInputType.text,
+                    prefixIcon: const Icon(Icons.alternate_email),
+                    errorText: _usernameError,
+                    suffixIcon: _isCheckingUsername
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : null,
                   ),
                   const SizedBox(height: 16),
 
@@ -139,7 +207,117 @@ class _SignupscreenState extends State<Signupscreen> {
                           : Icons.visibility_off),
                       onPressed: () {
                         setState(() {
-                          _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                          _isConfirmPasswordVisible =
+                              !_isConfirmPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+
+                  // Password Strength Indicator
+                  if (_passwordStrength != null &&
+                      _passwordController.text.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Password Strength: ',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colorScheme.secondary,
+                                ),
+                              ),
+                              Text(
+                                _passwordStrength!.strength,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: _passwordStrength!.color,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          LinearProgressIndicator(
+                            value: _passwordStrength!.score / 6,
+                            backgroundColor:
+                                colorScheme.surfaceContainerHighest,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                _passwordStrength!.color),
+                          ),
+                          if (_passwordStrength!.feedback.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Missing: ${_passwordStrength!.feedback.join(', ')}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: colorScheme.secondary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+
+                  // Birthday Field
+                  CustomTextField(
+                    controller: _birthdayController,
+                    hintText: 'Birthday',
+                    keyboardType: TextInputType.none,
+                    prefixIcon: const Icon(Icons.calendar_today),
+                    errorText: _birthdayError,
+                    readOnly: true,
+                    onTap: () async {
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now()
+                            .subtract(const Duration(days: 365 * 20)),
+                        firstDate: DateTime(1900),
+                        lastDate: DateTime.now(),
+                      );
+                      if (picked != null) {
+                        _birthdayController.text =
+                            '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Gender Dropdown
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: _genderError != null
+                              ? Colors.red
+                              : colorScheme.outline),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedGender,
+                      decoration: InputDecoration(
+                        labelText: 'Gender',
+                        hintText: 'Select your gender',
+                        prefixIcon: const Icon(Icons.person_outline),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 16),
+                        errorText: _genderError,
+                      ),
+                      items: _genders.map((String gender) {
+                        return DropdownMenuItem<String>(
+                          value: gender,
+                          child: Text(gender),
+                        );
+                      }).toList(),
+                      onChanged: (String? value) {
+                        setState(() {
+                          _selectedGender = value;
+                          _genderError = null;
                         });
                       },
                     ),
@@ -219,9 +397,12 @@ class _SignupscreenState extends State<Signupscreen> {
     // Clear previous errors
     setState(() {
       _nameError = null;
+      _usernameError = null;
       _emailError = null;
       _passwordError = null;
       _confirmPasswordError = null;
+      _birthdayError = null;
+      _genderError = null;
     });
 
     // Validate name
@@ -229,6 +410,26 @@ class _SignupscreenState extends State<Signupscreen> {
     if (nameError != null) {
       setState(() {
         _nameError = nameError;
+      });
+      return;
+    }
+
+    // Validate username
+    final usernameError = Validators.validateUsername(_usernameController.text);
+    if (usernameError != null) {
+      setState(() {
+        _usernameError = usernameError;
+      });
+      return;
+    }
+
+    // Check username availability
+    final usernameAvailabilityError =
+        await UsernameService.validateUsernameAvailability(
+            _usernameController.text);
+    if (usernameAvailabilityError != null) {
+      setState(() {
+        _usernameError = usernameAvailabilityError;
       });
       return;
     }
@@ -253,9 +454,7 @@ class _SignupscreenState extends State<Signupscreen> {
 
     // Validate confirm password
     final confirmPasswordError = Validators.validateConfirmPassword(
-      _confirmPasswordController.text, 
-      _passwordController.text
-    );
+        _confirmPasswordController.text, _passwordController.text);
     if (confirmPasswordError != null) {
       setState(() {
         _confirmPasswordError = confirmPasswordError;
@@ -263,19 +462,53 @@ class _SignupscreenState extends State<Signupscreen> {
       return;
     }
 
+    // Validate birthday
+    if (_birthdayController.text.isEmpty) {
+      setState(() {
+        _birthdayError = 'Birthday is required';
+      });
+      return;
+    }
+
+    // Validate gender
+    if (_selectedGender == null) {
+      setState(() {
+        _genderError = 'Gender is required';
+      });
+      return;
+    }
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     try {
+      print("Creating user with data:");
+      print("Email: ${_emailController.text}");
+      print("Full Name: ${_nameController.text}");
+      print("Username: ${_usernameController.text}");
+      print("Birthday: ${_birthdayController.text}");
+      print("Gender: $_selectedGender");
+
       final user = await authProvider.createUserWithEmailAndPassword(
         _emailController.text,
         _passwordController.text,
+        fullName: _nameController.text,
+        username: _usernameController.text,
+        birthday: _birthdayController.text,
+        gender: _selectedGender!,
       );
 
       if (user != null) {
-        print("User created successfully");
+        print("User created successfully with UID: ${user.uid}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
         goToHome(context);
       }
     } catch (e) {
+      print("Signup error: $e");
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

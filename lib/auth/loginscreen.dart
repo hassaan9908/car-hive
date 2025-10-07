@@ -6,7 +6,6 @@ import 'package:carhive/auth/auth_provider.dart';
 import 'package:carhive/components/custom_textfield.dart';
 import 'package:carhive/utils/validators.dart';
 
-
 class Loginscreen extends StatefulWidget {
   const Loginscreen({super.key});
 
@@ -15,7 +14,6 @@ class Loginscreen extends StatefulWidget {
 }
 
 class _LoginscreenState extends State<Loginscreen> {
-
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
@@ -35,7 +33,7 @@ class _LoginscreenState extends State<Loginscreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final authProvider = Provider.of<AuthProvider>(context);
-    
+
     return Scaffold(
       backgroundColor: colorScheme.background,
       body: SafeArea(
@@ -52,9 +50,9 @@ class _LoginscreenState extends State<Loginscreen> {
                     'assets/images/car-image.png',
                     width: 100,
                     height: 100,
-                    ),
+                  ),
                   const SizedBox(height: 24),
-                  
+
                   // Title
                   Text(
                     'Welcome Back',
@@ -73,7 +71,7 @@ class _LoginscreenState extends State<Loginscreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 48),
-                  
+
                   // Email Field
                   CustomTextField(
                     controller: _emailController,
@@ -83,7 +81,7 @@ class _LoginscreenState extends State<Loginscreen> {
                     errorText: _emailError,
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Password Field
                   CustomTextField(
                     controller: _passwordController,
@@ -92,7 +90,9 @@ class _LoginscreenState extends State<Loginscreen> {
                     prefixIcon: Icon(Icons.lock),
                     errorText: _passwordError,
                     suffixIcon: IconButton(
-                      icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                      icon: Icon(_isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off),
                       onPressed: () {
                         setState(() {
                           _isPasswordVisible = !_isPasswordVisible;
@@ -101,7 +101,7 @@ class _LoginscreenState extends State<Loginscreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Login Button
                   ElevatedButton(
                     onPressed: authProvider.isLoading ? null : _login,
@@ -119,7 +119,8 @@ class _LoginscreenState extends State<Loginscreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Text(
@@ -132,7 +133,6 @@ class _LoginscreenState extends State<Loginscreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -146,7 +146,8 @@ class _LoginscreenState extends State<Loginscreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const Signupscreen()),
+                            MaterialPageRoute(
+                                builder: (context) => const Signupscreen()),
                           );
                         },
                         child: Text(
@@ -160,8 +161,7 @@ class _LoginscreenState extends State<Loginscreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                   ElevatedButton(
-                    
+                  ElevatedButton(
                     onPressed: () => _loginWithGoogle(),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -175,9 +175,7 @@ class _LoginscreenState extends State<Loginscreen> {
                         ),
                       ],
                     ),
-                    ),
-                  
-                  
+                  ),
                 ],
               ),
             ),
@@ -220,7 +218,7 @@ class _LoginscreenState extends State<Loginscreen> {
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     try {
       final user = await authProvider.loginUserWithEmailAndPassword(
         _emailController.text,
@@ -244,10 +242,10 @@ class _LoginscreenState extends State<Loginscreen> {
 
   _loginWithGoogle() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     try {
       final user = await authProvider.signInWithGoogle();
-      
+
       if (user != null) {
         print("User logged in with Google");
         goToHome(context);
@@ -262,8 +260,4 @@ class _LoginscreenState extends State<Loginscreen> {
       );
     }
   }
-  
-  
-
-
 }
