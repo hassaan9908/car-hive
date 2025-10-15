@@ -4,46 +4,38 @@ import 'app_colors.dart';
 final ThemeData lightTheme = ThemeData(
   brightness: Brightness.light,
   useMaterial3: true,
-  
+
   // Color Scheme
   colorScheme: const ColorScheme.light(
     primary: AppColors.primaryBlue,
     onPrimary: Colors.white,
     primaryContainer: Color(0xFFE0E7FF),
     onPrimaryContainer: AppColors.primaryBlue,
-    
     secondary: AppColors.secondaryGreen,
     onSecondary: Colors.white,
     secondaryContainer: Color(0xFFD1FAE5),
     onSecondaryContainer: AppColors.secondaryGreen,
-    
     tertiary: AppColors.secondaryPurple,
     onTertiary: Colors.white,
     tertiaryContainer: Color(0xFFEDE9FE),
     onTertiaryContainer: AppColors.secondaryPurple,
-    
-    background: Color(0xFFFAFBFC),
-    onBackground: Color(0xFF1F2937),
     surface: Colors.white,
     onSurface: Color(0xFF1F2937),
-    surfaceVariant: Color(0xFFF9FAFB),
+    surfaceContainerHighest: Color(0xFFF9FAFB),
     onSurfaceVariant: Color(0xFF6B7280),
-    
     outline: Color(0xFFE5E7EB),
     outlineVariant: Color(0xFFD1D5DB),
-    
     error: AppColors.error,
     onError: Colors.white,
     errorContainer: Color(0xFFFEE2E2),
     onErrorContainer: AppColors.error,
-    
     shadow: Color(0xFF000000),
     scrim: Color(0xFF000000),
     inverseSurface: Color(0xFF1F2937),
     onInverseSurface: Colors.white,
     inversePrimary: AppColors.primaryBlueLight,
   ),
-  
+
   // App Bar Theme
   appBarTheme: const AppBarTheme(
     backgroundColor: AppColors.primaryBlue,
@@ -58,22 +50,22 @@ final ThemeData lightTheme = ThemeData(
     iconTheme: IconThemeData(color: Colors.white),
     surfaceTintColor: Colors.transparent,
   ),
-  
-  // Card Theme
-  cardTheme: CardTheme(
-    color: Colors.white,
-    elevation: 1,
-    shadowColor: const Color(0xFF000000).withOpacity(0.05),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-      side: const BorderSide(
-        color: Color(0xFFF3F4F6),
-        width: 1,
-      ),
-    ),
-    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-  ),
-  
+
+  // Card Theme comment the code
+//  cardTheme: CardTheme(
+//   surfaceTintColor: Colors.white, // replaces color
+//   elevation: 1,
+//   shadowColor: Colors.black.withOpacity(0.05), // removed const
+//   shape: RoundedRectangleBorder(
+//     borderRadius: BorderRadius.circular(16),
+//     side: const BorderSide(
+//       color: Color(0xFFF3F4F6),
+//       width: 1,
+//     ),
+//   ),
+//   margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+// ),
+
   // Input Decoration Theme
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
@@ -111,7 +103,7 @@ final ThemeData lightTheme = ThemeData(
       fontWeight: FontWeight.w500,
     ),
   ),
-  
+
   // Elevated Button Theme
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
@@ -130,7 +122,7 @@ final ThemeData lightTheme = ThemeData(
       ),
     ),
   ),
-  
+
   // Text Button Theme
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(
@@ -145,7 +137,7 @@ final ThemeData lightTheme = ThemeData(
       ),
     ),
   ),
-  
+
   // Outlined Button Theme
   outlinedButtonTheme: OutlinedButtonThemeData(
     style: OutlinedButton.styleFrom(
@@ -162,7 +154,7 @@ final ThemeData lightTheme = ThemeData(
       ),
     ),
   ),
-  
+
   // Bottom Navigation Bar Theme
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
     backgroundColor: Colors.white,
@@ -179,23 +171,25 @@ final ThemeData lightTheme = ThemeData(
       fontWeight: FontWeight.w500,
     ),
   ),
-  
-  // Tab Bar Theme
-  tabBarTheme: const TabBarTheme(
-    labelColor: AppColors.primaryBlue,
-    unselectedLabelColor: Color(0xFF6B7280),
-    indicatorColor: AppColors.primaryBlue,
-    indicatorSize: TabBarIndicatorSize.tab,
-    labelStyle: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-    ),
-    unselectedLabelStyle: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w500,
-    ),
-  ),
-  
+
+  // Tab Bar Theme comment the code
+  // tabBarTheme: const TabBarTheme(
+  //   labelStyle: TextStyle(
+  //     fontSize: 16,
+  //     fontWeight: FontWeight.w600,
+  //     color: AppColors.primaryBlue,
+  //   ),
+  //   unselectedLabelStyle: TextStyle(
+  //     fontSize: 16,
+  //     fontWeight: FontWeight.w500,
+  //     color: Color(0xFF6B7280),
+  //   ),
+  //   indicator: UnderlineTabIndicator(
+  //     borderSide: BorderSide(color: AppColors.primaryBlue, width: 2),
+  //   ),
+  //   indicatorSize: TabBarIndicatorSize.tab,
+  // ),
+
   // Floating Action Button Theme
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
     backgroundColor: AppColors.primaryBlue,
@@ -205,20 +199,20 @@ final ThemeData lightTheme = ThemeData(
       borderRadius: BorderRadius.all(Radius.circular(16)),
     ),
   ),
-  
+
   // Divider Theme
   dividerTheme: const DividerThemeData(
     color: Color(0xFFE5E7EB),
     thickness: 1,
     space: 1,
   ),
-  
+
   // Icon Theme
   iconTheme: const IconThemeData(
     color: Color(0xFF1F2937),
     size: 24,
   ),
-  
+
   // Text Theme
   textTheme: const TextTheme(
     displayLarge: TextStyle(
@@ -312,10 +306,10 @@ final ThemeData lightTheme = ThemeData(
       letterSpacing: 0,
     ),
   ),
-  
+
   // Scaffold Background
   scaffoldBackgroundColor: const Color(0xFFFAFBFC),
-  
+
   // List Tile Theme
   listTileTheme: const ListTileThemeData(
     contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -330,7 +324,7 @@ final ThemeData lightTheme = ThemeData(
       color: Color(0xFF6B7280),
     ),
   ),
-  
+
   // Chip Theme
   chipTheme: ChipThemeData(
     backgroundColor: const Color(0xFFF3F4F6),
@@ -346,4 +340,4 @@ final ThemeData lightTheme = ThemeData(
     ),
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
   ),
-); 
+);

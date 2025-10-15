@@ -29,7 +29,7 @@ class Upload extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
-    
+
     return WillPopScope(
       onWillPop: () async {
         Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
@@ -40,7 +40,9 @@ class Upload extends StatelessWidget {
           backgroundColor: Colors.blue,
           title: const Text("Choose a plan"),
         ),
-        body: currentUser == null ? _buildLoginPrompt(context) : _buildUploadOptions(context),
+        body: currentUser == null
+            ? _buildLoginPrompt(context)
+            : _buildUploadOptions(context),
         bottomNavigationBar: CustomBottomNav(
           selectedIndex: _selectedIndex,
           onTabSelected: (index) => _onTabSelected(context, index),
@@ -59,15 +61,16 @@ class Upload extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.login, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text('Please login to upload ads', style: TextStyle(fontSize: 18)),
-          SizedBox(height: 24),
+          const Icon(Icons.login, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          const Text('Please login to upload ads',
+              style: TextStyle(fontSize: 18)),
+          const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
               Navigator.pushNamed(context, 'loginscreen');
             },
-            child: Text('Login'),
+            child: const Text('Login'),
           ),
         ],
       ),
@@ -120,24 +123,21 @@ class Upload extends StatelessWidget {
                         const SizedBox(height: 10),
                         const Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text("Post an ad in 2 minutes"),
                           ],
                         ),
                         const Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text("20 million users"),
                           ],
                         ),
                         const Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text("Connect directly with buyers"),
                           ],
@@ -151,7 +151,10 @@ class Upload extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => const PostAdCar()),
+                                  builder: (context) => const PostAdCar(
+                                   
+                                   
+                                  )),
                             );
                           },
                           style: ElevatedButton.styleFrom(
@@ -159,8 +162,7 @@ class Upload extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
                           ),
                           child: const Text("Post Your Ad"),
                         ),
@@ -220,24 +222,21 @@ class Upload extends StatelessWidget {
                         const SizedBox(height: 10),
                         const Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text("Post an ad in 2 minutes"),
                           ],
                         ),
                         const Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text("20 million users"),
                           ],
                         ),
                         const Row(
                           children: [
-                            Icon(Icons.check,
-                                color: Colors.green, size: 18),
+                            Icon(Icons.check, color: Colors.green, size: 18),
                             SizedBox(width: 5),
                             Text("Connect directly with buyers"),
                           ],
@@ -260,8 +259,7 @@ class Upload extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
                           ),
                           child: const Text("Help to sell car!"),
                         ),

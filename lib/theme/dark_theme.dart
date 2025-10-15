@@ -5,47 +5,38 @@ final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
 
   useMaterial3: true,
-  
+
   // Color Scheme
   colorScheme: const ColorScheme.dark(
     primary: AppColors.primaryBlue,
     onPrimary: Colors.white,
     primaryContainer: AppColors.primaryBlueLight,
     onPrimaryContainer: Colors.white,
-    
     secondary: AppColors.secondaryGreen,
     onSecondary: Colors.white,
     secondaryContainer: AppColors.secondaryGreen,
     onSecondaryContainer: Colors.white,
-    
     tertiary: AppColors.secondaryPurple,
     onTertiary: Colors.white,
     tertiaryContainer: AppColors.secondaryPurple,
     onTertiaryContainer: Colors.white,
-    
-    background: AppColors.darkBackground,
-    onBackground: AppColors.darkOnSurface,
     surface: AppColors.darkSurface,
     onSurface: AppColors.darkOnSurface,
-    surfaceVariant: AppColors.darkSurfaceVariant,
+    surfaceContainerHighest: AppColors.darkSurfaceVariant,
     onSurfaceVariant: AppColors.darkOnSurfaceVariant,
-    
     outline: AppColors.darkOutline,
     outlineVariant: AppColors.darkOutlineVariant,
-    
     error: AppColors.error,
     onError: Colors.white,
     errorContainer: AppColors.error,
     onErrorContainer: Colors.white,
-    
     shadow: AppColors.neutral900,
     scrim: AppColors.neutral900,
     inverseSurface: AppColors.lightSurface,
     onInverseSurface: AppColors.lightOnSurface,
     inversePrimary: AppColors.primaryBlueLight,
-
   ),
-  
+
   // App Bar Theme
   appBarTheme: const AppBarTheme(
     backgroundColor: AppColors.darkSurface,
@@ -59,17 +50,17 @@ final ThemeData darkTheme = ThemeData(
     ),
     iconTheme: IconThemeData(color: AppColors.darkOnSurface),
   ),
-  
+
   // Card Theme
-  cardTheme: CardTheme(
-    color: AppColors.darkSurface,
-    elevation: 4,
-    shadowColor: AppColors.neutral900,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-  ),
-  
+  // cardTheme: const CardTheme(
+  //   color: AppColors.darkSurface,
+  //   elevation: 4,
+  //   shadowColor: AppColors.neutral900,
+  //   shape: RoundedRectangleBorder(
+  //     borderRadius: BorderRadius.all(Radius.circular(12)),
+  //   ),
+  // ),
+
   // Input Decoration Theme
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
@@ -94,11 +85,10 @@ final ThemeData darkTheme = ThemeData(
       borderSide: const BorderSide(color: AppColors.error),
     ),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-
     labelStyle: const TextStyle(color: AppColors.darkOnSurfaceVariant),
     floatingLabelStyle: const TextStyle(color: AppColors.primaryBlue),
   ),
-  
+
   // Elevated Button Theme
 
   elevatedButtonTheme: ElevatedButtonThemeData(
@@ -117,7 +107,7 @@ final ThemeData darkTheme = ThemeData(
       ),
     ),
   ),
-  
+
   // Text Button Theme
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(
@@ -132,7 +122,7 @@ final ThemeData darkTheme = ThemeData(
       ),
     ),
   ),
-  
+
   // Outlined Button Theme
   outlinedButtonTheme: OutlinedButtonThemeData(
     style: OutlinedButton.styleFrom(
@@ -148,7 +138,7 @@ final ThemeData darkTheme = ThemeData(
       ),
     ),
   ),
-  
+
   // Bottom Navigation Bar Theme
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
     backgroundColor: AppColors.darkSurface,
@@ -157,15 +147,17 @@ final ThemeData darkTheme = ThemeData(
     type: BottomNavigationBarType.fixed,
     elevation: 8,
   ),
-  
-  // Tab Bar Theme
-  tabBarTheme: const TabBarTheme(
-    labelColor: AppColors.primaryBlueLight,
-    unselectedLabelColor: AppColors.darkOnSurfaceVariant,
-    indicatorColor: AppColors.primaryBlueLight,
-    indicatorSize: TabBarIndicatorSize.tab,
-  ),
-  
+
+  // Tab Bar Theme comment to the code to runn application 
+  // tabBarTheme: const TabBarTheme(
+  //   labelStyle: TextStyle(color: AppColors.primaryBlueLight),
+  //   unselectedLabelStyle: TextStyle(color: AppColors.darkOnSurfaceVariant),
+  //   indicator: UnderlineTabIndicator(
+  //     borderSide: BorderSide(color: AppColors.primaryBlueLight, width: 2),
+  //   ),
+  //   indicatorSize: TabBarIndicatorSize.tab,
+  // ),
+
   // Floating Action Button Theme
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
     backgroundColor: AppColors.primaryBlue,
@@ -175,20 +167,20 @@ final ThemeData darkTheme = ThemeData(
       borderRadius: BorderRadius.all(Radius.circular(16)),
     ),
   ),
-  
+
   // Divider Theme
   dividerTheme: const DividerThemeData(
     color: AppColors.darkOutline,
     thickness: 1,
     space: 1,
   ),
-  
+
   // Icon Theme
   iconTheme: const IconThemeData(
     color: AppColors.darkOnSurface,
     size: 24,
   ),
-  
+
   // Text Theme
   textTheme: const TextTheme(
     displayLarge: TextStyle(

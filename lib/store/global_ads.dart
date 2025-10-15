@@ -1,6 +1,5 @@
 // import 'package:carhive/models/ad_model.dart';
 
-
 // class GlobalAdStore {
 //   static final GlobalAdStore _instance = GlobalAdStore._internal();
 //   factory GlobalAdStore() => _instance;
@@ -32,82 +31,72 @@ class GlobalAdStore {
 
   // Get all active ads for the used cars tab (simplified query to avoid index issues)
   Stream<List<AdModel>> getAllActiveAds() {
-    return _firestore
-        .collection('ads')
-        .snapshots()
-        .map((snapshot) {
-          final ads = snapshot.docs
-              .map((doc) => AdModel.fromFirestore(doc.data(), doc.id))
-              .toList();
-          
-          // Filter for active ads only
-          final activeAds = ads.where((ad) => ad.status == 'active').toList();
-          
-          // Sort in memory instead of in Firestore to avoid index requirements
-          activeAds.sort((a, b) => (b.createdAt ?? DateTime.now())
-              .compareTo(a.createdAt ?? DateTime.now()));
-          return activeAds;
-        });
+    return _firestore.collection('ads').snapshots().map((snapshot) {
+      final ads = snapshot.docs
+          .map((doc) => AdModel.fromFirestore(doc.data(), doc.id))
+          .toList();
+
+      // Filter for active ads only
+      final activeAds = ads.where((ad) => ad.status == 'active').toList();
+
+      // Sort in memory instead of in Firestore to avoid index requirements
+      activeAds.sort((a, b) => (b.createdAt ?? DateTime.now())
+          .compareTo(a.createdAt ?? DateTime.now()));
+      return activeAds;
+    });
   }
 
   // Get all ads regardless of status
   Stream<List<AdModel>> getAllAds() {
-    return _firestore
-        .collection('ads')
-        .snapshots()
-        .map((snapshot) {
-          final ads = snapshot.docs
-              .map((doc) => AdModel.fromFirestore(doc.data(), doc.id))
-              .toList();
-          
-          // Filter out ads without status (they should be pending)
-          final validAds = ads.where((ad) => ad.status != null && ad.status.isNotEmpty && ad.status != '').toList();
-          
-          validAds.sort((a, b) => (b.createdAt ?? DateTime.now())
-              .compareTo(a.createdAt ?? DateTime.now()));
-          return validAds;
-        });
+    return _firestore.collection('ads').snapshots().map((snapshot) {
+      final ads = snapshot.docs
+          .map((doc) => AdModel.fromFirestore(doc.data(), doc.id))
+          .toList();
+
+      // Filter out ads without status (they should be pending)
+      final validAds =
+          ads.where((ad) => ad.status.isNotEmpty && ad.status != '').toList();
+
+      validAds.sort((a, b) => (b.createdAt ?? DateTime.now())
+          .compareTo(a.createdAt ?? DateTime.now()));
+      return validAds;
+    });
   }
 
   // Get ads for a specific user (simplified query)
   Stream<List<AdModel>> getUserAds(String userId) {
-    return _firestore
-        .collection('ads')
-        .snapshots()
-        .map((snapshot) {
-          final ads = snapshot.docs
-              .map((doc) => AdModel.fromFirestore(doc.data(), doc.id))
-              .toList();
-          
-          // Filter for user's ads only
-          final userAds = ads.where((ad) => ad.userId == userId).toList();
-          
-          // Sort in memory
-          userAds.sort((a, b) => (b.createdAt ?? DateTime.now())
-              .compareTo(a.createdAt ?? DateTime.now()));
-          return userAds;
-        });
+    return _firestore.collection('ads').snapshots().map((snapshot) {
+      final ads = snapshot.docs
+          .map((doc) => AdModel.fromFirestore(doc.data(), doc.id))
+          .toList();
+
+      // Filter for user's ads only
+      final userAds = ads.where((ad) => ad.userId == userId).toList();
+
+      // Sort in memory
+      userAds.sort((a, b) => (b.createdAt ?? DateTime.now())
+          .compareTo(a.createdAt ?? DateTime.now()));
+      return userAds;
+    });
   }
 
   // Get ads by status for a specific user (simplified query)
   Stream<List<AdModel>> getUserAdsByStatus(String userId, String status) {
-    return _firestore
-        .collection('ads')
-        .snapshots()
-        .map((snapshot) {
-          final ads = snapshot.docs
-              .map((doc) => AdModel.fromFirestore(doc.data(), doc.id))
-              .toList();
-          
-          // Filter for user's ads with specific status
-          final userAdsByStatus = ads.where((ad) => 
-              ad.userId == userId && ad.status == status).toList();
-          
-          // Sort in memory
-          userAdsByStatus.sort((a, b) => (b.createdAt ?? DateTime.now())
-              .compareTo(a.createdAt ?? DateTime.now()));
-          return userAdsByStatus;
-        });
+    return _firestore.collection('ads').snapshots().map((snapshot) {
+      final ads = snapshot.docs
+          .map((doc) => AdModel.fromFirestore(doc.data(), doc.id))
+          .toList();
+
+      // Filter for user's ads with specific status
+      final userAdsByStatus = ads
+          .where((ad) => ad.userId == userId && ad.status == status)
+          .toList();
+
+      // Sort in memory
+      userAdsByStatus.sort((a, b) => (b.createdAt ?? DateTime.now())
+          .compareTo(a.createdAt ?? DateTime.now()));
+      return userAdsByStatus;
+    });
   }
 
   // Add a new ad
@@ -120,11 +109,12 @@ class GlobalAdStore {
 
       final adData = ad.toFirestore();
       adData['userId'] = currentUser.uid;
-      adData['status'] = 'pending'; // Set initial status as pending for admin review
+      adData['status'] =
+          'pending'; // Set initial status as pending for admin review
       adData['createdAt'] = Timestamp.now();
 
       final docRef = await _firestore.collection('ads').add(adData);
-      
+
       // Create activity log for new ad
       await _createActivityLog(
         type: 'adPosted',
