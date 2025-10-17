@@ -294,6 +294,7 @@ class _PostAdCarState extends State<PostAdCar> {
     super.dispose();
   }
 
+  // ignore: unused_element
   void _submitForm() {
     if ((_images.isEmpty && _webImages.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(

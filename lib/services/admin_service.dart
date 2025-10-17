@@ -129,6 +129,7 @@ class AdminService {
 
         // Sort by createdAt descending (most recent first)
         allActivities.sort((a, b) {
+          // ignore: unnecessary_null_comparison
           if (a.createdAt == null && b.createdAt == null) return 0;
           return b.createdAt.compareTo(a.createdAt);
         });
@@ -164,6 +165,7 @@ class AdminService {
 
       // Sort by createdAt descending (most recent first)
       allUsers.sort((a, b) {
+        // ignore: unnecessary_null_comparison
         if (a.createdAt == null && b.createdAt == null) return 0;
         return b.createdAt.compareTo(a.createdAt);
       });
