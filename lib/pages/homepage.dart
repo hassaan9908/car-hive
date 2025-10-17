@@ -5,10 +5,11 @@ import '../components/custom_textfield.dart';
 import '../components/car_tabs.dart';
 import '../components/custom_bottom_nav.dart';
 import '../providers/search_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Homepage extends StatefulWidget {
   final int initialTab;
-
+  
   const Homepage({super.key, this.initialTab = 0});
 
   @override
@@ -56,7 +57,7 @@ class _HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
+    
     return Consumer<SearchProvider>(
       builder: (context, searchProvider, _) {
         return Scaffold(
@@ -136,7 +137,7 @@ class _HomepageState extends State<Homepage> {
                     },
                   ),
                 ),
-
+                
                 // Search Results or Car Tabs
                 Expanded(
                   child: _isSearchActive
@@ -182,8 +183,8 @@ class _HomepageState extends State<Homepage> {
             Text(
               searchProvider.error!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+                color: Colors.grey[600],
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -210,42 +211,37 @@ class _HomepageState extends State<Homepage> {
             Text(
               'Try searching with different keywords',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+                color: Colors.grey[600],
+              ),
             ),
           ],
         ),
       );
     }
 
-
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
       itemCount: searchProvider.filteredAds.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final ad = searchProvider.filteredAds[index];
-
         return _buildAdListItem(context, ad);
-
       },
     );
   }
 
   Widget _buildAdListItem(BuildContext context, dynamic ad) {
     final colorScheme = Theme.of(context).colorScheme;
-
+    
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(
-          context,
-          '/car-details',
+          context, 
+          '/car-details', 
           arguments: ad,
         );
       },
       child: Card(
-
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         clipBehavior: Clip.antiAlias,
@@ -269,13 +265,10 @@ class _HomepageState extends State<Homepage> {
               ),
               const SizedBox(width: 12),
               // Details
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-
                     Text(ad.year, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
                     const SizedBox(height: 6),
                     Text(
@@ -292,12 +285,14 @@ class _HomepageState extends State<Homepage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'PKR ${ad.price}',
-                      style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w700),
-                    ),
+                    _buildTrustRow(context, ad.userId, ad.id),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'PKR ${ad.price}',
+                style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -306,6 +301,88 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
-  
+  Widget _buildTrustRow(BuildContext context, String? userId, String? adId) {
+    final cs = Theme.of(context).colorScheme;
+    if (userId == null || userId.isEmpty) return const SizedBox.shrink();
 
+    Future<Map<String, dynamic>> load() async {
+      // Trust level from user
+      final userSnap = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userData = userSnap.data() ?? {};
+      final String level = (userData['trustLevel'] ?? 'Bronze').toString();
+
+      // Per-ad average rating
+      double avg = 0.0;
+      int count = 0;
+      if (adId != null && adId.isNotEmpty) {
+        final reviewsSnap = await FirebaseFirestore.instance
+            .collection('reviews')
+            .where('adId', isEqualTo: adId)
+            .get();
+        if (reviewsSnap.docs.isNotEmpty) {
+          int sum = 0;
+          for (final d in reviewsSnap.docs) {
+            final r = d.data()['rating'];
+            if (r is int) {
+              sum += r;
+              count += 1;
+            } else if (r is num) {
+              sum += r.toInt();
+              count += 1;
+            }
+          }
+          if (count > 0) avg = sum / count;
+        }
+      }
+
+      return {'level': level, 'avg': avg, 'count': count};
+    }
+
+    return FutureBuilder<Map<String, dynamic>>(
+      future: load(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox(height: 0);
+        final level = (snapshot.data!['level'] as String?) ?? 'Bronze';
+        final avgRating = ((snapshot.data!['avg'] ?? 0) as num).toDouble();
+        final ratingCount = (snapshot.data!['count'] ?? 0) as int;
+        final Color levelColor = _levelColor(level, cs);
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: levelColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: levelColor.withOpacity(0.3)),
+              ),
+              child: Text(
+                level,
+                style: TextStyle(color: levelColor, fontSize: 11, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.star, size: 14, color: Colors.amber[600]),
+            const SizedBox(width: 2),
+            Text(
+              '${avgRating.toStringAsFixed(1)} (${ratingCount})',
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Color _levelColor(String level, ColorScheme cs) {
+    switch (level.toLowerCase()) {
+      case 'gold':
+        return const Color(0xFFFFC107);
+      case 'silver':
+        return const Color(0xFFB0BEC5);
+      default:
+        return cs.primary;
+    }
+  }
 }

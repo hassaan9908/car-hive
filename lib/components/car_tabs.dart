@@ -1,40 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/store/global_ads.dart';
-
-// Simple cache for trust levels to persist across account switches
-class TrustLevelCache {
-  static final Map<String, String> _cache = {};
-
-  static void setTrustLevel(String userId, String trustLevel) {
-    _cache[userId] = trustLevel;
-  }
-
-  static String? getTrustLevel(String userId) {
-    return _cache[userId];
-  }
-
-  static void clearCache() {
-    _cache.clear();
-  }
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CarTabs extends StatelessWidget {
   final int initialTab;
-
+  
   const CarTabs({Key? key, this.initialTab = 0}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
+    
     return DefaultTabController(
       length: 2,
       initialIndex: initialTab,
       child: Column(
         children: [
-
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TabBar(
@@ -46,16 +28,13 @@ class CarTabs extends StatelessWidget {
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
-
                 textBaseline: TextBaseline.alphabetic,
                 inherit: false,
               ),
-              unselectedLabelColor: Colors.white,
+              unselectedLabelColor: colorScheme.onSurfaceVariant,
               unselectedLabelStyle: const TextStyle(
                 fontWeight: FontWeight.w500,
-
                 fontSize: 14,
-                
                 textBaseline: TextBaseline.alphabetic,
                 inherit: false,
               ),
@@ -89,8 +68,8 @@ class CarTabs extends StatelessWidget {
                       Text(
                         'Stay tuned for new car listings',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -117,31 +96,29 @@ class _UsedCarsTab extends StatelessWidget {
         if (snapshot.hasError) {
           String errorMessage = 'Error loading ads';
           String errorDetails = '';
-
+          
           if (snapshot.error.toString().contains('failed-precondition')) {
             errorMessage = 'Database configuration required';
-            errorDetails =
-                'Please contact support to set up the database properly.';
+            errorDetails = 'Please contact support to set up the database properly.';
           } else if (snapshot.error.toString().contains('permission-denied')) {
             errorMessage = 'Access denied';
             errorDetails = 'You may not have permission to view ads.';
           } else {
             errorDetails = snapshot.error.toString();
           }
-
+          
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.error_outline, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text(errorMessage,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      textBaseline: TextBaseline.alphabetic,
-                      inherit: false,
-                    )),
+                Text(errorMessage, style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold,
+                  textBaseline: TextBaseline.alphabetic,
+                  inherit: false,
+                )),
                 SizedBox(height: 8),
                 if (errorDetails.isNotEmpty)
                   Padding(
@@ -149,7 +126,7 @@ class _UsedCarsTab extends StatelessWidget {
                     child: Text(
                       errorDetails,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14, 
                         color: Colors.grey[600],
                         textBaseline: TextBaseline.alphabetic,
                         inherit: false,
@@ -171,34 +148,29 @@ class _UsedCarsTab extends StatelessWidget {
               children: [
                 Icon(Icons.car_rental, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text('No cars available',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      textBaseline: TextBaseline.alphabetic,
-                      inherit: false,
-                    )),
+                Text('No cars available', style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold,
+                  textBaseline: TextBaseline.alphabetic,
+                  inherit: false,
+                )),
                 SizedBox(height: 8),
-                Text('Check back later for new listings',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      textBaseline: TextBaseline.alphabetic,
-                      inherit: false,
-                    )),
+                Text('Check back later for new listings', style: TextStyle(
+                  color: Colors.grey,
+                  textBaseline: TextBaseline.alphabetic,
+                  inherit: false,
+                )),
               ],
             ),
           );
         }
 
-
         return ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
           itemCount: ads.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final ad = ads[index];
-
             return _buildAdListItem(context, ad);
           },
         );
@@ -208,17 +180,16 @@ class _UsedCarsTab extends StatelessWidget {
 
   Widget _buildAdListItem(BuildContext context, AdModel ad) {
     final colorScheme = Theme.of(context).colorScheme;
-
+    
     return GestureDetector(
       onTap: () {
         // Navigate to detailed car page
         Navigator.pushNamed(
-          context,
-          '/car-details',
+          context, 
+          '/car-details', 
           arguments: ad,
         );
       },
-
       child: Card(
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -258,17 +229,21 @@ class _UsedCarsTab extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: Theme.of(context).colorScheme.onSurface,
-
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-
                     const SizedBox(height: 8),
-                    Text(
-                      'PKR ${ad.price}',
-                      style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w700),
-                    ),
+                    // Trust row
+                    _buildTrustRow(context, ad.userId, ad.id),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              // Price
+              Text(
+                'PKR ${ad.price}',
+                style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -277,6 +252,88 @@ class _UsedCarsTab extends StatelessWidget {
     );
   }
 
-  
-} 
+  Widget _buildTrustRow(BuildContext context, String? userId, String? adId) {
+    final cs = Theme.of(context).colorScheme;
+    if (userId == null || userId.isEmpty) return const SizedBox.shrink();
 
+    Future<Map<String, dynamic>> load() async {
+      // Fetch user trust
+      final userSnap = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userData = userSnap.data() ?? {};
+      final String level = (userData['trustLevel'] ?? 'Bronze').toString();
+
+      // Compute per-ad average rating
+      double avg = 0.0;
+      int count = 0;
+      if (adId != null && adId.isNotEmpty) {
+        final reviewsSnap = await FirebaseFirestore.instance
+            .collection('reviews')
+            .where('adId', isEqualTo: adId)
+            .get();
+        if (reviewsSnap.docs.isNotEmpty) {
+          int sum = 0;
+          for (final d in reviewsSnap.docs) {
+            final r = d.data()['rating'];
+            if (r is int) {
+              sum += r;
+              count += 1;
+            } else if (r is num) {
+              sum += r.toInt();
+              count += 1;
+            }
+          }
+          if (count > 0) avg = sum / count;
+        }
+      }
+
+      return {'level': level, 'avg': avg, 'count': count};
+    }
+
+    return FutureBuilder<Map<String, dynamic>>(
+      future: load(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox(height: 0);
+        final level = (snapshot.data!['level'] as String?) ?? 'Bronze';
+        final avgRating = ((snapshot.data!['avg'] ?? 0) as num).toDouble();
+        final ratingCount = (snapshot.data!['count'] ?? 0) as int;
+        final Color levelColor = _levelColor(level, cs);
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: levelColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: levelColor.withOpacity(0.3)),
+              ),
+              child: Text(
+                level,
+                style: TextStyle(color: levelColor, fontSize: 11, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.star, size: 14, color: Colors.amber[600]),
+            const SizedBox(width: 2),
+            Text(
+              '${avgRating.toStringAsFixed(1)} (${ratingCount})',
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Color _levelColor(String level, ColorScheme cs) {
+    switch (level.toLowerCase()) {
+      case 'gold':
+        return const Color(0xFFFFC107);
+      case 'silver':
+        return const Color(0xFFB0BEC5);
+      default:
+        return cs.primary;
+    }
+  }
+} 

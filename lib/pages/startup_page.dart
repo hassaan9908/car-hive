@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:carhive/auth/loginscreen.dart';
-import 'package:carhive/auth/signupscreen.dart';
-import 'package:carhive/pages/homepage.dart';
 import 'package:carhive/theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -85,7 +83,7 @@ class _StartupPageState extends State<StartupPage>
             colors: [
               colorScheme.background,
               colorScheme.background.withOpacity(0.95),
-              AppColors.automotiveBlue.withOpacity(0.05),
+              AppColors.primaryBlue.withOpacity(0.05),
             ],
           ),
         ),
@@ -113,11 +111,11 @@ class _StartupPageState extends State<StartupPage>
                           width: 240,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
-                            color: AppColors.automotiveBlue.withOpacity(0.1),
+                            color: AppColors.primaryBlue.withOpacity(0.1),
                             boxShadow: [
                               BoxShadow(
                                 color:
-                                    AppColors.automotiveBlue.withOpacity(0.2),
+                                    AppColors.primaryBlue.withOpacity(0.2),
                                 blurRadius: 30,
                                 offset: const Offset(0, 10),
                               ),
@@ -126,21 +124,21 @@ class _StartupPageState extends State<StartupPage>
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(20),
                             child: Container(
-                              color: AppColors.automotiveBlue.withOpacity(0.1),
+                              color: AppColors.primaryBlue.withOpacity(0.1),
                               child: Image.asset(
                                 'assets/images/car-image.png',
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
                                     decoration: BoxDecoration(
-                                      color: AppColors.automotiveBlue
+                                      color: AppColors.primaryBlue
                                           .withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: const Icon(
                                       Icons.car_rental,
                                       size: 120,
-                                      color: AppColors.automotiveBlue,
+                                      color: AppColors.primaryBlue,
                                     ),
                                   );
                                 },
@@ -161,7 +159,7 @@ class _StartupPageState extends State<StartupPage>
                           Text(
                             'CarHive',
                             style: theme.textTheme.displayLarge?.copyWith(
-                              color: AppColors.automotiveBlue,
+                              color: AppColors.primaryBlue,
                               fontWeight: FontWeight.bold,
                               letterSpacing: -1,
                             ),
@@ -224,11 +222,11 @@ class _StartupPageState extends State<StartupPage>
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.automotiveBlue,
+                                  backgroundColor: AppColors.primaryBlue,
                                   foregroundColor: Colors.white,
                                   elevation: 8,
                                   shadowColor:
-                                      AppColors.automotiveBlue.withOpacity(0.3),
+                                      AppColors.primaryBlue.withOpacity(0.3),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),

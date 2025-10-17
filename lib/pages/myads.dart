@@ -3,7 +3,6 @@ import 'package:carhive/store/global_ads.dart';
 import 'package:flutter/material.dart';
 import '../components/custom_bottom_nav.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Myads extends StatefulWidget {
   const Myads({super.key});
@@ -21,15 +20,15 @@ class Myads extends StatefulWidget {
 }
 
 class _MyadsState extends State<Myads> {
-  int _selectedTabIndex = 0; // 0 = Active, 1 = Pending, 2 = Sold, 3 = Removed
+  int _selectedTabIndex = 0; // 0 = Active, 1 = Sold, 2 = Removed
   final int _selectedIndex = 1;
 
-  final List<String> _tabs = ['Active', 'Pending', 'Sold', 'Removed'];
+  final List<String> _tabs = ['Ads', 'Sold', 'Removed'];
 
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
-
+    
     if (currentUser == null) {
       return WillPopScope(
         onWillPop: () async {
@@ -51,8 +50,7 @@ class _MyadsState extends State<Myads> {
               children: [
                 Icon(Icons.login, size: 64, color: Colors.grey),
                 SizedBox(height: 16),
-                Text('Please login to view your ads',
-                    style: TextStyle(fontSize: 18)),
+                Text('Please login to view your ads', style: TextStyle(fontSize: 18)),
                 SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
@@ -175,78 +173,79 @@ class _MyadsState extends State<Myads> {
   }
 
   Widget _buildTabContent(String userId) {
-    String status;
     switch (_selectedTabIndex) {
       case 0:
-        status = 'active';
-        break;
+        // Active tab shows both active and pending ads
+        return _buildActiveTabContent(userId);
       case 1:
-        status = 'pending';
-        break;
+        // Sold tab shows sold ads
+        return _buildSoldTabContent(userId);
       case 2:
-        status = 'sold';
-        break;
-      case 3:
-        status = 'removed';
-        break;
+        // Removed tab shows removed ads
+        return _buildRemovedTabContent(userId);
       default:
-        status = 'active';
+        return _buildActiveTabContent(userId);
     }
+  }
 
-    final stream = GlobalAdStore().getUserAdsByStatus(userId, status);
-
+  Widget _buildActiveTabContent(String userId) {
     return StreamBuilder<List<AdModel>>(
-      stream: stream,
+      stream: GlobalAdStore().getUserAdsByStatus(userId, 'active'),
+      builder: (context, activeSnapshot) {
+        return StreamBuilder<List<AdModel>>(
+          stream: GlobalAdStore().getUserAdsByStatus(userId, 'pending'),
+          builder: (context, pendingSnapshot) {
+            if (activeSnapshot.connectionState == ConnectionState.waiting || 
+                pendingSnapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+
+            if (activeSnapshot.hasError || pendingSnapshot.hasError) {
+              return _buildErrorWidget(activeSnapshot.error ?? pendingSnapshot.error);
+            }
+
+            final activeAds = activeSnapshot.data ?? [];
+            final pendingAds = pendingSnapshot.data ?? [];
+            final allAds = [...activeAds, ...pendingAds];
+
+            if (allAds.isEmpty) {
+              return _buildAdPlaceholder(
+                'No Active Ads',
+                'You don\'t have any active or pending ads.',
+              );
+            }
+
+            return ListView.builder(
+              itemCount: allAds.length,
+              itemBuilder: (context, index) {
+                final ad = allAds[index];
+                return _buildAdCard(ad);
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSoldTabContent(String userId) {
+    return StreamBuilder<List<AdModel>>(
+      stream: GlobalAdStore().getUserAdsByStatus(userId, 'sold'),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         }
 
         if (snapshot.hasError) {
-          String errorMessage = 'Error loading ads';
-          String errorDetails = '';
-
-          if (snapshot.error.toString().contains('failed-precondition')) {
-            errorMessage = 'Database configuration required';
-            errorDetails =
-                'Please contact support to set up the database properly.';
-          } else if (snapshot.error.toString().contains('permission-denied')) {
-            errorMessage = 'Access denied';
-            errorDetails = 'You may not have permission to view ads.';
-          } else {
-            errorDetails = snapshot.error.toString();
-          }
-
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.grey),
-                SizedBox(height: 16),
-                Text(errorMessage,
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                SizedBox(height: 8),
-                if (errorDetails.isNotEmpty)
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      errorDetails,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-              ],
-            ),
-          );
+          return _buildErrorWidget(snapshot.error);
         }
 
         final ads = snapshot.data ?? [];
 
         if (ads.isEmpty) {
           return _buildAdPlaceholder(
-            'No ${_tabs[_selectedTabIndex]} Ads',
-            'You haven\'t posted anything yet.',
+            'No Sold Ads',
+            'You haven\'t sold any cars yet.',
           );
         }
 
@@ -261,8 +260,75 @@ class _MyadsState extends State<Myads> {
     );
   }
 
-  Widget _buildAdCard(AdModel ad) {
+  Widget _buildRemovedTabContent(String userId) {
+    return StreamBuilder<List<AdModel>>(
+      stream: GlobalAdStore().getUserAdsByStatus(userId, 'removed'),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
 
+        if (snapshot.hasError) {
+          return _buildErrorWidget(snapshot.error);
+        }
+
+        final ads = snapshot.data ?? [];
+
+        if (ads.isEmpty) {
+          return _buildAdPlaceholder(
+            'No Removed Ads',
+            'You don\'t have any removed ads.',
+          );
+        }
+
+        return ListView.builder(
+          itemCount: ads.length,
+          itemBuilder: (context, index) {
+            final ad = ads[index];
+            return _buildAdCard(ad);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildErrorWidget(dynamic error) {
+    String errorMessage = 'Error loading ads';
+    String errorDetails = '';
+    
+    if (error.toString().contains('failed-precondition')) {
+      errorMessage = 'Database configuration required';
+      errorDetails = 'Please contact support to set up the database properly.';
+    } else if (error.toString().contains('permission-denied')) {
+      errorMessage = 'Access denied';
+      errorDetails = 'You may not have permission to view ads.';
+    } else {
+      errorDetails = error.toString();
+    }
+    
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(errorMessage, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          SizedBox(height: 8),
+          if (errorDetails.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                errorDetails,
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdCard(AdModel ad) {
     final cs = Theme.of(context).colorScheme;
 
     Color statusColor;
@@ -278,6 +344,11 @@ class _MyadsState extends State<Myads> {
         statusColor = Colors.amber[700]!;
         statusLabel = 'Pending Review';
         statusIcon = Icons.hourglass_bottom;
+        break;
+      case 'sold':
+        statusColor = Colors.blue;
+        statusLabel = 'Sold';
+        statusIcon = Icons.sell;
         break;
       case 'removed':
         statusColor = Colors.red;
@@ -317,9 +388,9 @@ class _MyadsState extends State<Myads> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
                       Text(
                         (ad.title.isNotEmpty
                             ? ad.title
@@ -358,7 +429,7 @@ class _MyadsState extends State<Myads> {
                 // Status pill
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
+              decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(999),
                   ),
@@ -376,82 +447,93 @@ class _MyadsState extends State<Myads> {
                 ),
                 const Spacer(),
 
-                // Edit icon
-                _roundIconButton(
-                  icon: Icons.edit,
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Edit feature coming soon!')),
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-                // Delete or Remove depending on status
-                _roundIconButton(
-                  icon: ad.status == 'removed' ? Icons.delete_forever : Icons.delete,
-                  onPressed: () async {
-                    if (ad.status == 'removed') {
-                      try {
-                        await GlobalAdStore().deleteAd(ad.id!);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Ad deleted permanently')),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to delete ad: $e')),
-                        );
+                // Edit and Delete buttons (not shown for sold ads)
+                if (ad.status != 'sold') ...[
+                  // Edit icon
+                  _roundIconButton(
+                    icon: Icons.edit,
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Edit feature coming soon!')),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  // Delete or Remove depending on status
+                  _roundIconButton(
+                    icon: ad.status == 'removed' ? Icons.delete_forever : Icons.delete,
+                    onPressed: () async {
+                      if (ad.status == 'removed') {
+                        // Permanently delete removed ads
+                        try {
+                          await GlobalAdStore().deleteAd(ad.id!);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Ad deleted permanently')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to delete ad: $e')),
+                          );
+                        }
+                      } else if (ad.status == 'active') {
+                        // Show popup for active ads asking if sold or removed
+                        _showDeleteActiveAdDialog(ad);
+                      } else if (ad.status == 'pending') {
+                        // Pending ads can only be removed
+                        try {
+                          await GlobalAdStore().updateAdStatus(ad.id!, 'removed');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Ad moved to removed')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to remove ad: $e')),
+                          );
+                        }
                       }
-                    } else {
-                      try {
-                        await GlobalAdStore().updateAdStatus(ad.id!, 'removed');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Ad moved to removed')),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to remove ad: $e')),
-                        );
-                      }
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                ],
 
                 // Promote / Relist CTA
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    if (ad.status == 'removed') {
-                      try {
-                        await GlobalAdStore().updateAdStatus(ad.id!, 'active');
+                if (ad.status != 'sold') // Sold ads don't show action buttons
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      if (ad.status == 'removed') {
+                        try {
+                          // Use the actual previousStatus from the ad, fallback to 'active' if not available
+                          final previousStatus = ad.previousStatus ?? 'active';
+                          await GlobalAdStore().reactivateAd(ad.id!, previousStatus: previousStatus);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Ad relisted')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to relist ad: $e')),
+                          );
+                        }
+                      } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Ad relisted')),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to relist ad: $e')),
+                          const SnackBar(content: Text('Promote functionality coming soon!')),
                         );
                       }
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Promote functionality coming soon!')),
-                      );
-                    }
-                  },
-                  icon: Icon(ad.status == 'removed' ? Icons.refresh : Icons.rocket_launch, size: 16),
-                  label: Text(ad.status == 'removed' ? 'Relist' : 'Promote'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ad.status == 'removed' ? Colors.green : cs.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                    textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                    },
+                    icon: Icon(ad.status == 'removed' ? Icons.refresh : Icons.rocket_launch, size: 16),
+                    label: Text(ad.status == 'removed' ? 'Relist' : 'Promote'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ad.status == 'removed' ? Colors.green : cs.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                      textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
+              ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -468,19 +550,17 @@ class _MyadsState extends State<Myads> {
           child: Icon(icon, size: 18, color: cs.onSurfaceVariant),
         ),
       ),
-
     );
   }
 
   Widget _buildAdPlaceholder(String title, String subtitle) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
           Icon(Icons.car_rental, size: 64, color: Colors.grey),
           SizedBox(height: 16),
-          Text(title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
           Text(subtitle, style: TextStyle(color: Colors.grey)),
         ],
@@ -488,83 +568,59 @@ class _MyadsState extends State<Myads> {
     );
   }
 
-  Widget _buildTrustBadge(String userId) {
-    final badgeTextStyle = const TextStyle(
-      color: Colors.white,
-      fontSize: 11,
-      fontWeight: FontWeight.w700,
-    );
-
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        // Handle error state - show nothing if there's an error
-        if (snapshot.hasError) {
-          print('Trust badge error for user $userId: ${snapshot.error}');
-          return const SizedBox.shrink();
-        }
-
-        // Handle loading state - show a subtle loading indicator
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.grey[600],
-              borderRadius: BorderRadius.circular(999),
+  void _showDeleteActiveAdDialog(AdModel ad) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Remove Ad'),
+          content: const Text('What would you like to do with this ad?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
             ),
-            child: const SizedBox(
-              width: 12,
-              height: 12,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                try {
+                  // Use markSold method which handles sales count and trust rank updates
+                  await GlobalAdStore().markSold(ad.id!);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Ad marked as sold')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to mark as sold: $e')),
+                  );
+                }
+              },
+              child: const Text(
+                'Mark as Sold',
+                style: TextStyle(color: Colors.blue),
               ),
             ),
-          );
-        }
-
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const SizedBox.shrink();
-        }
-
-        final data = snapshot.data!.data() ?? {};
-        final String level = (data['trustLevel'] ?? '').toString();
-        if (level.isEmpty) return const SizedBox.shrink();
-
-        Color bg;
-        switch (level) {
-          case 'Gold':
-            bg = Colors.amber[700] ?? Colors.amber;
-            break;
-          case 'Silver':
-            bg = Colors.blueGrey[400] ?? Colors.blueGrey;
-            break;
-          case 'Bronze':
-          default:
-            bg = Colors.brown[400] ?? Colors.brown;
-        }
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: const [
-              BoxShadow(
-                  color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.verified, size: 14, color: Colors.white),
-              const SizedBox(width: 6),
-              Text(level.toUpperCase(), style: badgeTextStyle),
-            ],
-          ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                try {
+                  // Use markRemoved method which handles previousStatus properly
+                  await GlobalAdStore().markRemoved(ad.id!, previousStatus: ad.status);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Ad moved to removed')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to remove ad: $e')),
+                  );
+                }
+              },
+              child: const Text(
+                'Remove',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
         );
       },
     );
