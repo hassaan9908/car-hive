@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../services/trust_rank_service.dart';
-import '../components/car_tabs.dart';
 
 class AuthService {
   final _auth = FirebaseAuth.instance;
@@ -142,12 +141,22 @@ class AuthService {
   Future<void> signout() async {
     try {
       await _auth.signOut();
-      // Clear trust level cache when user signs out
-      TrustLevelCache.clearCache();
     } catch (e) {
       print("Sign out error: $e");
       rethrow;
     }
+  }
+
+  Future<Map<String, dynamic>?> getUserDocument(String userId) async {
+    try {
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        return userDoc.data();
+      }
+    } catch (e) {
+      print('Error getting user document: $e');
+    }
+    return null;
   }
 
   // ... rest of your existing methods

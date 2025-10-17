@@ -8,37 +8,35 @@ final ThemeData darkTheme = ThemeData(
 
   // Color Scheme - Automotive Dark Theme
   colorScheme: const ColorScheme.dark(
-    primary: AppColors.automotiveBlueLight,
+    primary: AppColors.primaryBlueLight,
     onPrimary: Colors.white,
-    primaryContainer: AppColors.automotiveBlueDark,
-    onPrimaryContainer: AppColors.automotiveBlueLight,
-    secondary: AppColors.performanceGreen,
+    primaryContainer: AppColors.primaryBlueDark,
+    onPrimaryContainer: AppColors.primaryBlueLight,
+    secondary: AppColors.secondaryGreen,
     onSecondary: Colors.white,
-    secondaryContainer: AppColors.racingGreen,
-    onSecondaryContainer: AppColors.performanceGreen,
-    tertiary: AppColors.innovationOrange,
+    secondaryContainer: AppColors.secondaryGreen,
+    onSecondaryContainer: AppColors.secondaryGreen,
+    tertiary: AppColors.secondaryOrange,
     onTertiary: Colors.white,
-    tertiaryContainer: AppColors.premiumOrange,
-    onTertiaryContainer: AppColors.innovationOrange,
+    tertiaryContainer: AppColors.secondaryOrange,
+    onTertiaryContainer: AppColors.secondaryOrange,
     background: AppColors.darkBackground,
     onBackground: AppColors.darkOnSurface,
     surface: AppColors.darkSurface,
     onSurface: AppColors.darkOnSurface,
     surfaceVariant: AppColors.darkSurfaceVariant,
     onSurfaceVariant: AppColors.darkOnSurfaceVariant,
-    surfaceContainer: AppColors.darkSurfaceContainer,
-    surfaceContainerHighest: AppColors.darkSurfaceContainerHighest,
     outline: AppColors.darkOutline,
     outlineVariant: AppColors.darkOutlineVariant,
-    error: AppColors.safetyRed,
+    error: AppColors.secondaryRed,
     onError: Colors.white,
-    errorContainer: AppColors.trustRed,
-    onErrorContainer: AppColors.safetyRed,
+    errorContainer: AppColors.secondaryRed,
+    onErrorContainer: AppColors.secondaryRed,
     shadow: AppColors.neutral900,
     scrim: AppColors.neutral900,
     inverseSurface: AppColors.lightSurface,
     onInverseSurface: AppColors.lightOnSurface,
-    inversePrimary: AppColors.automotiveBlueLight,
+    inversePrimary: AppColors.primaryBlueLight,
   ),
 
   // App Bar Theme - Automotive Dark Style
@@ -57,16 +55,6 @@ final ThemeData darkTheme = ThemeData(
     iconTheme: IconThemeData(color: AppColors.darkOnSurface),
     surfaceTintColor: Colors.transparent,
   ),
-
-  // Card Theme
-  // cardTheme: CardTheme(
-  //   color: AppColors.darkSurface,
-  //   elevation: 4,
-  //   shadowColor: AppColors.neutral900,
-  //   shape: RoundedRectangleBorder(
-  //     borderRadius: BorderRadius.circular(12),
-  //   ),
-  // ),
 
   // Input Decoration Theme - Automotive Dark Style
   inputDecorationTheme: InputDecorationTheme(
@@ -91,11 +79,11 @@ final ThemeData darkTheme = ThemeData(
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide:
-          const BorderSide(color: AppColors.automotiveBlueLight, width: 2),
+          const BorderSide(color: AppColors.primaryBlueLight, width: 2),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.safetyRed),
+      borderSide: const BorderSide(color: AppColors.secondaryRed),
     ),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     labelStyle: const TextStyle(
@@ -105,7 +93,7 @@ final ThemeData darkTheme = ThemeData(
       inherit: false,
     ),
     floatingLabelStyle: const TextStyle(
-      color: AppColors.automotiveBlueLight,
+      color: AppColors.primaryBlueLight,
       fontSize: 16,
       fontWeight: FontWeight.w500,
       textBaseline: TextBaseline.alphabetic,
@@ -116,10 +104,10 @@ final ThemeData darkTheme = ThemeData(
   // Elevated Button Theme - Automotive Dark Style
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.automotiveBlueLight,
+      backgroundColor: AppColors.primaryBlueLight,
       foregroundColor: Colors.white,
       elevation: 4,
-      shadowColor: AppColors.automotiveBlueLight.withValues(alpha: 0.3),
+      shadowColor: AppColors.primaryBlueLight.withOpacity(0.3),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -137,7 +125,7 @@ final ThemeData darkTheme = ThemeData(
   // Text Button Theme - Automotive Dark Style
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(
-      foregroundColor: AppColors.automotiveBlueLight,
+      foregroundColor: AppColors.primaryBlueLight,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -154,8 +142,8 @@ final ThemeData darkTheme = ThemeData(
   // Outlined Button Theme - Automotive Dark Style
   outlinedButtonTheme: OutlinedButtonThemeData(
     style: OutlinedButton.styleFrom(
-      foregroundColor: AppColors.automotiveBlueLight,
-      side: const BorderSide(color: AppColors.automotiveBlueLight, width: 1.5),
+      foregroundColor: AppColors.primaryBlueLight,
+      side: const BorderSide(color: AppColors.primaryBlueLight, width: 1.5),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -173,7 +161,7 @@ final ThemeData darkTheme = ThemeData(
   // Bottom Navigation Bar Theme - Automotive Dark Style
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
     backgroundColor: AppColors.darkSurface,
-    selectedItemColor: AppColors.automotiveBlueLight,
+    selectedItemColor: AppColors.primaryBlueLight,
     unselectedItemColor: AppColors.darkOnSurfaceVariant,
     type: BottomNavigationBarType.fixed,
     elevation: 8,
@@ -191,17 +179,9 @@ final ThemeData darkTheme = ThemeData(
     ),
   ),
 
-  // Tab Bar Theme
-  // tabBarTheme: const TabBarTheme(
-  //   labelColor: AppColors.automotiveBlueLight,
-  //   unselectedLabelColor: AppColors.darkOnSurfaceVariant,
-  //   indicatorColor: AppColors.automotiveBlueLight,
-  //   indicatorSize: TabBarIndicatorSize.tab,
-  // ),
-
   // Floating Action Button Theme - Automotive Dark Style
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: AppColors.automotiveBlueLight,
+    backgroundColor: AppColors.primaryBlueLight,
     foregroundColor: Colors.white,
     elevation: 6,
     shape: RoundedRectangleBorder(
@@ -371,7 +351,7 @@ final ThemeData darkTheme = ThemeData(
   // Chip Theme - Automotive Dark Style
   chipTheme: ChipThemeData(
     backgroundColor: AppColors.darkSurfaceVariant,
-    selectedColor: AppColors.automotiveBlueLight,
+    selectedColor: AppColors.primaryBlueLight,
     disabledColor: AppColors.darkSurfaceVariant,
     labelStyle: const TextStyle(
       fontSize: 14,

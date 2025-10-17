@@ -67,13 +67,13 @@ service cloud.firestore {
       // SIMPLIFIED: Allow reading ALL ads for everyone (your app filters in memory)
       allow read: if true;
 
-      // Updates/deletes: owners can edit their own ads with controlled status transitions; admins can do anything.
+      // Updates: owners can edit their own ads with controlled status transitions; admins can do anything.
       // Owner permissions:
       // - Set status to 'sold' (may clear previousStatus)
       // - Set status to 'removed' and set previousStatus
       // - Reactivate from 'removed' to 'active' or 'pending' and clear previousStatus
       // - Update other non-moderation fields without touching status/previousStatus
-      allow update, delete: if isSignedIn() && (
+      allow update: if isSignedIn() && (
         (
           resource.data.userId == currentUid() && (
             // SOLD: only status and previousStatus (optional clear)
@@ -103,6 +103,11 @@ service cloud.firestore {
             )
           )
         ) || isAdmin()
+      );
+
+      // Deletes: owners can delete their own ads; admins can delete any ad
+      allow delete: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
       );
 
     }

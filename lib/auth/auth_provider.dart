@@ -116,4 +116,21 @@ class AuthProvider extends ChangeNotifier {
   String getEmail() {
     return _user?.email ?? '';
   }
+
+  Future<String> getUsername() async {
+    if (_user == null) return '';
+    
+    try {
+      final userDoc = await _authService.getUserDocument(_user!.uid);
+      
+      if (userDoc != null) {
+        final username = userDoc['username'] as String?;
+        return username ?? '';
+      }
+    } catch (e) {
+      print('Error getting username: $e');
+    }
+    
+    return '';
+  }
 }
