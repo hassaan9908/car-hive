@@ -7,7 +7,7 @@ class AdModel {
   final String year;
   final String mileage;
   final String fuel;
-  late final String status; // 'active', 'pending', 'removed'
+  late final String status; // 'active', 'pending', 'removed', 'sold'
   final String? userId;
   final String? id; // Firestore document ID
   final DateTime? createdAt;
@@ -18,6 +18,7 @@ class AdModel {
   final String? registeredIn;
   final String? name;
   final String? phone;
+  final String? previousStatus; // used to restore from removed to prior state
 
   AdModel({
     required this.title,
@@ -37,6 +38,7 @@ class AdModel {
     this.registeredIn,
     this.name,
     this.phone,
+    this.previousStatus,
   });
 
   static DateTime? _parseCreatedAt(dynamic value) {
@@ -83,6 +85,7 @@ class AdModel {
       registeredIn: data['registeredIn'],
       name: data['name'],
       phone: data['phone'],
+      previousStatus: data['previousStatus'],
     );
   }
 
@@ -105,6 +108,7 @@ class AdModel {
       'registeredIn': registeredIn,
       'name': name,
       'phone': phone,
+      'previousStatus': previousStatus,
     };
   }
 }
