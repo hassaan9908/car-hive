@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
+
   // Primary brand colors (CarHive blue)
   static const Color primaryBlue = Color.fromARGB(255, 43, 128, 207);
   static const Color primaryBlueLight = Color(0xFF3B82F6);
@@ -51,19 +52,86 @@ class AppColors {
   // Gradient colors
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [primaryBlue, primaryBlueLight],
+
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
-  static const LinearGradient darkGradient = LinearGradient(
-    colors: [darkBackground, darkSurface],
+
+  static const LinearGradient premiumGradient = LinearGradient(
+    colors: [primaryBlue, primaryBlueLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
+  static const LinearGradient performanceGradient = LinearGradient(
+    colors: [secondaryGreen, secondaryOrange],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient innovationGradient = LinearGradient(
+    colors: [secondaryOrange, secondaryRed],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient luxuryGradient = LinearGradient(
+    colors: [secondaryPurple, secondaryGreen],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  // 🌅 Light theme gradients
   static const LinearGradient lightGradient = LinearGradient(
     colors: [lightBackground, lightSurface],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  // 🌙 Dark theme gradients
+  static const LinearGradient darkGradient = LinearGradient(
+    colors: [darkBackground, darkSurface],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  // 🎨 SPECIAL EFFECTS
+  static const LinearGradient shimmerGradient = LinearGradient(
+    colors: [
+      Color(0xFFE2E8F0),
+      Color(0xFFCBD5E1),
+      Color(0xFFE2E8F0),
+    ],
+    stops: [0.0, 0.5, 1.0],
+    begin: Alignment(-1.0, -0.3),
+    end: Alignment(1.0, 0.3),
+  );
+
+  // 🚗 CAR-SPECIFIC COLORS
+  static const Color carMetallic = Color(0xFF718096); // Metallic car paint
+  static const Color carPearl = Color(0xFFE2E8F0); // Pearl white
+  static const Color carMatte = Color(0xFF4A5568); // Matte black
+  static const Color carChrome = Color(0xFFCBD5E1); // Chrome finish
+
+  // ===== Legacy aliases (to keep older references compiling) =====
+  // Brand & accents
+  static const Color automotiveBlue = primaryBlue;
+  static const Color automotiveBlueLight = primaryBlueLight;
+  static const Color racingGreen = secondaryGreen;
+  static const Color performanceGreen = secondaryGreen;
+  static const Color premiumOrange = secondaryOrange;
+  static const Color innovationOrange = secondaryOrange;
+  static const Color luxuryPurple = secondaryPurple;
+  static const Color exclusivePurple = secondaryPurple;
+  static const Color trustRed = error;
+  static const Color premiumSilver = neutral300;
+  static const Color chromeSilver = carChrome;
+
+  // Container aliases used by some themes
+  static const Color lightSurfaceContainer = lightSurface;
+  static const Color lightSurfaceContainerHighest = lightSurface;
+  static const Color darkSurfaceContainerLow = darkSurface;
+  static const Color darkSurfaceContainerMedium = darkSurface;
+  static const Color darkSurfaceContainerHigh = darkSurfaceVariant;
+  static const Color darkSurfaceContainerHighest = darkSurfaceVariant;
 }

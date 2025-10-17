@@ -57,7 +57,7 @@ class _AdminLayoutState extends State<AdminLayout> {
                 duration: const Duration(milliseconds: 300),
                 width: _isSidebarCollapsed ? 70 : 250,
                 decoration: const BoxDecoration(
-                  color: AppColors.primaryBlue,
+                  color: AppColors.automotiveBlue,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black12,
@@ -94,7 +94,9 @@ class _AdminLayoutState extends State<AdminLayout> {
                           ],
                           IconButton(
                             icon: Icon(
-                              _isSidebarCollapsed ? Icons.menu_open : Icons.menu,
+                              _isSidebarCollapsed
+                                  ? Icons.menu_open
+                                  : Icons.menu,
                               color: Colors.white,
                             ),
                             onPressed: () {
@@ -107,7 +109,7 @@ class _AdminLayoutState extends State<AdminLayout> {
                       ),
                     ),
                     const Divider(color: Colors.white24, height: 1),
-                    
+
                     // Navigation Items
                     Expanded(
                       child: ListView.builder(
@@ -116,7 +118,7 @@ class _AdminLayoutState extends State<AdminLayout> {
                         itemBuilder: (context, index) {
                           final item = _navigationItems[index];
                           final isSelected = _selectedIndex == index;
-                          
+
                           return ListTile(
                             leading: Icon(
                               item.icon,
@@ -127,8 +129,12 @@ class _AdminLayoutState extends State<AdminLayout> {
                                 : Text(
                                     item.title,
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.white70,
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.white70,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
                                     ),
                                   ),
                             selected: isSelected,
@@ -142,7 +148,7 @@ class _AdminLayoutState extends State<AdminLayout> {
                         },
                       ),
                     ),
-                    
+
                     // User Info
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -154,19 +160,25 @@ class _AdminLayoutState extends State<AdminLayout> {
                             CircleAvatar(
                               backgroundColor: Colors.white,
                               child: Text(
-                                (adminProvider.currentAdmin?.displayName?.isNotEmpty == true
-                                        ? adminProvider.currentAdmin!.displayName![0]
-                                        : adminProvider.currentAdmin?.email[0] ?? 'A')
+                                (adminProvider.currentAdmin?.displayName
+                                                ?.isNotEmpty ==
+                                            true
+                                        ? adminProvider
+                                            .currentAdmin!.displayName![0]
+                                        : adminProvider
+                                                .currentAdmin?.email[0] ??
+                                            'A')
                                     .toUpperCase(),
                                 style: const TextStyle(
-                                  color: AppColors.primaryBlue,
+                                  color: AppColors.automotiveBlue,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              adminProvider.currentAdmin?.displayName ?? 'Admin',
+                              adminProvider.currentAdmin?.displayName ??
+                                  'Admin',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -174,7 +186,10 @@ class _AdminLayoutState extends State<AdminLayout> {
                               textAlign: TextAlign.center,
                             ),
                             Text(
-                              adminProvider.currentAdmin?.role.replaceAll('_', ' ').toUpperCase() ?? 'ADMIN',
+                              adminProvider.currentAdmin?.role
+                                      .replaceAll('_', ' ')
+                                      .toUpperCase() ??
+                                  'ADMIN',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.8),
                                 fontSize: 12,
@@ -184,7 +199,8 @@ class _AdminLayoutState extends State<AdminLayout> {
                             const SizedBox(height: 16),
                           ],
                           IconButton(
-                            icon: const Icon(Icons.logout, color: Colors.white70),
+                            icon:
+                                const Icon(Icons.logout, color: Colors.white70),
                             onPressed: () async {
                               await adminProvider.adminLogout();
                               if (mounted) {
@@ -199,7 +215,7 @@ class _AdminLayoutState extends State<AdminLayout> {
                   ],
                 ),
               ),
-              
+
               // Main Content
               Expanded(
                 child: _navigationItems[_selectedIndex].page,
@@ -233,7 +249,7 @@ class AdminAnalyticsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Analytics'),
-        backgroundColor: AppColors.primaryBlue,
+        backgroundColor: AppColors.automotiveBlue,
         foregroundColor: Colors.white,
       ),
       body: const Center(
@@ -252,11 +268,11 @@ class AdminSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-              appBar: AppBar(
-          title: const Text('Settings'),
-          backgroundColor: AppColors.primaryBlue,
-          foregroundColor: Colors.white,
-        ),
+      appBar: AppBar(
+        title: const Text('Settings'),
+        backgroundColor: AppColors.automotiveBlue,
+        foregroundColor: Colors.white,
+      ),
       body: const Center(
         child: Text(
           'Admin Settings - Coming Soon',
@@ -266,5 +282,3 @@ class AdminSettingsPage extends StatelessWidget {
     );
   }
 }
-
-

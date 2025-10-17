@@ -1,0 +1,169 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function currentUid() {
+      return request.auth.uid;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        (userDoc(currentUid()).data.role == 'admin' ||
+         userDoc(currentUid()).data.role == 'super_admin');
+    }
+
+    // USERS
+    match /users/{uid} {
+      allow create: if isSignedIn()
+        && uid == currentUid()
+        && request.resource.data.role == 'user';
+
+      // Allow reading user data for trust badges and public profile info
+      // Users can read their own full data, others can only read public fields
+      allow read: if isAdmin() || 
+        (isSignedIn() && uid == currentUid()) ||
+        (isSignedIn() && request.auth != null); // Allow any signed-in user to read for trust badges
+
+      allow update: if isSignedIn() && uid == currentUid()
+        && !request.resource.data.diff(resource.data)
+            .changedKeys()
+            .hasAny(['role','totalAdsPosted','activeAdsCount','rejectedAdsCount','updatedBy','createdAt'])
+        || isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+    // PHONE NUMBERS collection for uniqueness checking
+    match /phoneNumbers/{phoneNumber} {
+      allow read: if true; // Allow anyone to check phone number availability
+      allow create: if isSignedIn() && phoneNumber == request.resource.data.phoneNumber;
+      allow update: if isSignedIn() && phoneNumber == request.resource.data.phoneNumber;
+      allow delete: if isSignedIn() && phoneNumber == resource.data.phoneNumber;
+    }
+
+    // Allow username availability checking - create a separate collection for usernames
+    match /usernames/{username} {
+      allow read: if true; // Allow anyone to check username availability
+      allow create: if isSignedIn() && username == request.resource.data.username;
+      allow update: if isSignedIn() && username == request.resource.data.username;
+      allow delete: if isSignedIn() && username == resource.data.username;
+    }
+
+    // ADS - SIMPLIFIED RULES
+    match /ads/{adId} {
+      // Anyone can create their own ad (if signed in)
+      allow create: if isSignedIn()
+        && request.resource.data.userId == currentUid()
+        && request.resource.data.status == 'pending';
+
+      // SIMPLIFIED: Allow reading ALL ads for everyone (your app filters in memory)
+      allow read: if true;
+
+      // Updates: owners can edit their own ads with controlled status transitions; admins can do anything.
+      // Owner permissions:
+      // - Set status to 'sold' (may clear previousStatus)
+      // - Set status to 'removed' and set previousStatus
+      // - Reactivate from 'removed' to 'active' or 'pending' and clear previousStatus
+      // - Update other non-moderation fields without touching status/previousStatus
+      allow update: if isSignedIn() && (
+        (
+          resource.data.userId == currentUid() && (
+            // SOLD: only status and previousStatus (optional clear)
+            (
+              request.resource.data.status == 'sold' &&
+              request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','previousStatus']) &&
+              (!('previousStatus' in request.resource.data) || request.resource.data.previousStatus == null)
+            ) ||
+            // REMOVED: may set previousStatus (string)
+            (
+              request.resource.data.status == 'removed' &&
+              request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','previousStatus']) &&
+              (request.resource.data.previousStatus is string)
+            ) ||
+            // REACTIVATE from removed: restore status to active/pending and clear previousStatus
+            (
+              resource.data.status == 'removed' &&
+              request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','previousStatus']) &&
+              request.resource.data.status in ['active','pending'] &&
+              request.resource.data.previousStatus == null
+            ) ||
+            // Other updates: cannot touch status, previousStatus, moderation fields
+            (
+              !request.resource.data.diff(resource.data)
+                .changedKeys()
+                .hasAny(['status','previousStatus','approvedAt','approvedBy','rejectedAt','rejectedBy','rejectionReason'])
+            )
+          )
+        ) || isAdmin()
+      );
+
+      // Deletes: owners can delete their own ads; admins can delete any ad
+      allow delete: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+
+    }
+
+    // REVIEWS collection (separate collection)
+    match /reviews/{reviewId} {
+      // Allow reading all reviews
+      allow read: if true;
+
+      // Allow creating reviews only if:
+      // 1. User is signed in
+      // 2. User is not the owner of the ad
+      // 3. Required fields are present and valid
+      allow create: if isSignedIn()
+        && request.resource.data.userId == currentUid()
+        && request.resource.data.adId is string
+        && request.resource.data.adTitle is string
+        && request.resource.data.adOwnerId is string
+        && request.resource.data.userName is string
+        && request.resource.data.comment is string
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.adOwnerId != currentUid();
+
+      // Allow users to update their own reviews (only comment and rating)
+      allow update: if isSignedIn() 
+        && resource.data.userId == currentUid()
+        && request.resource.data.userId == currentUid()
+        && request.resource.data.adId == resource.data.adId
+        && request.resource.data.adTitle == resource.data.adTitle
+        && request.resource.data.adOwnerId == resource.data.adOwnerId
+        && request.resource.data.userName == resource.data.userName
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.comment is string
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+
+      // Allow users to delete their own reviews
+      allow delete: if isSignedIn() && resource.data.userId == currentUid();
+
+      // Admins can do anything with reviews
+      allow write: if isAdmin();
+    }
+
+    // ACTIVITIES (audit log)
+    match /activities/{activityId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

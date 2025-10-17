@@ -5,48 +5,41 @@ final ThemeData darkTheme = ThemeData(
   brightness: Brightness.dark,
 
   useMaterial3: true,
-  
-  // Color Scheme
+
+  // Color Scheme - Automotive Dark Theme
   colorScheme: const ColorScheme.dark(
-    primary: AppColors.primaryBlue,
+    primary: AppColors.primaryBlueLight,
     onPrimary: Colors.white,
-    primaryContainer: AppColors.primaryBlueLight,
-    onPrimaryContainer: Colors.white,
-    
+    primaryContainer: AppColors.primaryBlueDark,
+    onPrimaryContainer: AppColors.primaryBlueLight,
     secondary: AppColors.secondaryGreen,
     onSecondary: Colors.white,
     secondaryContainer: AppColors.secondaryGreen,
-    onSecondaryContainer: Colors.white,
-    
-    tertiary: AppColors.secondaryPurple,
+    onSecondaryContainer: AppColors.secondaryGreen,
+    tertiary: AppColors.secondaryOrange,
     onTertiary: Colors.white,
-    tertiaryContainer: AppColors.secondaryPurple,
-    onTertiaryContainer: Colors.white,
-    
+    tertiaryContainer: AppColors.secondaryOrange,
+    onTertiaryContainer: AppColors.secondaryOrange,
     background: AppColors.darkBackground,
     onBackground: AppColors.darkOnSurface,
     surface: AppColors.darkSurface,
     onSurface: AppColors.darkOnSurface,
     surfaceVariant: AppColors.darkSurfaceVariant,
     onSurfaceVariant: AppColors.darkOnSurfaceVariant,
-    
     outline: AppColors.darkOutline,
     outlineVariant: AppColors.darkOutlineVariant,
-    
-    error: AppColors.error,
+    error: AppColors.secondaryRed,
     onError: Colors.white,
-    errorContainer: AppColors.error,
-    onErrorContainer: Colors.white,
-    
+    errorContainer: AppColors.secondaryRed,
+    onErrorContainer: AppColors.secondaryRed,
     shadow: AppColors.neutral900,
     scrim: AppColors.neutral900,
     inverseSurface: AppColors.lightSurface,
     onInverseSurface: AppColors.lightOnSurface,
     inversePrimary: AppColors.primaryBlueLight,
-
   ),
-  
-  // App Bar Theme
+
+  // App Bar Theme - Automotive Dark Style
   appBarTheme: const AppBarTheme(
     backgroundColor: AppColors.darkSurface,
     foregroundColor: AppColors.darkOnSurface,
@@ -60,24 +53,16 @@ final ThemeData darkTheme = ThemeData(
       inherit: false,
     ),
     iconTheme: IconThemeData(color: AppColors.darkOnSurface),
+    surfaceTintColor: Colors.transparent,
   ),
-  
-  // Card Theme
-  // cardTheme: CardTheme(
-  //   color: AppColors.darkSurface,
-  //   elevation: 4,
-  //   shadowColor: AppColors.neutral900,
-  //   shape: RoundedRectangleBorder(
-  //     borderRadius: BorderRadius.circular(12),
-  //   ),
-  // ),
-  
-  // Input Decoration Theme
+
+  // Input Decoration Theme - Automotive Dark Style
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
     fillColor: AppColors.darkSurfaceVariant,
     hintStyle: const TextStyle(
       color: AppColors.darkOnSurfaceVariant,
+      fontSize: 16,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -93,34 +78,36 @@ final ThemeData darkTheme = ThemeData(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+      borderSide:
+          const BorderSide(color: AppColors.primaryBlueLight, width: 2),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.error),
+      borderSide: const BorderSide(color: AppColors.secondaryRed),
     ),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-
     labelStyle: const TextStyle(
       color: AppColors.darkOnSurfaceVariant,
+      fontSize: 16,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
     floatingLabelStyle: const TextStyle(
-      color: AppColors.primaryBlue,
+      color: AppColors.primaryBlueLight,
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
   ),
-  
-  // Elevated Button Theme
 
+  // Elevated Button Theme - Automotive Dark Style
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.primaryBlue,
+      backgroundColor: AppColors.primaryBlueLight,
       foregroundColor: Colors.white,
       elevation: 4,
-      shadowColor: AppColors.primaryBlue.withOpacity(0.3),
+      shadowColor: AppColors.primaryBlueLight.withOpacity(0.3),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -128,13 +115,14 @@ final ThemeData darkTheme = ThemeData(
       textStyle: const TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
         textBaseline: TextBaseline.alphabetic,
         inherit: false,
       ),
     ),
   ),
-  
-  // Text Button Theme
+
+  // Text Button Theme - Automotive Dark Style
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(
       foregroundColor: AppColors.primaryBlueLight,
@@ -150,12 +138,12 @@ final ThemeData darkTheme = ThemeData(
       ),
     ),
   ),
-  
-  // Outlined Button Theme
+
+  // Outlined Button Theme - Automotive Dark Style
   outlinedButtonTheme: OutlinedButtonThemeData(
     style: OutlinedButton.styleFrom(
       foregroundColor: AppColors.primaryBlueLight,
-      side: const BorderSide(color: AppColors.primaryBlueLight),
+      side: const BorderSide(color: AppColors.primaryBlueLight, width: 1.5),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -163,58 +151,64 @@ final ThemeData darkTheme = ThemeData(
       textStyle: const TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
         textBaseline: TextBaseline.alphabetic,
         inherit: false,
       ),
     ),
   ),
-  
-  // Bottom Navigation Bar Theme
+
+  // Bottom Navigation Bar Theme - Automotive Dark Style
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
     backgroundColor: AppColors.darkSurface,
     selectedItemColor: AppColors.primaryBlueLight,
     unselectedItemColor: AppColors.darkOnSurfaceVariant,
     type: BottomNavigationBarType.fixed,
     elevation: 8,
+    selectedLabelStyle: TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      textBaseline: TextBaseline.alphabetic,
+      inherit: false,
+    ),
+    unselectedLabelStyle: TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+      textBaseline: TextBaseline.alphabetic,
+      inherit: false,
+    ),
   ),
-  
-  // Tab Bar Theme
-  // tabBarTheme: const TabBarTheme(
-  //   labelColor: AppColors.primaryBlueLight,
-  //   unselectedLabelColor: AppColors.darkOnSurfaceVariant,
-  //   indicatorColor: AppColors.primaryBlueLight,
-  //   indicatorSize: TabBarIndicatorSize.tab,
-  // ),
-  
-  // Floating Action Button Theme
+
+  // Floating Action Button Theme - Automotive Dark Style
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: AppColors.primaryBlue,
+    backgroundColor: AppColors.primaryBlueLight,
     foregroundColor: Colors.white,
     elevation: 6,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.all(Radius.circular(16)),
     ),
   ),
-  
-  // Divider Theme
+
+  // Divider Theme - Automotive Dark Style
   dividerTheme: const DividerThemeData(
     color: AppColors.darkOutline,
     thickness: 1,
     space: 1,
   ),
-  
-  // Icon Theme
+
+  // Icon Theme - Automotive Dark Style
   iconTheme: const IconThemeData(
     color: AppColors.darkOnSurface,
     size: 24,
   ),
-  
-  // Text Theme
+
+  // Text Theme - Automotive Dark Style
   textTheme: const TextTheme(
     displayLarge: TextStyle(
       fontSize: 32,
       fontWeight: FontWeight.bold,
       color: AppColors.darkOnSurface,
+      letterSpacing: -0.5,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -222,6 +216,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 28,
       fontWeight: FontWeight.bold,
       color: AppColors.darkOnSurface,
+      letterSpacing: -0.5,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -229,6 +224,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 24,
       fontWeight: FontWeight.bold,
       color: AppColors.darkOnSurface,
+      letterSpacing: -0.25,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -236,6 +232,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 22,
       fontWeight: FontWeight.w600,
       color: AppColors.darkOnSurface,
+      letterSpacing: -0.25,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -243,6 +240,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 20,
       fontWeight: FontWeight.w600,
       color: AppColors.darkOnSurface,
+      letterSpacing: -0.25,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -250,6 +248,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 18,
       fontWeight: FontWeight.w600,
       color: AppColors.darkOnSurface,
+      letterSpacing: -0.25,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -257,6 +256,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 16,
       fontWeight: FontWeight.w600,
       color: AppColors.darkOnSurface,
+      letterSpacing: 0,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -264,6 +264,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 14,
       fontWeight: FontWeight.w500,
       color: AppColors.darkOnSurface,
+      letterSpacing: 0,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -271,6 +272,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 12,
       fontWeight: FontWeight.w500,
       color: AppColors.darkOnSurfaceVariant,
+      letterSpacing: 0,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -278,6 +280,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 16,
       fontWeight: FontWeight.normal,
       color: AppColors.darkOnSurface,
+      letterSpacing: 0,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -285,6 +288,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 14,
       fontWeight: FontWeight.normal,
       color: AppColors.darkOnSurface,
+      letterSpacing: 0,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -292,6 +296,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 12,
       fontWeight: FontWeight.normal,
       color: AppColors.darkOnSurfaceVariant,
+      letterSpacing: 0,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -299,6 +304,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 14,
       fontWeight: FontWeight.w500,
       color: AppColors.darkOnSurface,
+      letterSpacing: 0,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -306,6 +312,7 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 12,
       fontWeight: FontWeight.w500,
       color: AppColors.darkOnSurfaceVariant,
+      letterSpacing: 0,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
@@ -313,8 +320,49 @@ final ThemeData darkTheme = ThemeData(
       fontSize: 10,
       fontWeight: FontWeight.w500,
       color: AppColors.darkOnSurfaceVariant,
+      letterSpacing: 0,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
+  ),
+
+  // Scaffold Background - Automotive Dark Style
+  scaffoldBackgroundColor: AppColors.darkBackground,
+
+  // List Tile Theme - Automotive Dark Style
+  listTileTheme: const ListTileThemeData(
+    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    titleTextStyle: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+      color: AppColors.darkOnSurface,
+      textBaseline: TextBaseline.alphabetic,
+      inherit: false,
+    ),
+    subtitleTextStyle: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.normal,
+      color: AppColors.darkOnSurfaceVariant,
+      textBaseline: TextBaseline.alphabetic,
+      inherit: false,
+    ),
+  ),
+
+  // Chip Theme - Automotive Dark Style
+  chipTheme: ChipThemeData(
+    backgroundColor: AppColors.darkSurfaceVariant,
+    selectedColor: AppColors.primaryBlueLight,
+    disabledColor: AppColors.darkSurfaceVariant,
+    labelStyle: const TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      color: AppColors.darkOnSurface,
+      textBaseline: TextBaseline.alphabetic,
+      inherit: false,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
   ),
 );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/store/global_ads.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CarTabs extends StatelessWidget {
   final int initialTab;
@@ -233,12 +234,16 @@ class _UsedCarsTab extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'PKR ${ad.price}',
-                      style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w700),
-                    ),
+                    // Trust row
+                    _buildTrustRow(context, ad.userId, ad.id),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              // Price
+              Text(
+                'PKR ${ad.price}',
+                style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -247,5 +252,88 @@ class _UsedCarsTab extends StatelessWidget {
     );
   }
 
-  // removed old grid detail chip as UI switched to list layout
+  Widget _buildTrustRow(BuildContext context, String? userId, String? adId) {
+    final cs = Theme.of(context).colorScheme;
+    if (userId == null || userId.isEmpty) return const SizedBox.shrink();
+
+    Future<Map<String, dynamic>> load() async {
+      // Fetch user trust
+      final userSnap = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userData = userSnap.data() ?? {};
+      final String level = (userData['trustLevel'] ?? 'Bronze').toString();
+
+      // Compute per-ad average rating
+      double avg = 0.0;
+      int count = 0;
+      if (adId != null && adId.isNotEmpty) {
+        final reviewsSnap = await FirebaseFirestore.instance
+            .collection('reviews')
+            .where('adId', isEqualTo: adId)
+            .get();
+        if (reviewsSnap.docs.isNotEmpty) {
+          int sum = 0;
+          for (final d in reviewsSnap.docs) {
+            final r = d.data()['rating'];
+            if (r is int) {
+              sum += r;
+              count += 1;
+            } else if (r is num) {
+              sum += r.toInt();
+              count += 1;
+            }
+          }
+          if (count > 0) avg = sum / count;
+        }
+      }
+
+      return {'level': level, 'avg': avg, 'count': count};
+    }
+
+    return FutureBuilder<Map<String, dynamic>>(
+      future: load(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox(height: 0);
+        final level = (snapshot.data!['level'] as String?) ?? 'Bronze';
+        final avgRating = ((snapshot.data!['avg'] ?? 0) as num).toDouble();
+        final ratingCount = (snapshot.data!['count'] ?? 0) as int;
+        final Color levelColor = _levelColor(level, cs);
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: levelColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: levelColor.withOpacity(0.3)),
+              ),
+              child: Text(
+                level,
+                style: TextStyle(color: levelColor, fontSize: 11, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.star, size: 14, color: Colors.amber[600]),
+            const SizedBox(width: 2),
+            Text(
+              '${avgRating.toStringAsFixed(1)} (${ratingCount})',
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Color _levelColor(String level, ColorScheme cs) {
+    switch (level.toLowerCase()) {
+      case 'gold':
+        return const Color(0xFFFFC107);
+      case 'silver':
+        return const Color(0xFFB0BEC5);
+      default:
+        return cs.primary;
+    }
+  }
 } 
