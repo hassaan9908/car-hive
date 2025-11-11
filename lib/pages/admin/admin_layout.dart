@@ -57,7 +57,7 @@ class _AdminLayoutState extends State<AdminLayout> {
                 duration: const Duration(milliseconds: 300),
                 width: _isSidebarCollapsed ? 70 : 250,
                 decoration: const BoxDecoration(
-                  color: AppColors.automotiveBlue,
+                  color: AppColors.primaryBlue,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black12,
@@ -170,7 +170,7 @@ class _AdminLayoutState extends State<AdminLayout> {
                                             'A')
                                     .toUpperCase(),
                                 style: const TextStyle(
-                                  color: AppColors.automotiveBlue,
+                                  color: AppColors.primaryBlue,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -249,7 +249,7 @@ class AdminAnalyticsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Analytics'),
-        backgroundColor: AppColors.automotiveBlue,
+        backgroundColor: AppColors.primaryBlue,
         foregroundColor: Colors.white,
       ),
       body: const Center(
@@ -270,7 +270,7 @@ class AdminSettingsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: AppColors.automotiveBlue,
+        backgroundColor: AppColors.primaryBlue,
         foregroundColor: Colors.white,
       ),
       body: const Center(

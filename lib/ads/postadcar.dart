@@ -1,6 +1,7 @@
 import 'package:carhive/models/ad_model.dart' show AdModel;
 import 'package:carhive/store/global_ads.dart' show GlobalAdStore;
 import 'package:carhive/components/searchable_dropdown.dart';
+import 'package:carhive/services/cloudinary_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -95,6 +96,11 @@ class _PostAdCarState extends State<PostAdCar> {
   String? _userCity;
   String? _userUsername;
   bool _isLoadingProfile = true;
+  
+  // Image upload state
+  bool _isUploadingImages = false;
+  double _uploadProgress = 0.0;
+  final CloudinaryService _cloudinaryService = CloudinaryService();
 
   // Cities list for location selection
   final List<String> _cities = [
@@ -157,7 +163,7 @@ class _PostAdCarState extends State<PostAdCar> {
     "Auction Sheet Available",
   ];
 
-// this image picker is both for web and mobile
+  // this image picker is both for web and mobile
   Future<void> _pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked != null && (_images.length + _webImages.length) < 20) {
@@ -171,6 +177,49 @@ class _PostAdCarState extends State<PostAdCar> {
         }
       });
     }
+  }
+
+  // Upload images to Cloudinary and return URLs
+  Future<List<String>> _uploadImages() async {
+    final List<String> imageUrls = [];
+    
+    setState(() {
+      _isUploadingImages = true;
+      _uploadProgress = 0.0;
+    });
+
+    try {
+      if (kIsWeb) {
+        // Upload web images (Uint8List)
+        imageUrls.addAll(await _cloudinaryService.uploadMultipleImagesBytes(
+          imageBytesList: _webImages,
+          onProgress: (current, total) {
+            setState(() {
+              _uploadProgress = current / total;
+            });
+          },
+        ));
+      } else {
+        // Upload mobile images (File)
+        imageUrls.addAll(await _cloudinaryService.uploadMultipleImages(
+          imageFiles: _images,
+          onProgress: (current, total) {
+            setState(() {
+              _uploadProgress = current / total;
+            });
+          },
+        ));
+      }
+    } catch (e) {
+      throw Exception('Failed to upload images: $e');
+    } finally {
+      setState(() {
+        _isUploadingImages = false;
+        _uploadProgress = 0.0;
+      });
+    }
+
+    return imageUrls;
   }
 
   // this is for mobiel image picker ==========
@@ -670,6 +719,21 @@ class _PostAdCarState extends State<PostAdCar> {
                   ),
                 ),
               ),
+              // Image upload progress
+              if (_isUploadingImages)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      CircularProgressIndicator(value: _uploadProgress),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Uploading images... ${(_uploadProgress * 100).toStringAsFixed(0)}%',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
               // User profile information display
               if (_isLoadingProfile)
                 const Padding(
@@ -698,8 +762,35 @@ class _PostAdCarState extends State<PostAdCar> {
                       backgroundColor: Colors.blue.shade800,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    onPressed: () async {
+                    onPressed: (_isUploadingImages) ? null : () async {
                       if (_formKey.currentState!.validate()) {
+                        List<String> imageUrls = [];
+                        
+                        // Upload images to Cloudinary
+                        if (_images.isNotEmpty || _webImages.isNotEmpty) {
+                          try {
+                            imageUrls = await _uploadImages();
+                            if (imageUrls.isEmpty) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('No images were uploaded. Please try again.'),
+                                ),
+                              );
+                              return;
+                            }
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to upload images: $e'),
+                              ),
+                            );
+                            return;
+                          }
+                        }
+
+                        // Create ad with image URLs
                         final newAd = AdModel(
                           title: _titleController.text,
                           price: _priceController.text,
@@ -716,11 +807,13 @@ class _PostAdCarState extends State<PostAdCar> {
                           registeredIn: selectedRegisteredIn,
                           name: _nameController.text,
                           phone: _phoneController.text,
+                          imageUrls: imageUrls.isNotEmpty ? imageUrls : null,
                         );
 
                         try {
                           await GlobalAdStore().addAd(newAd);
 
+                          if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content: Text(
@@ -728,18 +821,39 @@ class _PostAdCarState extends State<PostAdCar> {
                           );
 
                           await Future.delayed(const Duration(seconds: 1));
+                          if (!mounted) return;
                           Navigator.pushReplacementNamed(context, '/myads');
                         } catch (e) {
+                          if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Failed to post ad: $e')),
                           );
                         }
                       }
                     },
-                    child: const Text(
-                      "Post Ad",
-                      style: TextStyle(fontSize: 16, color: Colors.white),
-                    ),
+                    child: _isUploadingImages
+                        ? const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Text(
+                                "Uploading...",
+                                style: TextStyle(fontSize: 16, color: Colors.white),
+                              ),
+                            ],
+                          )
+                        : const Text(
+                            "Post Ad",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
                   ),
                 ),
               ),

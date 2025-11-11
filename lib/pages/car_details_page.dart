@@ -55,19 +55,12 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Enhanced Car image placeholder
+            // Enhanced Car images display
             Container(
               height: 280,
               width: double.infinity,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    colorScheme.surfaceContainerHighest,
-                    colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
-                  ],
-                ),
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(30),
                   bottomRight: Radius.circular(30),
@@ -82,26 +75,103 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
               ),
               child: Stack(
                 children: [
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Icon(
-                        Icons.car_rental,
-                        size: 100,
-                        color: colorScheme.primary,
+                  // Display images from Cloudinary if available
+                  if (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
+                    PageView.builder(
+                      itemCount: ad.imageUrls!.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(30),
+                              bottomRight: Radius.circular(30),
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(30),
+                              bottomRight: Radius.circular(30),
+                            ),
+                            child: Image.network(
+                              ad.imageUrls![index],
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: colorScheme.surfaceContainerHighest,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      size: 100,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    // Placeholder if no images
+                    Container(
+                      color: colorScheme.surfaceContainerHighest,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            Icons.car_rental,
+                            size: 100,
+                            color: colorScheme.primary,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
                   // Trust badge overlay
                   Positioned(
                     top: 20,
                     right: 20,
                     child: _buildTrustBadge(context),
                   ),
+                  // Image counter overlay
+                  if (ad.imageUrls != null && ad.imageUrls!.length > 1)
+                    Positioned(
+                      top: 20,
+                      left: 20,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          '1 / ${ad.imageUrls!.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
