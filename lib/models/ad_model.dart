@@ -19,6 +19,7 @@ class AdModel {
   final String? name;
   final String? phone;
   final String? previousStatus; // used to restore from removed to prior state
+  final List<String>? imageUrls; // Cloudinary image URLs
 
   AdModel({
     required this.title,
@@ -39,6 +40,7 @@ class AdModel {
     this.name,
     this.phone,
     this.previousStatus,
+    this.imageUrls,
   });
 
   static DateTime? _parseCreatedAt(dynamic value) {
@@ -67,6 +69,14 @@ class AdModel {
 
   // Factory constructor to create AdModel from Firestore document
   factory AdModel.fromFirestore(Map<String, dynamic> data, String documentId) {
+    // Parse imageUrls from Firestore
+    List<String>? imageUrlsList;
+    if (data['imageUrls'] != null) {
+      if (data['imageUrls'] is List) {
+        imageUrlsList = List<String>.from(data['imageUrls']);
+      }
+    }
+    
     return AdModel(
       id: documentId,
       title: data['title'] ?? '',
@@ -86,6 +96,7 @@ class AdModel {
       name: data['name'],
       phone: data['phone'],
       previousStatus: data['previousStatus'],
+      imageUrls: imageUrlsList,
     );
   }
 
@@ -109,6 +120,7 @@ class AdModel {
       'name': name,
       'phone': phone,
       'previousStatus': previousStatus,
+      'imageUrls': imageUrls,
     };
   }
 }

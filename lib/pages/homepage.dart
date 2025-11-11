@@ -257,10 +257,33 @@ class _HomepageState extends State<Homepage> {
                   width: 100,
                   height: 64,
                   color: colorScheme.surfaceVariant,
-                  child: Image.asset(
-                    'assets/images/Retro.gif',
-                    fit: BoxFit.cover,
-                  ),
+                  child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
+                      ? Image.network(
+                          ad.imageUrls![0],
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/images/Retro.gif',
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        )
+                      : Image.asset(
+                          'assets/images/Retro.gif',
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ),
               const SizedBox(width: 12),
