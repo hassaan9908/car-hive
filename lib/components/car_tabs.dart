@@ -180,6 +180,12 @@ class _UsedCarsTab extends StatelessWidget {
 
   Widget _buildAdListItem(BuildContext context, AdModel ad) {
     final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color card_color = isDark 
+        ? const Color.fromARGB(255, 15, 15, 15) 
+        : Colors.grey.shade200;
     
     return GestureDetector(
       onTap: () {
@@ -194,7 +200,7 @@ class _UsedCarsTab extends StatelessWidget {
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         clipBehavior: Clip.antiAlias,
-        color: Theme.of(context).colorScheme.surface,
+        color: card_color,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(

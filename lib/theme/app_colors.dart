@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 
 class AppColors {
 
-  // Primary brand colors (CarHive blue)
-  static const Color primaryBlue = Color.fromARGB(255, 43, 128, 207);
-  static const Color primaryBlueLight = Color(0xFF3B82F6);
-  static const Color primaryBlueDark = Color(0xFF1E40AF);
+  // Primary brand colors (CarHive orange)
+  static const Color primaryOrange = Color(0xFFf48c25);
+  static const Color primaryOrangeLight = Color(0xFFf48c25);
+  static const Color primaryOrangeDark = Color(0xFFd97706);
+  
+  // Legacy blue colors (kept for backward compatibility, but should use orange)
+  static const Color primaryBlue = Color(0xFFf48c25); // Replaced with orange
+  static const Color primaryBlueLight = Color(0xFFf48c25); // Replaced with orange
+  static const Color primaryBlueDark = Color(0xFFd97706); // Replaced with orange dark
   
   // Secondary colors
   static const Color secondaryGreen = Color(0xFF10B981);
@@ -14,9 +19,9 @@ class AppColors {
   static const Color secondaryPurple = Color(0xFF8B5CF6);
   
   // Light theme colors
-  static const Color lightBackground = Color(0xFFF8FAFC);
+  static const Color lightBackground = Color(0xFFE0E0E0);
   static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightSurfaceVariant = Color(0xFFF1F5F9);
+  static const Color lightSurfaceVariant = Colors.white;
   static const Color lightOnSurface = Color(0xFF1E293B);
   static const Color lightOnSurfaceVariant = Color(0xFF64748B);
   static const Color lightOutline = Color(0xFFE2E8F0);
@@ -24,8 +29,8 @@ class AppColors {
   
   // Dark theme colors (matching admin panel)
   static const Color darkBackground = Color(0xFF0F172A);
-  static const Color darkSurface = Color(0xFF1E293B);
-  static const Color darkSurfaceVariant = Color(0xFF334155);
+  static const Color darkSurface = Color(0xFF212121);
+  static const Color darkSurfaceVariant = Colors.black;
   static const Color darkOnSurface = Color(0xFFF1F5F9);
   static const Color darkOnSurfaceVariant = Color(0xFFCBD5E1);
   static const Color darkOutline = Color(0xFF475569);

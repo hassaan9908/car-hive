@@ -56,23 +56,14 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
     return Consumer<SearchProvider>(
       builder: (context, searchProvider, _) {
         return Scaffold(
           appBar: AppBar(
             title: const Text(
-              'CarHive',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                textBaseline: TextBaseline.alphabetic,
-                inherit: false,
-              ),
+              'CarHive',          
             ),
-            backgroundColor: colorScheme.primary,
+            backgroundColor: Colors.transparent,
             centerTitle: true,
             actions: [
               // Admin Panel button (web only)
@@ -81,34 +72,24 @@ class _HomepageState extends State<Homepage> {
                   onPressed: () {
                     Navigator.pushNamed(context, '/admin');
                   },
-                  icon: const Icon(
-                    Icons.admin_panel_settings,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(Icons.admin_panel_settings),
                   tooltip: 'Admin Panel',
                 ),
+              IconButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/map-view');
+                },
+                icon: const Icon(Icons.map),
+                tooltip: 'Map View',
+              ),
               IconButton(
                   onPressed: () {
                     Navigator.pushNamed(context, '/notifications');
                   },
-                  icon: const Icon(
-                    Icons.chat,
-                    color: Colors.white,
-                  )),
+                  icon: const Icon(Icons.chat)),
             ],
           ),
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  colorScheme.background,
-                  colorScheme.surfaceVariant,
-                ],
-              ),
-            ),
-            child: Column(
+          body: Column(
               children: [
                 // Search Bar
                 Padding(
@@ -146,7 +127,6 @@ class _HomepageState extends State<Homepage> {
                 ),
               ],
             ),
-          ),
           bottomNavigationBar: CustomBottomNav(
             selectedIndex: _selectedIndex,
             onTabSelected: (index) => _onTabSelected(context, index),

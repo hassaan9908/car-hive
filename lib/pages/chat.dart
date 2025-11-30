@@ -12,14 +12,9 @@ class _ChatState extends State<Chat> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-                'Chats',
-                style: TextStyle(
-                  color: Colors.white
-                ),
-                ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              centerTitle: true,
+        title: const Text('Chats'),
+        backgroundColor: Colors.transparent,
+        centerTitle: true,
       ),
       body: Center(
         child: Text('Chats'),

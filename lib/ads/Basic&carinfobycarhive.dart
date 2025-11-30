@@ -30,7 +30,9 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          backgroundColor: Colors.blue, title: const Text('Sell It Myself')),
+        title: const Text('Sell It Myself'),
+        backgroundColor: Colors.transparent,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(

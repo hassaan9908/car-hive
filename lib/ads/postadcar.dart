@@ -1,7 +1,10 @@
 import 'package:carhive/models/ad_model.dart' show AdModel;
 import 'package:carhive/store/global_ads.dart' show GlobalAdStore;
-import 'package:carhive/components/searchable_dropdown.dart';
 import 'package:carhive/services/cloudinary_service.dart';
+import 'package:carhive/services/car_360_service.dart';
+import 'package:carhive/screens/capture_360_screen.dart';
+import 'package:carhive/models/car_360_set.dart';
+import 'package:carhive/widgets/location_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -9,6 +12,8 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class PostAdCar extends StatefulWidget {
   const PostAdCar({super.key});
@@ -23,6 +28,8 @@ class _PostAdCarState extends State<PostAdCar> {
   String? selectedLocation;
   String? selectedCarModel;
   String? selectedRegisteredIn;
+  LatLng? selectedLocationCoords;
+  String selectedLocationAddress = '';
 
   @override
   void initState() {
@@ -61,7 +68,6 @@ class _PostAdCarState extends State<PostAdCar> {
 // Controllers for ads
 
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _priceadController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _mileageController = TextEditingController();
   final TextEditingController _fuelController = TextEditingController();
@@ -101,53 +107,13 @@ class _PostAdCarState extends State<PostAdCar> {
   bool _isUploadingImages = false;
   double _uploadProgress = 0.0;
   final CloudinaryService _cloudinaryService = CloudinaryService();
+  
+  // 360° capture state (16 angles)
+  final Car360Service _car360Service = Car360Service();
+  Car360Set? _captured360Set;
+  List<Uint8List?> _360PreviewImages = [];
+  bool _isUploading360 = false;
 
-  // Cities list for location selection
-  final List<String> _cities = [
-    'Karachi',
-    'Lahore',
-    'Islamabad',
-    'Rawalpindi',
-    'Faisalabad',
-    'Multan',
-    'Gujranwala',
-    'Peshawar',
-    'Quetta',
-    'Sialkot',
-    'Sargodha',
-    'Bahawalpur',
-    'Sukkur',
-    'Jhang',
-    'Sheikhupura',
-    'Larkana',
-    'Gujrat',
-    'Mardan',
-    'Kasur',
-    'Dera Ghazi Khan',
-    'Nawabshah',
-    'Sahiwal',
-    'Mirpur Khas',
-    'Chiniot',
-    'Kotri',
-    'Kamoke',
-    'Hafizabad',
-    'Kohat',
-    'Jacobabad',
-    'Shikarpur',
-    'Muzaffargarh',
-    'Khanpur',
-    'Gojra',
-    'Bahawalnagar',
-    'Muridke',
-    'Pakpattan',
-    'Abottabad',
-    'Tando Adam',
-    'Jhelum',
-    'Sanghar',
-    'Chishtian',
-    'Kot Addu',
-    'Khanewal'
-  ];
 
   final List<String> chipOptions = [
     "Alloy Rims",
@@ -241,7 +207,120 @@ class _PostAdCarState extends State<PostAdCar> {
       isScrollControlled: true,
       builder: (_) => _FullScreenPopup(
         title: "Select Location",
-        content: ListView(
+        content: Column(
+          children: [
+            // Map-based location picker
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Card(
+                elevation: 4,
+                child: InkWell(
+                  onTap: () async {
+                    Navigator.pop(context); // Close the bottom sheet first
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => LocationPicker(
+                          initialLocation: selectedLocationCoords,
+                          onLocationSelected: (location, address) {
+                            setState(() {
+                              selectedLocationCoords = location;
+                              selectedLocationAddress = address;
+                              selectedLocation = address.split(',')[0]; // Use first part as city
+                            });
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFf48c25).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.map,
+                            color: const Color(0xFFf48c25),
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Use Map to Select Location',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: const Color(0xFFf48c25),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Get precise location using Google Maps',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (selectedLocationAddress.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade100,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Selected: ${selectedLocationAddress}',
+                                    style: TextStyle(
+                                      color: Colors.green.shade800,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.grey[400],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Expanded(child: Divider()),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text('OR'),
+                  ),
+                  Expanded(child: Divider()),
+                ],
+              ),
+            ),
+            
+            // City list
+            Expanded(
+              child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             ...[
@@ -288,9 +367,16 @@ class _PostAdCarState extends State<PostAdCar> {
               (city) => ListTile(
                 title: Text(city),
                 onTap: () {
-                  setState(() => selectedLocation = city);
+                        setState(() {
+                          selectedLocation = city;
+                          selectedLocationCoords = null; // Clear precise coords when using city
+                          selectedLocationAddress = city;
+                        });
                   Navigator.pop(context);
                 },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -335,7 +421,7 @@ class _PostAdCarState extends State<PostAdCar> {
           children: [
             const Text("Unregistered",
                 style:
-                    TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ListTile(
               title: const Text("Unregistered"),
               onTap: () {
@@ -346,7 +432,7 @@ class _PostAdCarState extends State<PostAdCar> {
             const SizedBox(height: 8),
             const Text("Provinces",
                 style:
-                    TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ...["Punjab", "Sindh", "Balochistan", "KPK"]
                 .map((province) => ListTile(
                       title: Text(province),
@@ -358,7 +444,7 @@ class _PostAdCarState extends State<PostAdCar> {
             const SizedBox(height: 8),
             const Text("Popular Cities",
                 style:
-                    TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ...["Lahore", "Karachi", "Islamabad", "Multan", "Quetta"]
                 .map((city) => ListTile(
                       title: Text(city),
@@ -370,7 +456,7 @@ class _PostAdCarState extends State<PostAdCar> {
             const SizedBox(height: 8),
             const Text("Other Cities",
                 style:
-                    TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ...[
               "Rawalpindi",
               "Faisalabad",
@@ -399,6 +485,38 @@ class _PostAdCarState extends State<PostAdCar> {
     }
   }
 
+  // Open 360° capture screen (16 angles)
+  Future<void> _open360CaptureScreen() async {
+    final result = await Navigator.push<Car360Set>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Capture360Screen(
+          existingSet: _captured360Set,
+          onCaptureComplete: (set) {
+            // Called when capture is complete
+          },
+        ),
+      ),
+    );
+
+    if (result != null && result.capturedCount > 0) {
+      setState(() {
+        _captured360Set = result;
+        _car360Service.setCurrentSet(result);
+        _360PreviewImages = result.imageBytes;
+      });
+    }
+  }
+
+  // Clear 360° images
+  void _clear360Images() {
+    setState(() {
+      _car360Service.clearAll();
+      _captured360Set = null;
+      _360PreviewImages = [];
+    });
+  }
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -416,39 +534,6 @@ class _PostAdCarState extends State<PostAdCar> {
     super.dispose();
   }
 
-  void _submitForm() {
-    if ((_images.isEmpty && _webImages.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please add at least one image.")),
-      );
-      return;
-    }
-
-    if (selectedLocation == null ||
-        selectedCarModel == null ||
-        selectedRegisteredIn == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                "Please select location, car model year, and registration city.")),
-      );
-      return;
-    }
-
-    // Check if form key and current state are valid before validating
-    if (_formKey.currentState != null && _formKey.currentState!.validate()) {
-      // Form is valid and dropdowns/images are selected
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Posting Ad...")),
-      );
-      // Your submission logic here
-    } else {
-      // Form validation failed
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fix the validation errors.")),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -459,7 +544,7 @@ class _PostAdCarState extends State<PostAdCar> {
         appBar: AppBar(
           title: const Text("Sell Your Car"),
           leading: const BackButton(),
-          backgroundColor: Colors.blue.shade800,
+          backgroundColor: Colors.transparent,
         ),
         body: Center(
           child: Column(
@@ -486,7 +571,7 @@ class _PostAdCarState extends State<PostAdCar> {
       appBar: AppBar(
         title: const Text("Sell Your Car"),
         leading: const BackButton(),
-        backgroundColor: Colors.blue.shade800,
+        backgroundColor: Colors.transparent,
       ),
       body: Form(
         key: _formKey,
@@ -502,7 +587,7 @@ class _PostAdCarState extends State<PostAdCar> {
                     width: double.infinity,
                     height: 150,
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.blue),
+                      border: Border.all(color: const Color(0xFFf48c25)),
                       borderRadius: BorderRadius.circular(8),
                     ),
 
@@ -550,10 +635,10 @@ class _PostAdCarState extends State<PostAdCar> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.camera_alt_outlined,
-                                    size: 30, color: Colors.blue),
+                                    size: 30, color: const Color(0xFFf48c25)),
                                 SizedBox(height: 8),
                                 Text("Add Photo",
-                                    style: TextStyle(color: Colors.blue)),
+                                    style: TextStyle(color: const Color(0xFFf48c25))),
                               ],
                             ),
                           )
@@ -592,21 +677,347 @@ class _PostAdCarState extends State<PostAdCar> {
                 ),
               ),
 
-              // Location searchable dropdown
+              // 360° Photo Capture Section
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: SearchableDropdown<String>(
-                  labelText: 'Location',
-                  hintText: 'Search and select your location',
-                  value: selectedLocation,
-                  items: _cities,
-                  itemAsString: (city) => city,
-                  onChanged: (value) =>
-                      setState(() => selectedLocation = value),
-                  validator: (value) =>
-                      value == null ? 'Please select a location' : null,
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.rotate_right, color: const Color(0xFFf48c25)),
+                            const SizedBox(width: 8),
+                            const Text(
+                              '360° View Photos',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_360PreviewImages.isNotEmpty)
+                          TextButton.icon(
+                            onPressed: _clear360Images,
+                            icon: const Icon(Icons.clear, size: 18),
+                            label: const Text('Clear'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Capture 16 angles of your car for a smooth 360° drag-to-rotate experience',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_360PreviewImages.isEmpty || _360PreviewImages.every((img) => img == null))
+                      // Capture button
+                      GestureDetector(
+                        onTap: _open360CaptureScreen,
+                        child: Container(
+                          width: double.infinity,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFFf48c25).withOpacity(0.1),
+                                const Color(0xFFf48c25).withOpacity(0.2),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFf48c25).withOpacity(0.5),
+                              width: 2,
+                              style: BorderStyle.solid,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFf48c25),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Start 360° Capture',
+                                style: TextStyle(
+                                  color: const Color(0xFFf48c25),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '8 guided angles',
+                                style: TextStyle(
+                                  color: const Color(0xFFf48c25).withOpacity(0.8),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      // Preview captured images (16 angles)
+                      Builder(
+                        builder: (context) {
+                          final capturedImages = _360PreviewImages.where((img) => img != null).toList();
+                          final capturedCount = capturedImages.length;
+                          
+                          return Column(
+                            children: [
+                              Container(
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.grey.shade100,
+                                ),
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.all(8),
+                                  itemCount: capturedCount + 1,
+                                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                  itemBuilder: (context, index) {
+                                    if (index == capturedCount) {
+                                      // Add more button
+                                      return GestureDetector(
+                                        onTap: _open360CaptureScreen,
+                                        child: Container(
+                                          width: 80,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFf48c25).withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: const Color(0xFFf48c25).withOpacity(0.5)),
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.edit, color: const Color(0xFFf48c25)),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Edit',
+                                                style: TextStyle(
+                                                  color: const Color(0xFFf48c25),
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Stack(
+                                        children: [
+                                          Image.memory(
+                                            capturedImages[index]!,
+                                            width: 80,
+                                            height: 84,
+                                            fit: BoxFit.cover,
+                                          ),
+                                          Positioned(
+                                            top: 4,
+                                            left: 4,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 6,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black54,
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                              child: Text(
+                                                '${index + 1}',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.green.shade300),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: Colors.green.shade700,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '$capturedCount/16 angles captured',
+                                      style: TextStyle(
+                                        color: Colors.green.shade700,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    if (capturedCount == 16)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.shade700,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Text(
+                                          '360° Ready',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                  ],
                 ),
               ),
+
+              const Divider(height: 32),
+
+              // Location selector
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Location *',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: _openLocationSelector,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade400),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              selectedLocationCoords != null 
+                                  ? Icons.location_on 
+                                  : Icons.location_city,
+                              color: selectedLocation != null 
+                                  ? const Color(0xFFf48c25) 
+                                  : Colors.grey,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    selectedLocation ?? 'Select Location',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: selectedLocation != null 
+                                          ? Colors.black87 
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                  if (selectedLocationAddress.isNotEmpty && 
+                                      selectedLocationAddress != selectedLocation) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      selectedLocationAddress,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                  if (selectedLocationCoords != null) ...[
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade100,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'Precise Location',
+                                        style: TextStyle(
+                                          color: Colors.green.shade800,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.grey[600],
+                ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               _buildFormTile(
                   "Car model${selectedCarModel != null ? " ($selectedCarModel)" : ""}",
                   Icons.directions_car,
@@ -759,10 +1170,10 @@ class _PostAdCarState extends State<PostAdCar> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade800,
+                      backgroundColor: const Color(0xFFf48c25),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    onPressed: (_isUploadingImages) ? null : () async {
+                    onPressed: (_isUploadingImages || _isUploading360) ? null : () async {
                       if (_formKey.currentState!.validate()) {
                         List<String> imageUrls = [];
                         
@@ -790,12 +1201,67 @@ class _PostAdCarState extends State<PostAdCar> {
                           }
                         }
 
+                        // Upload 360° images if captured (16 angles)
+                        List<String>? images360Urls;
+                        if (_captured360Set != null && _captured360Set!.capturedCount > 0) {
+                          try {
+                            setState(() => _isUploading360 = true);
+                            images360Urls = await _car360Service.uploadCar360Set(
+                              _captured360Set!,
+                              onProgress: (current, total) {
+                                // Optional: show progress
+                              },
+                            );
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to upload 360° images: $e')),
+                            );
+                            // Continue without 360 images
+                          } finally {
+                            if (mounted) setState(() => _isUploading360 = false);
+                          }
+                        }
+
+                        // Use selected location coordinates or get current location
+                        Map<String, double>? locationCoords;
+                        if (selectedLocationCoords != null) {
+                          // Use the precise location selected by user
+                          locationCoords = {
+                            'lat': selectedLocationCoords!.latitude,
+                            'lng': selectedLocationCoords!.longitude,
+                          };
+                        } else {
+                          // Fallback to current location if no precise location selected
+                          try {
+                          LocationPermission permission = await Geolocator.checkPermission();
+                          if (permission == LocationPermission.denied) {
+                            permission = await Geolocator.requestPermission();
+                          }
+                          
+                          if (permission == LocationPermission.whileInUse ||
+                              permission == LocationPermission.always) {
+                            Position position = await Geolocator.getCurrentPosition(
+                              desiredAccuracy: LocationAccuracy.medium,
+                            );
+                            locationCoords = {
+                              'lat': position.latitude,
+                              'lng': position.longitude,
+                            };
+                          }
+                        } catch (e) {
+                          print('Error getting location: $e');
+                          // Continue without location coordinates
+                          }
+                        }
+
                         // Create ad with image URLs
                         final newAd = AdModel(
                           title: _titleController.text,
                           price: _priceController.text,
-                          location:
-                              selectedLocation ?? _locationController.text,
+                          location: selectedLocationAddress.isNotEmpty 
+                              ? selectedLocationAddress 
+                              : selectedLocation ?? _locationController.text,
                           year: selectedCarModel ?? '',
                           mileage: _mileageController.text,
                           fuel: _fuelController.text,
@@ -808,6 +1274,10 @@ class _PostAdCarState extends State<PostAdCar> {
                           name: _nameController.text,
                           phone: _phoneController.text,
                           imageUrls: imageUrls.isNotEmpty ? imageUrls : null,
+                          locationCoordinates: locationCoords,
+                          images360Urls: images360Urls != null && images360Urls.isNotEmpty
+                              ? images360Urls
+                              : null,
                         );
 
                         try {
@@ -831,11 +1301,11 @@ class _PostAdCarState extends State<PostAdCar> {
                         }
                       }
                     },
-                    child: _isUploadingImages
-                        ? const Row(
+                    child: (_isUploadingImages || _isUploading360)
+                        ? Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              SizedBox(
+                              const SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
@@ -843,10 +1313,10 @@ class _PostAdCarState extends State<PostAdCar> {
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               ),
-                              SizedBox(width: 12),
+                              const SizedBox(width: 12),
                               Text(
-                                "Uploading...",
-                                style: TextStyle(fontSize: 16, color: Colors.white),
+                                _isUploading360 ? "Uploading 360° images..." : "Uploading...",
+                                style: const TextStyle(fontSize: 16, color: Colors.white),
                               ),
                             ],
                           )
@@ -872,6 +1342,12 @@ class _PostAdCarState extends State<PostAdCar> {
     String? hint,
     String? Function(String?)? validator,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final Color fill_color = isDark 
+        ? const Color.fromARGB(255, 15, 15, 15) 
+        : Colors.grey.shade200;
+
     return ListTile(
       leading: Icon(icon, color: Colors.grey.shade700),
       title: TextFormField(
@@ -891,6 +1367,7 @@ class _PostAdCarState extends State<PostAdCar> {
           labelText: label,
           hintText: hint,
           border: InputBorder.none,
+          fillColor: fill_color,
         ),
       ),
     );
@@ -900,7 +1377,6 @@ class _PostAdCarState extends State<PostAdCar> {
     String title,
     IconData icon,
     VoidCallback onTap, {
-    String? selectedValue,
     String? subtitle,
   }) {
     return ListTile(
