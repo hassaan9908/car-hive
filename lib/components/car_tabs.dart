@@ -5,13 +5,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CarTabs extends StatelessWidget {
   final int initialTab;
-  
+
   const CarTabs({Key? key, this.initialTab = 0}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return DefaultTabController(
       length: 2,
       initialIndex: initialTab,
@@ -68,8 +68,8 @@ class CarTabs extends StatelessWidget {
                       Text(
                         'Stay tuned for new car listings',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                       ),
                     ],
                   ),
@@ -96,29 +96,31 @@ class _UsedCarsTab extends StatelessWidget {
         if (snapshot.hasError) {
           String errorMessage = 'Error loading ads';
           String errorDetails = '';
-          
+
           if (snapshot.error.toString().contains('failed-precondition')) {
             errorMessage = 'Database configuration required';
-            errorDetails = 'Please contact support to set up the database properly.';
+            errorDetails =
+                'Please contact support to set up the database properly.';
           } else if (snapshot.error.toString().contains('permission-denied')) {
             errorMessage = 'Access denied';
             errorDetails = 'You may not have permission to view ads.';
           } else {
             errorDetails = snapshot.error.toString();
           }
-          
+
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.error_outline, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text(errorMessage, style: TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  textBaseline: TextBaseline.alphabetic,
-                  inherit: false,
-                )),
+                Text(errorMessage,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
                 SizedBox(height: 8),
                 if (errorDetails.isNotEmpty)
                   Padding(
@@ -126,7 +128,7 @@ class _UsedCarsTab extends StatelessWidget {
                     child: Text(
                       errorDetails,
                       style: TextStyle(
-                        fontSize: 14, 
+                        fontSize: 14,
                         color: Colors.grey[600],
                         textBaseline: TextBaseline.alphabetic,
                         inherit: false,
@@ -148,18 +150,20 @@ class _UsedCarsTab extends StatelessWidget {
               children: [
                 Icon(Icons.car_rental, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text('No cars available', style: TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  textBaseline: TextBaseline.alphabetic,
-                  inherit: false,
-                )),
+                Text('No cars available',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
                 SizedBox(height: 8),
-                Text('Check back later for new listings', style: TextStyle(
-                  color: Colors.grey,
-                  textBaseline: TextBaseline.alphabetic,
-                  inherit: false,
-                )),
+                Text('Check back later for new listings',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
               ],
             ),
           );
@@ -191,8 +195,8 @@ class _UsedCarsTab extends StatelessWidget {
       onTap: () {
         // Navigate to detailed car page
         Navigator.pushNamed(
-          context, 
-          '/car-details', 
+          context,
+          '/car-details',
           arguments: ad,
         );
       },
@@ -221,7 +225,8 @@ class _UsedCarsTab extends StatelessWidget {
                             return Center(
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                value: loadingProgress.expectedTotalBytes != null
+                                value: loadingProgress.expectedTotalBytes !=
+                                        null
                                     ? loadingProgress.cumulativeBytesLoaded /
                                         loadingProgress.expectedTotalBytes!
                                     : null,
@@ -247,7 +252,9 @@ class _UsedCarsTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(ad.year, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                    Text(ad.year,
+                        style: TextStyle(
+                            color: colorScheme.onSurfaceVariant, fontSize: 12)),
                     const SizedBox(height: 6),
                     Text(
                       (ad.title.isNotEmpty
@@ -256,9 +263,9 @@ class _UsedCarsTab extends StatelessWidget {
                               ? ad.carBrand!
                               : 'Car')),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -272,7 +279,8 @@ class _UsedCarsTab extends StatelessWidget {
               // Price
               Text(
                 'PKR ${ad.price}',
-                style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    color: colorScheme.primary, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -285,71 +293,79 @@ class _UsedCarsTab extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     if (userId == null || userId.isEmpty) return const SizedBox.shrink();
 
-    Future<Map<String, dynamic>> load() async {
-      // Fetch user trust
-      final userSnap = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-      final userData = userSnap.data() ?? {};
-      final String level = (userData['trustLevel'] ?? 'Bronze').toString();
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, userSnapshot) {
+        if (!userSnapshot.hasData) return const SizedBox(height: 0);
 
-      // Compute per-ad average rating
-      double avg = 0.0;
-      int count = 0;
-      if (adId != null && adId.isNotEmpty) {
-        final reviewsSnap = await FirebaseFirestore.instance
-            .collection('reviews')
-            .where('adId', isEqualTo: adId)
-            .get();
-        if (reviewsSnap.docs.isNotEmpty) {
-          int sum = 0;
-          for (final d in reviewsSnap.docs) {
-            final r = d.data()['rating'];
-            if (r is int) {
-              sum += r;
-              count += 1;
-            } else if (r is num) {
-              sum += r.toInt();
-              count += 1;
+        final userData =
+            userSnapshot.data!.data() as Map<String, dynamic>? ?? {};
+        final String level = (userData['trustLevel'] ?? 'Bronze').toString();
+
+        return StreamBuilder<QuerySnapshot>(
+          stream: adId != null && adId.isNotEmpty
+              ? FirebaseFirestore.instance
+                  .collection('reviews')
+                  .where('adId', isEqualTo: adId)
+                  .snapshots()
+              : null,
+          builder: (context, reviewSnapshot) {
+            double avg = 0.0;
+            int count = 0;
+
+            if (reviewSnapshot.hasData &&
+                reviewSnapshot.data!.docs.isNotEmpty) {
+              int sum = 0;
+              for (final d in reviewSnapshot.data!.docs) {
+                final r = d.data() as Map<String, dynamic>;
+                final rating = r['rating'];
+                if (rating is int) {
+                  sum += rating;
+                  count += 1;
+                } else if (rating is num) {
+                  sum += rating.toInt();
+                  count += 1;
+                }
+              }
+              if (count > 0) avg = sum / count;
             }
-          }
-          if (count > 0) avg = sum / count;
-        }
-      }
 
-      return {'level': level, 'avg': avg, 'count': count};
-    }
+            final avgRating = avg;
+            final ratingCount = count;
+            final Color levelColor = _levelColor(level, cs);
 
-    return FutureBuilder<Map<String, dynamic>>(
-      future: load(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox(height: 0);
-        final level = (snapshot.data!['level'] as String?) ?? 'Bronze';
-        final avgRating = ((snapshot.data!['avg'] ?? 0) as num).toDouble();
-        final ratingCount = (snapshot.data!['count'] ?? 0) as int;
-        final Color levelColor = _levelColor(level, cs);
-
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: levelColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: levelColor.withOpacity(0.3)),
-              ),
-              child: Text(
-                level,
-                style: TextStyle(color: levelColor, fontSize: 11, fontWeight: FontWeight.w600),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(Icons.star, size: 14, color: Colors.amber[600]),
-            const SizedBox(width: 2),
-            Text(
-              '${avgRating.toStringAsFixed(1)} (${ratingCount})',
-              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
-            ),
-          ],
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: levelColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: levelColor.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    level,
+                    style: TextStyle(
+                        color: levelColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.star, size: 14, color: Colors.amber[600]),
+                const SizedBox(width: 2),
+                Text(
+                  '${avgRating.toStringAsFixed(1)} (${ratingCount})',
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -365,4 +381,4 @@ class _UsedCarsTab extends StatelessWidget {
         return cs.primary;
     }
   }
-} 
+}

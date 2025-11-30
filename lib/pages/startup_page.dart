@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carhive/auth/loginscreen.dart';
 import 'package:carhive/auth/signupscreen.dart';
+// import removed: app_colors not directly used, theme colors pulled from Theme.of(context)
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StartupPage extends StatefulWidget {

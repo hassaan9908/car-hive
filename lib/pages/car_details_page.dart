@@ -6,6 +6,7 @@ import '../widgets/car_360_viewer.dart';
 import '../screens/car_360_viewer_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CarDetailsPage extends StatefulWidget {
   final AdModel ad;
@@ -26,6 +27,49 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch phone dialer')),
+        );
+      }
+    }
+  }
+
+  Future<void> _openChat(String sellerId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to send messages')),
+        );
+      }
+      return;
+    }
+
+    if (currentUser.uid == sellerId) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You cannot message yourself')),
+        );
+      }
+      return;
+    }
+
+    // Navigate to chat page with seller ID
+    if (mounted) {
+      Navigator.pushNamed(
+        context,
+        '/notifications',
+        arguments: {'userId': sellerId},
+      );
+    }
   }
 
   @override
@@ -84,12 +128,15 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                             child: Image.network(
                               ad.imageUrls![index],
                               fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return Center(
                                   child: CircularProgressIndicator(
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded /
+                                    value: loadingProgress.expectedTotalBytes !=
+                                            null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
                                             loadingProgress.expectedTotalBytes!
                                         : null,
                                   ),
@@ -548,22 +595,115 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        if (ad.name != null && ad.name!.isNotEmpty) ...[
-                          _buildEnhancedContactCard(
-                            context,
-                            'Seller Name',
-                            ad.name!,
-                            Icons.person,
-                          ),
-                          const SizedBox(height: 12),
+                        // Fetch seller info from user document with real-time updates
+                        if (ad.userId != null && ad.userId!.isNotEmpty)
+                          StreamBuilder<DocumentSnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(ad.userId)
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const SizedBox(
+                                  height: 40,
+                                  child: Center(
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2)),
+                                );
+                              }
+
+                              // Fallback to ad fields if user doc doesn't exist
+                              if (!snapshot.hasData || !snapshot.data!.exists) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (ad.name != null &&
+                                        ad.name!.isNotEmpty) ...[
+                                      _buildEnhancedContactCard(
+                                        context,
+                                        'Seller Name',
+                                        ad.name!,
+                                        Icons.person,
+                                      ),
+                                      const SizedBox(height: 12),
+                                    ],
+                                    if (ad.phone != null &&
+                                        ad.phone!.isNotEmpty)
+                                      _buildEnhancedContactCard(
+                                        context,
+                                        'Phone',
+                                        ad.phone!,
+                                        Icons.phone,
+                                      ),
+                                  ],
+                                );
+                              }
+
+                              final data = snapshot.data!.data()
+                                      as Map<String, dynamic>? ??
+                                  {};
+                              final sellerName = (data['fullName'] ??
+                                      data['displayName'] ??
+                                      ad.name ??
+                                      '')
+                                  .toString();
+                              final email = (data['email'] ?? '').toString();
+                              final phone =
+                                  (data['phoneNumber'] ?? ad.phone ?? '')
+                                      .toString();
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (sellerName.isNotEmpty) ...[
+                                    _buildEnhancedContactCard(
+                                      context,
+                                      'Seller Name',
+                                      sellerName,
+                                      Icons.person,
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+                                  if (email.isNotEmpty) ...[
+                                    _buildEnhancedContactCard(
+                                      context,
+                                      'Email',
+                                      email,
+                                      Icons.email,
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+                                  if (phone.isNotEmpty)
+                                    _buildEnhancedContactCard(
+                                      context,
+                                      'Phone',
+                                      phone,
+                                      Icons.phone,
+                                    ),
+                                ],
+                              );
+                            },
+                          )
+                        else ...[
+                          // No userId, use ad embedded fields only
+                          if (ad.name != null && ad.name!.isNotEmpty) ...[
+                            _buildEnhancedContactCard(
+                              context,
+                              'Seller Name',
+                              ad.name!,
+                              Icons.person,
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          if (ad.phone != null && ad.phone!.isNotEmpty)
+                            _buildEnhancedContactCard(
+                              context,
+                              'Phone',
+                              ad.phone!,
+                              Icons.phone,
+                            ),
                         ],
-                        if (ad.phone != null && ad.phone!.isNotEmpty)
-                          _buildEnhancedContactCard(
-                            context,
-                            'Phone',
-                            ad.phone!,
-                            Icons.phone,
-                          ),
                       ],
                     ),
                   ),
@@ -598,13 +738,41 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: ElevatedButton.icon(
-                              onPressed: () {
-                                // TODO: Implement call functionality
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content:
-                                          Text('Call feature coming soon!')),
-                                );
+                              onPressed: () async {
+                                // Get phone number from user doc or ad
+                                String? phoneNumber;
+                                if (ad.userId != null &&
+                                    ad.userId!.isNotEmpty) {
+                                  try {
+                                    final userDoc = await FirebaseFirestore
+                                        .instance
+                                        .collection('users')
+                                        .doc(ad.userId)
+                                        .get();
+                                    if (userDoc.exists) {
+                                      final data = userDoc.data()
+                                          as Map<String, dynamic>?;
+                                      phoneNumber =
+                                          data?['phoneNumber']?.toString();
+                                    }
+                                  } catch (e) {
+                                    print('Error fetching phone: $e');
+                                  }
+                                }
+                                phoneNumber ??= ad.phone;
+
+                                if (phoneNumber != null &&
+                                    phoneNumber.isNotEmpty) {
+                                  await _makePhoneCall(phoneNumber);
+                                } else {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'Phone number not available')),
+                                    );
+                                  }
+                                }
                               },
                               icon: const Icon(Icons.phone),
                               label: const Text('Call'),
@@ -635,12 +803,16 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                             ),
                             child: ElevatedButton.icon(
                               onPressed: () {
-                                // TODO: Implement message functionality
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content:
-                                          Text('Message feature coming soon!')),
-                                );
+                                if (ad.userId != null &&
+                                    ad.userId!.isNotEmpty) {
+                                  _openChat(ad.userId!);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'Seller information not available')),
+                                  );
+                                }
                               },
                               icon: const Icon(Icons.message),
                               label: const Text('Message'),
