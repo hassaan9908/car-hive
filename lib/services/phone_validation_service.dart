@@ -6,11 +6,10 @@ class PhoneValidationService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
   /// Check if a phone number is already in use by another user
+  /// Note: This will fail with permission denied for unauthenticated users
+  /// We handle this in the UI by catching the error during actual signup
   static Future<bool> isPhoneNumberAvailable(String phoneNumber) async {
     try {
-      final currentUser = _auth.currentUser;
-      if (currentUser == null) return false;
-
       // Normalize phone number for comparison
       final normalizedPhone = _normalizePhoneNumber(phoneNumber);
 
@@ -21,10 +20,7 @@ class PhoneValidationService {
           .get();
 
       if (phoneDoc.exists) {
-        final phoneData = phoneDoc.data();
-        if (phoneData != null && phoneData['userId'] != currentUser.uid) {
-          return false; // Phone number is already in use by another user
-        }
+        return false; // Phone number is already in use
       }
 
       // Fallback: Query users collection for existing phone number
@@ -33,14 +29,20 @@ class PhoneValidationService {
           .where('phoneNumber', isEqualTo: normalizedPhone)
           .get();
 
-      // Check if any user (other than current user) has this phone number
-      for (final doc in querySnapshot.docs) {
-        if (doc.id != currentUser.uid) {
-          return false; // Phone number is already in use
-        }
+      // If any documents are found, the phone number is already in use
+      return querySnapshot
+          .docs.isEmpty; // true if no documents found (phone number available)
+    } on FirebaseException catch (e) {
+      // Handle permission denied or other Firebase errors gracefully
+      if (e.code == 'permission-denied') {
+        // If we can't check due to permissions, we assume it might be available
+        // The actual duplicate check will happen during signup
+        print(
+            'Permission denied when checking phone number availability - will check during signup');
+        return true;
       }
-
-      return true; // Phone number is available
+      print('Error checking phone number availability: $e');
+      return false; // Return false on other errors to be safe
     } catch (e) {
       print('Error checking phone number availability: $e');
       return false; // Return false on error to be safe
@@ -106,6 +108,27 @@ class PhoneValidationService {
 
     // Return as is if format is not recognized
     return phoneNumber.trim();
+  }
+
+  /// Format phone number for Firebase authentication
+  static String _formatPhoneNumberForFirebase(String phoneNumber) {
+    // Remove all non-digit characters
+    String digitsOnly = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+
+    // Ensure proper format for Pakistan phone numbers
+    if (digitsOnly.startsWith('92') && digitsOnly.length == 12) {
+      // +92 format: +92XXXXXXXXXX -> +92XXXXXXXXXX
+      return '+$digitsOnly';
+    } else if (digitsOnly.startsWith('03') && digitsOnly.length == 11) {
+      // 03XXXXXXXXX format -> +923XXXXXXXXX
+      return '+92${digitsOnly.substring(1)}';
+    } else if (digitsOnly.length == 10 && digitsOnly.startsWith('3')) {
+      // XXXXXXXXXX format (starting with 3) -> +923XXXXXXXXX
+      return '+92$digitsOnly';
+    }
+
+    // If format is not recognized, return as is
+    return phoneNumber;
   }
 
   /// Validate phone number format and availability

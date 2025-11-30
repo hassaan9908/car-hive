@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carhive/auth/loginscreen.dart';
-import 'package:carhive/theme/app_colors.dart';
+// import removed: app_colors not directly used, theme colors pulled from Theme.of(context)
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StartupPage extends StatefulWidget {
@@ -83,7 +83,7 @@ class _StartupPageState extends State<StartupPage>
             colors: [
               colorScheme.background,
               colorScheme.background.withOpacity(0.95),
-              AppColors.primaryBlue.withOpacity(0.05),
+              Theme.of(context).colorScheme.primary.withOpacity(0.05),
             ],
           ),
         ),
@@ -111,11 +111,16 @@ class _StartupPageState extends State<StartupPage>
                           width: 240,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
-                            color: AppColors.primaryBlue.withOpacity(0.1),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(0.1),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    AppColors.primaryBlue.withOpacity(0.2),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withOpacity(0.2),
                                 blurRadius: 30,
                                 offset: const Offset(0, 10),
                               ),
@@ -124,21 +129,27 @@ class _StartupPageState extends State<StartupPage>
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(20),
                             child: Container(
-                              color: AppColors.primaryBlue.withOpacity(0.1),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.1),
                               child: Image.asset(
                                 'assets/images/car-image.png',
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
                                     decoration: BoxDecoration(
-                                      color: AppColors.primaryBlue
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
                                           .withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.car_rental,
                                       size: 120,
-                                      color: AppColors.primaryBlue,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
                                     ),
                                   );
                                 },
@@ -159,7 +170,7 @@ class _StartupPageState extends State<StartupPage>
                           Text(
                             'CarHive',
                             style: theme.textTheme.displayLarge?.copyWith(
-                              color: AppColors.primaryBlue,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.bold,
                               letterSpacing: -1,
                             ),
@@ -222,11 +233,14 @@ class _StartupPageState extends State<StartupPage>
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primaryBlue,
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.primary,
                                   foregroundColor: Colors.white,
                                   elevation: 8,
-                                  shadowColor:
-                                      AppColors.primaryBlue.withOpacity(0.3),
+                                  shadowColor: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.3),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),

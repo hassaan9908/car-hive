@@ -67,35 +67,102 @@ class AdModel {
     return null;
   }
 
+  static String _asString(dynamic value) {
+    if (value == null) return '';
+    if (value is String) return value;
+    // Common patterns where a map is stored instead of a string
+    if (value is Map) {
+      final v =
+          value['name'] ?? value['title'] ?? value['city'] ?? value['value'];
+      if (v is String) return v;
+    }
+    return value.toString();
+  }
+
+  static List<String>? _parseImageUrls(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is List) {
+      final List<String> out = [];
+      for (final item in raw) {
+        if (item == null) continue;
+        if (item is String) {
+          out.add(item);
+        } else if (item is Map) {
+          final url = item['secure_url'] ??
+              item['secureUrl'] ??
+              item['url'] ??
+              item['path'];
+          if (url is String && url.isNotEmpty) out.add(url);
+        }
+      }
+      return out.isEmpty ? null : out;
+    }
+    // Single string
+    if (raw is String && raw.isNotEmpty) return [raw];
+    return null;
+  }
+
   // Factory constructor to create AdModel from Firestore document
   factory AdModel.fromFirestore(Map<String, dynamic> data, String documentId) {
-    // Parse imageUrls from Firestore
-    List<String>? imageUrlsList;
-    if (data['imageUrls'] != null) {
-      if (data['imageUrls'] is List) {
-        imageUrlsList = List<String>.from(data['imageUrls']);
-      }
-    }
-    
+    // Parse imageUrls from Firestore with backward compatibility
+    final imageUrlsList = _parseImageUrls(
+      data['imageUrls'] ?? data['images'] ?? data['photos'],
+    );
+
     return AdModel(
       id: documentId,
-      title: data['title'] ?? '',
-      price: data['price'] ?? '',
-      location: data['location'] ?? '',
-      year: data['year'] ?? '',
-      mileage: data['mileage'] ?? '',
-      fuel: data['fuel'] ?? '',
-      status: data['status'] ?? 'active',
-      userId: data['userId'],
-      createdAt: _parseCreatedAt(data['createdAt']),
-      description: data['description'],
-      carBrand: data['carBrand'],
-      bodyColor: data['bodyColor'],
-      kmsDriven: data['kmsDriven'],
-      registeredIn: data['registeredIn'],
-      name: data['name'],
-      phone: data['phone'],
-      previousStatus: data['previousStatus'],
+      title: _asString(data['title']),
+      price: _asString(data['price']),
+      location: _asString(data['location']),
+      year: _asString(data['year']),
+      mileage: _asString(data['mileage'] ?? data['kmsDriven']),
+      fuel: _asString(data['fuel']),
+      status: _asString(data['status']).isEmpty
+          ? 'active'
+          : _asString(data['status']),
+      userId:
+          _asString(data['userId']).isEmpty ? null : _asString(data['userId']),
+      createdAt: _parseCreatedAt(data['createdAt'] ?? data['created_at']),
+      description: (data['description'] is String)
+          ? data['description'] as String
+          : _asString(data['description']).isEmpty
+              ? null
+              : _asString(data['description']),
+      carBrand: (data['carBrand'] is String)
+          ? data['carBrand'] as String
+          : _asString(data['carBrand']).isEmpty
+              ? null
+              : _asString(data['carBrand']),
+      bodyColor: (data['bodyColor'] is String)
+          ? data['bodyColor'] as String
+          : _asString(data['bodyColor']).isEmpty
+              ? null
+              : _asString(data['bodyColor']),
+      kmsDriven: (data['kmsDriven'] is String)
+          ? data['kmsDriven'] as String
+          : _asString(data['kmsDriven']).isEmpty
+              ? null
+              : _asString(data['kmsDriven']),
+      registeredIn: (data['registeredIn'] is String)
+          ? data['registeredIn'] as String
+          : _asString(data['registeredIn']).isEmpty
+              ? null
+              : _asString(data['registeredIn']),
+      name: (data['name'] is String)
+          ? data['name'] as String
+          : _asString(data['name']).isEmpty
+              ? null
+              : _asString(data['name']),
+      phone: (data['phone'] is String)
+          ? data['phone'] as String
+          : _asString(data['phone']).isEmpty
+              ? null
+              : _asString(data['phone']),
+      previousStatus: (data['previousStatus'] is String)
+          ? data['previousStatus'] as String
+          : _asString(data['previousStatus']).isEmpty
+              ? null
+              : _asString(data['previousStatus']),
       imageUrls: imageUrlsList,
     );
   }

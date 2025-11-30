@@ -6,22 +6,31 @@ import '../auth/loginscreen.dart';
 import '../auth/auth_provider.dart';
 import 'homepage.dart';
 import 'edit_profile_page.dart';
+import 'blog_list_page.dart'; // Add this import
+import 'video_list_page.dart'; // Add this import
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../services/cloudinary_service.dart';
 
 class Profilepage extends StatelessWidget {
   const Profilepage({super.key});
 
   static const int _selectedIndex = 4;
   static const List<String> _navRoutes = [
-    '/', '/myads', '/upload', '/investment', '/profile'
+    '/',
+    '/myads',
+    '/upload',
+    '/investment',
+    '/profile'
   ];
 
   void _onTabSelected(BuildContext context, int index) {
     if (_selectedIndex == index) return;
     if (index == 0) {
-      Navigator.pushNamedAndRemoveUntil(context, _navRoutes[0], (route) => false);
+      Navigator.pushNamedAndRemoveUntil(
+          context, _navRoutes[0], (route) => false);
     } else {
       Navigator.pushReplacementNamed(context, _navRoutes[index]);
     }
@@ -52,21 +61,23 @@ class Profilepage extends StatelessWidget {
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-          child: Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+              children: [
                 // Header: user info or login CTA
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: authProvider.isLoggedIn
-                      ? _buildGreetingMessage(context, authProvider, colorScheme)
+                      ? _buildGreetingMessage(
+                          context, authProvider, colorScheme)
                       : _buildLoginButton(context, colorScheme),
                 ),
 
                 // User engagement score and rank (only for logged in users)
                 if (authProvider.isLoggedIn) ...[
                   const SizedBox(height: 16),
-                  _buildEngagementScore(context, authProvider.user!.uid, colorScheme),
+                  _buildEngagementScore(
+                      context, authProvider.user!.uid, colorScheme),
                   const SizedBox(height: 16),
                 ],
 
@@ -107,7 +118,8 @@ class Profilepage extends StatelessWidget {
                     );
                   }),
                   _dividerInset(context),
-                  _settingsTile(context, Icons.language, 'Choose Language', onTap: () {}),
+                  _settingsTile(context, Icons.language, 'Choose Language',
+                      onTap: () {}),
                   _dividerInset(context),
                 ]),
 
@@ -116,11 +128,15 @@ class Profilepage extends StatelessWidget {
                 // Products section (Sell/Buy)
                 _sectionHeader(context, 'Products'),
                 _settingsCard(context, [
-                  _settingsTile(context, Icons.directions_car, 'Sell My Car', onTap: () => _navigateToUpload(context)),
+                  _settingsTile(context, Icons.directions_car, 'Sell My Car',
+                      onTap: () => _navigateToUpload(context)),
                   _dividerInset(context),
-                  _settingsTile(context, Icons.directions_car_filled, 'Buy Used Car', onTap: () => _navigateToUsedCars(context)),
+                  _settingsTile(
+                      context, Icons.directions_car_filled, 'Buy Used Car',
+                      onTap: () => _navigateToUsedCars(context)),
                   _dividerInset(context),
-                  _settingsTile(context, Icons.car_rental, 'Buy New Car', onTap: () => _navigateToNewCars(context)),
+                  _settingsTile(context, Icons.car_rental, 'Buy New Car',
+                      onTap: () => _navigateToNewCars(context)),
                 ]),
 
                 const SizedBox(height: 16),
@@ -128,11 +144,14 @@ class Profilepage extends StatelessWidget {
                 // Explore section
                 _sectionHeader(context, 'Explore'),
                 _settingsCard(context, [
-                  _settingsTile(context, Icons.article, 'Blog', onTap: () {}),
+                  _settingsTile(context, Icons.article, 'Blog',
+                      onTap: () => _navigateToBlog(context)),
                   _dividerInset(context),
-                  _settingsTile(context, Icons.ondemand_video, 'Videos', onTap: () {}),
+                  _settingsTile(context, Icons.ondemand_video, 'Videos',
+                      onTap: () => _navigateToVideos(context)),
                   _dividerInset(context),
-                  _settingsTile(context, Icons.directions_car, 'Cool Rides', onTap: () {}),
+                  _settingsTile(context, Icons.directions_car, 'Cool Rides',
+                      onTap: () {}),
                 ]),
 
                 const SizedBox(height: 16),
@@ -140,29 +159,32 @@ class Profilepage extends StatelessWidget {
                 // More section
                 _sectionHeader(context, 'More'),
                 _settingsCard(context, [
-                  _settingsTile(context, Icons.reviews_outlined, 'Rate & Review', onTap: () {}),
+                  _settingsTile(
+                      context, Icons.reviews_outlined, 'Rate & Review',
+                      onTap: () {}),
                   _dividerInset(context),
-                  _settingsTile(context, Icons.help_outline, 'Help', onTap: () {}),
+                  _settingsTile(context, Icons.help_outline, 'Help',
+                      onTap: () => Navigator.pushNamed(context, '/help')),
                 ]),
 
                 const SizedBox(height: 20),
 
-                    if (authProvider.isLoggedIn)
+                if (authProvider.isLoggedIn)
                   Center(
                     child: TextButton.icon(
-                          onPressed: () => _showLogoutDialog(context, authProvider),
+                      onPressed: () => _showLogoutDialog(context, authProvider),
                       icon: const Icon(Icons.logout, size: 18),
                       label: const Text('Log out'),
                       style: TextButton.styleFrom(
                         foregroundColor: colorScheme.error,
                         textStyle: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
                       ),
-                    
+                    ),
+                  ),
+
                 const SizedBox(height: 12),
-                  ],
-                ),
+              ],
+            ),
           ),
         ),
         bottomNavigationBar: CustomBottomNav(
@@ -207,76 +229,245 @@ class Profilepage extends StatelessWidget {
     );
   }
 
-  Widget _buildGreetingMessage(BuildContext context, AuthProvider authProvider, ColorScheme colorScheme) {
-    final displayName = authProvider.getDisplayName();
-    
+  Widget _buildGreetingMessage(BuildContext context, AuthProvider authProvider,
+      ColorScheme colorScheme) {
+    final userId = authProvider.user?.uid;
+
+    if (userId == null) return const SizedBox.shrink();
+
     return Center(
       child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 17),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // User avatar
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: colorScheme.primary.withOpacity(0.12),
-            child: Text(
-              displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.primary,
-              ),
-            ),
-          ),
-            const SizedBox(height: 10),
-          
-          // Greeting message
-          Text(
-            'Welcome',
-              style: TextStyle(
-                color: colorScheme.onSurface.withOpacity(0.6),
-              fontSize: 14,
-                fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 2),
-          
-          // Display Name
-          Text(
-            displayName.isNotEmpty ? displayName : 'User',
-              style: TextStyle(
-                color: colorScheme.onSurface,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          
-          // Username (if different from display name)
-          FutureBuilder<String>(
-            future: authProvider.getUsername(),
-            builder: (context, snapshot) {
-              if (snapshot.hasData && snapshot.data!.isNotEmpty && snapshot.data != displayName) {
-                return Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    '@${snapshot.data}',
+        margin: const EdgeInsets.symmetric(horizontal: 17),
+        child: StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .snapshots(),
+          builder: (context, snapshot) {
+            String? photoUrl;
+            String username = '';
+
+            if (snapshot.hasData && snapshot.data!.exists) {
+              final data = snapshot.data!.data() as Map<String, dynamic>?;
+              photoUrl = data?['photoUrl'] as String?;
+              username = data?['username']?.toString() ?? '';
+            }
+
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Larger User avatar with profile picture
+                GestureDetector(
+                  onTap: () => _showImagePickerOptions(context, userId),
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: colorScheme.primary.withOpacity(0.12),
+                        backgroundImage: photoUrl != null && photoUrl.isNotEmpty
+                            ? NetworkImage(photoUrl)
+                            : null,
+                        child: photoUrl == null || photoUrl.isEmpty
+                            ? Text(
+                                username.isNotEmpty
+                                    ? username[0].toUpperCase()
+                                    : 'U',
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.primary,
+                                ),
+                              )
+                            : null,
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: colorScheme.surface,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Username (if available)
+                if (username.isNotEmpty)
+                  Text(
+                    '@$username',
                     style: TextStyle(
                       color: colorScheme.onSurfaceVariant,
-                      fontSize: 12,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
+              ],
+            );
+          },
         ),
       ),
     );
+  }
+
+  void _showImagePickerOptions(BuildContext context, String? userId) {
+    if (userId == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Take Photo'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAndUploadImage(context, userId, ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Choose from Gallery'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAndUploadImage(context, userId, ImageSource.gallery);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: const Text('Remove Photo',
+                      style: TextStyle(color: Colors.red)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removeProfilePhoto(context, userId);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAndUploadImage(
+      BuildContext context, String userId, ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      // Show loading indicator
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+
+      // Upload to Cloudinary
+      final cloudinaryService = CloudinaryService();
+      String downloadUrl;
+
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        downloadUrl =
+            await cloudinaryService.uploadImageBytes(imageBytes: bytes);
+      } else {
+        downloadUrl =
+            await cloudinaryService.uploadImage(imageFile: File(image.path));
+      }
+
+      // Update Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .update({'photoUrl': downloadUrl});
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated successfully')),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog if open
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update profile picture: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeProfilePhoto(BuildContext context, String userId) async {
+    try {
+      // Show loading indicator
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+
+      // Update Firestore to remove photoUrl
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .update({'photoUrl': FieldValue.delete()});
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture removed')),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog if open
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to remove profile picture: $e')),
+        );
+      }
+    }
   }
 
   void _showLogoutDialog(BuildContext context, AuthProvider authProvider) {
@@ -326,7 +517,8 @@ class Profilepage extends StatelessWidget {
       color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.2)),
+        side:
+            BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -336,8 +528,9 @@ class Profilepage extends StatelessWidget {
   }
 
   // Single settings tile with trailing chevron
-  Widget _settingsTile(BuildContext context, IconData icon, String title, {String? subtitle, VoidCallback? onTap}) {
-      return ListTile(
+  Widget _settingsTile(BuildContext context, IconData icon, String title,
+      {String? subtitle, VoidCallback? onTap}) {
+    return ListTile(
       leading: Container(
         width: 36,
         height: 36,
@@ -347,11 +540,12 @@ class Profilepage extends StatelessWidget {
         ),
         child: Icon(icon, color: Theme.of(context).colorScheme.primary),
       ),
-      title: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+      title: Text(title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
       subtitle: subtitle != null ? Text(subtitle) : null,
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
-        dense: true,
+      dense: true,
       visualDensity: const VisualDensity(vertical: -1),
     );
   }
@@ -360,12 +554,12 @@ class Profilepage extends StatelessWidget {
   Widget _dividerInset(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 68),
-      child: Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.3)),
+      child: Divider(
+          height: 1, color: Theme.of(context).dividerColor.withOpacity(0.3)),
     );
   }
 
   // Premium banner like the screenshot
-  
 
   void _showThemeBottomSheet(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
@@ -442,28 +636,38 @@ class Profilepage extends StatelessWidget {
     );
   }
 
-  Widget _buildEngagementScore(BuildContext context, String userId, ColorScheme colorScheme) {
+  Widget _buildEngagementScore(
+      BuildContext context, String userId, ColorScheme colorScheme) {
     return FutureBuilder<Map<String, dynamic>>(
       future: _calculateEngagementScore(userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildEngagementCard(context, colorScheme, 0, 'Bronze', 0, 0, 0, true);
+          return _buildEngagementCard(
+              context, colorScheme, 0, 'Bronze', 0, 0, 0, true);
         }
-        
+
         final data = snapshot.data ?? {};
         final score = data['score'] ?? 0;
         final rank = data['rank'] ?? 'Bronze';
         final adsSold = data['adsSold'] ?? 0;
         final positiveRatings = data['positiveRatings'] ?? 0;
         final totalRatings = data['totalRatings'] ?? 0;
-        
-        return _buildEngagementCard(context, colorScheme, score, rank, adsSold, positiveRatings, totalRatings, false);
+
+        return _buildEngagementCard(context, colorScheme, score, rank, adsSold,
+            positiveRatings, totalRatings, false);
       },
     );
   }
 
-  Widget _buildEngagementCard(BuildContext context, ColorScheme colorScheme, int score, String rank, 
-      int adsSold, int positiveRatings, int totalRatings, bool isLoading) {
+  Widget _buildEngagementCard(
+      BuildContext context,
+      ColorScheme colorScheme,
+      int score,
+      String rank,
+      int adsSold,
+      int positiveRatings,
+      int totalRatings,
+      bool isLoading) {
     return Card(
       elevation: 2,
       color: colorScheme.surface,
@@ -517,7 +721,7 @@ class Profilepage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Score and Rank Row
             Row(
               children: [
@@ -542,9 +746,9 @@ class Profilepage extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Breakdown
             Text(
               'Score Breakdown',
@@ -555,7 +759,7 @@ class Profilepage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            
+
             Row(
               children: [
                 Expanded(
@@ -579,18 +783,20 @@ class Profilepage extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Progress bar for next rank
-            if (!isLoading) _buildRankProgress(context, score, rank, colorScheme),
+            if (!isLoading)
+              _buildRankProgress(context, score, rank, colorScheme),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildScoreItem(BuildContext context, String label, String value, IconData icon, ColorScheme colorScheme) {
+  Widget _buildScoreItem(BuildContext context, String label, String value,
+      IconData icon, ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -623,7 +829,8 @@ class Profilepage extends StatelessWidget {
     );
   }
 
-  Widget _buildBreakdownItem(BuildContext context, String label, String value, IconData icon, ColorScheme colorScheme) {
+  Widget _buildBreakdownItem(BuildContext context, String label, String value,
+      IconData icon, ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -661,7 +868,8 @@ class Profilepage extends StatelessWidget {
     );
   }
 
-  Widget _buildRankProgress(BuildContext context, int score, String currentRank, ColorScheme colorScheme) {
+  Widget _buildRankProgress(BuildContext context, int score, String currentRank,
+      ColorScheme colorScheme) {
     final rankThresholds = {
       'Bronze': 0,
       'Silver': 50,
@@ -669,11 +877,12 @@ class Profilepage extends StatelessWidget {
       'Platinum': 300,
       'Diamond': 500,
     };
-    
+
     final ranks = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
     final currentIndex = ranks.indexOf(currentRank);
-    final nextRank = currentIndex < ranks.length - 1 ? ranks[currentIndex + 1] : null;
-    
+    final nextRank =
+        currentIndex < ranks.length - 1 ? ranks[currentIndex + 1] : null;
+
     if (nextRank == null) {
       return Container(
         padding: const EdgeInsets.all(8),
@@ -697,12 +906,13 @@ class Profilepage extends StatelessWidget {
         ),
       );
     }
-    
+
     final currentThreshold = rankThresholds[currentRank] ?? 0;
     final nextThreshold = rankThresholds[nextRank] ?? 0;
-    final progress = (score - currentThreshold) / (nextThreshold - currentThreshold);
+    final progress =
+        (score - currentThreshold) / (nextThreshold - currentThreshold);
     final remaining = nextThreshold - score;
-    
+
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -750,45 +960,49 @@ class Profilepage extends StatelessWidget {
           .collection('ads')
           .where('userId', isEqualTo: userId)
           .get();
-      
+
       int adsSold = 0;
       int totalRatings = 0;
       int positiveRatings = 0;
-      
+
       // Count sold ads and get ratings
       for (final adDoc in adsSnapshot.docs) {
         final adData = adDoc.data();
         if (adData['status'] == 'sold' || adData['isSold'] == true) {
           adsSold++;
         }
-        
+
         // Get ratings for this ad
         final reviewsSnapshot = await FirebaseFirestore.instance
             .collection('reviews')
             .where('adId', isEqualTo: adDoc.id)
             .get();
-        
+
         for (final reviewDoc in reviewsSnapshot.docs) {
           final rating = reviewDoc.data()['rating'];
           if (rating is num) {
             totalRatings++;
-            if (rating >= 4) { // Consider 4+ as positive
+            if (rating >= 4) {
+              // Consider 4+ as positive
               positiveRatings++;
             }
           }
         }
       }
-      
+
       // Calculate score: 10 points per sold ad + 5 points per positive rating
       final score = (adsSold * 10) + (positiveRatings * 5);
-      
+
       // Determine rank based on score
       String rank = 'Bronze';
-      if (score >= 500) rank = 'Diamond';
-      else if (score >= 300) rank = 'Platinum';
-      else if (score >= 150) rank = 'Gold';
+      if (score >= 500)
+        rank = 'Diamond';
+      else if (score >= 300)
+        rank = 'Platinum';
+      else if (score >= 150)
+        rank = 'Gold';
       else if (score >= 50) rank = 'Silver';
-      
+
       return {
         'score': score,
         'rank': rank,
@@ -805,5 +1019,19 @@ class Profilepage extends StatelessWidget {
         'totalRatings': 0,
       };
     }
+  }
+
+  void _navigateToBlog(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const BlogListPage()),
+    );
+  }
+
+  void _navigateToVideos(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const VideoListPage()),
+    );
   }
 }
