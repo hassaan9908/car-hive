@@ -7,6 +7,7 @@ import 'package:carhive/pages/chat.dart';
 import 'package:carhive/pages/profilepage.dart';
 import 'package:carhive/pages/upload.dart';
 import 'package:carhive/pages/car_details_page.dart';
+import 'package:carhive/pages/map_view_screen.dart';
 import 'package:carhive/models/ad_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -22,11 +23,34 @@ import 'providers/admin_provider.dart';
 import 'providers/search_provider.dart';
 import 'providers/content_provider.dart'; // Add ContentProvider import
 import 'pages/admin/admin_debug_page.dart';
+import 'widgets/gradient_scaffold_wrapper.dart';
 import 'pages/blog_list_page.dart';
 import 'pages/video_list_page.dart';
 import 'pages/blog_detail_page.dart';
 import 'pages/video_detail_page.dart';
 import 'pages/help_page.dart';
+
+/// Custom route generator that maintains gradient during transitions
+class GradientPageRoute<T> extends PageRouteBuilder<T> {
+  final Widget page;
+
+  GradientPageRoute({
+    required this.page,
+    RouteSettings? settings,
+  }) : super(
+          pageBuilder: (context, animation, secondaryAnimation) => page,
+          settings: settings,
+          transitionDuration: const Duration(milliseconds: 200),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // Use fade transition to prevent glitches
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+        );
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,6 +90,15 @@ class MyApp extends StatelessWidget {
             theme: lightTheme,
             darkTheme: darkTheme,
             themeMode: themeProvider.themeMode,
+            builder: (context, child) {
+              if (child == null) return const SizedBox();
+              // Use RepaintBoundary to prevent glitches during navigation
+              return RepaintBoundary(
+                child: GradientScaffoldWrapper(
+                  child: child,
+                ),
+              );
+            },
             home: const AppInitializer(),
             debugShowCheckedModeBanner: false,
             routes: {
@@ -111,6 +144,18 @@ class MyApp extends StatelessWidget {
                   ),
                 );
               },
+              '/map-view': (context) => const MapViewScreen(),
+            },
+            onGenerateRoute: (settings) {
+              // Handle routes that need custom transitions
+              if (settings.name == '/car-details') {
+                final ad = settings.arguments as AdModel;
+                return GradientPageRoute(
+                  page: CarDetailsPage(ad: ad),
+                  settings: settings,
+                );
+              }
+              return null; // Let MaterialApp handle other routes
             },
           );
         },

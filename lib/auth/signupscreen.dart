@@ -86,7 +86,7 @@ class _SignupscreenState extends State<Signupscreen> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -106,10 +106,10 @@ class _SignupscreenState extends State<Signupscreen> {
                 children: [
                   // Logo or App Title
 
-                  Image.asset(
-                    'assets/images/Retro.gif',
-                    width: 140,
-                    height: 140,
+                 Image.asset(
+                    'assets/images/orange_car.png',
+                     width: 200,
+                     height: 200,
                   ),
                   const SizedBox(height: 20),
 
