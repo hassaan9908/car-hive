@@ -29,11 +29,8 @@ class Mutualinvestment extends StatelessWidget {
         appBar: AppBar(
               title: Text(
                 'Mutual Investment',
-                style: TextStyle(
-                  color: Colors.white
                 ),
-                ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
+              backgroundColor: Colors.transparent,
               centerTitle: true,
             ),
         body: Center(

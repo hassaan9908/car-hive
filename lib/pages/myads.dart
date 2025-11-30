@@ -37,13 +37,12 @@ class _MyadsState extends State<Myads> {
         },
         child: Scaffold(
           appBar: AppBar(
-            title: const Text(
-              'My Ads',
-              style: TextStyle(color: Colors.white),
+              title: Text(
+                'My Ads',
+                ),
+              backgroundColor: Colors.transparent,
+              centerTitle: true,
             ),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            centerTitle: true,
-          ),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -83,9 +82,8 @@ class _MyadsState extends State<Myads> {
         appBar: AppBar(
           title: const Text(
             'My Ads',
-            style: TextStyle(color: Colors.white),
           ),
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          backgroundColor: Colors.transparent,
           centerTitle: true,
         ),
         body: Column(
@@ -127,8 +125,15 @@ class _MyadsState extends State<Myads> {
   }
 
   Widget _buildTopTabs() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color topTabs_color = isDark 
+        ? const Color.fromARGB(255, 15, 15, 15) 
+        : Colors.grey.shade200;
+
     return Container(
-      color: Theme.of(context).colorScheme.surface,
+      color: topTabs_color,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(_tabs.length, (index) {

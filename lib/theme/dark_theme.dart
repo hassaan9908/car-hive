@@ -8,10 +8,10 @@ final ThemeData darkTheme = ThemeData(
 
   // Color Scheme - Automotive Dark Theme
   colorScheme: const ColorScheme.dark(
-    primary: AppColors.primaryBlueLight,
+    primary: AppColors.primaryOrange,
     onPrimary: Colors.white,
-    primaryContainer: AppColors.primaryBlueDark,
-    onPrimaryContainer: AppColors.primaryBlueLight,
+    primaryContainer: AppColors.primaryOrangeDark,
+    onPrimaryContainer: AppColors.primaryOrange,
     secondary: AppColors.secondaryGreen,
     onSecondary: Colors.white,
     secondaryContainer: AppColors.secondaryGreen,
@@ -20,7 +20,7 @@ final ThemeData darkTheme = ThemeData(
     onTertiary: Colors.white,
     tertiaryContainer: AppColors.secondaryOrange,
     onTertiaryContainer: AppColors.secondaryOrange,
-    background: AppColors.darkBackground,
+    background: Color.fromARGB(255, 22, 16, 10), // Custom dark background
     onBackground: AppColors.darkOnSurface,
     surface: AppColors.darkSurface,
     onSurface: AppColors.darkOnSurface,
@@ -36,23 +36,24 @@ final ThemeData darkTheme = ThemeData(
     scrim: AppColors.neutral900,
     inverseSurface: AppColors.lightSurface,
     onInverseSurface: AppColors.lightOnSurface,
-    inversePrimary: AppColors.primaryBlueLight,
+    inversePrimary: AppColors.primaryOrangeLight,
   ),
 
   // App Bar Theme - Automotive Dark Style
   appBarTheme: const AppBarTheme(
-    backgroundColor: AppColors.darkSurface,
-    foregroundColor: AppColors.darkOnSurface,
+    backgroundColor: Color(0xFF221910), // Same as app background (#221910)
+    foregroundColor: Color(0xFFf48c25), // Orange for title and actions
     elevation: 0,
     centerTitle: true,
     titleTextStyle: TextStyle(
-      color: AppColors.darkOnSurface,
+      color: Color(0xFFf48c25), // Orange #f48c25
       fontSize: 20,
       fontWeight: FontWeight.w600,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
-    iconTheme: IconThemeData(color: AppColors.darkOnSurface),
+    iconTheme: IconThemeData(color: Color(0xFFf48c25)), // Orange #f48c25
+    actionsIconTheme: IconThemeData(color: Color(0xFFf48c25)), // Orange #f48c25 for action buttons
     surfaceTintColor: Colors.transparent,
   ),
 
@@ -78,7 +79,8 @@ final ThemeData darkTheme = ThemeData(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.primaryBlueLight, width: 2),
+      borderSide:
+          const BorderSide(color: AppColors.primaryOrange, width: 2),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
@@ -92,7 +94,7 @@ final ThemeData darkTheme = ThemeData(
       inherit: false,
     ),
     floatingLabelStyle: const TextStyle(
-      color: AppColors.primaryBlueLight,
+      color: AppColors.primaryOrange,
       fontSize: 16,
       fontWeight: FontWeight.w500,
       textBaseline: TextBaseline.alphabetic,
@@ -103,10 +105,10 @@ final ThemeData darkTheme = ThemeData(
   // Elevated Button Theme - Automotive Dark Style
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.primaryBlueLight,
+      backgroundColor: AppColors.primaryOrange, // #f48c25
       foregroundColor: Colors.white,
       elevation: 4,
-      shadowColor: AppColors.primaryBlueLight.withOpacity(0.3),
+      shadowColor: AppColors.primaryOrange.withOpacity(0.3),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -124,7 +126,7 @@ final ThemeData darkTheme = ThemeData(
   // Text Button Theme - Automotive Dark Style
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(
-      foregroundColor: AppColors.primaryBlueLight,
+      foregroundColor: AppColors.primaryOrange,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -141,8 +143,8 @@ final ThemeData darkTheme = ThemeData(
   // Outlined Button Theme - Automotive Dark Style
   outlinedButtonTheme: OutlinedButtonThemeData(
     style: OutlinedButton.styleFrom(
-      foregroundColor: AppColors.primaryBlueLight,
-      side: const BorderSide(color: AppColors.primaryBlueLight, width: 1.5),
+      foregroundColor: AppColors.primaryOrange,
+      side: const BorderSide(color: AppColors.primaryOrange, width: 1.5),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -159,8 +161,8 @@ final ThemeData darkTheme = ThemeData(
 
   // Bottom Navigation Bar Theme - Automotive Dark Style
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-    backgroundColor: AppColors.darkSurface,
-    selectedItemColor: AppColors.primaryBlueLight,
+    backgroundColor: Colors.black, // Black in dark mode
+    selectedItemColor: AppColors.primaryOrange,
     unselectedItemColor: AppColors.darkOnSurfaceVariant,
     type: BottomNavigationBarType.fixed,
     elevation: 8,
@@ -180,7 +182,7 @@ final ThemeData darkTheme = ThemeData(
 
   // Floating Action Button Theme - Automotive Dark Style
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: AppColors.primaryBlueLight,
+    backgroundColor: AppColors.primaryOrange,
     foregroundColor: Colors.white,
     elevation: 6,
     shape: RoundedRectangleBorder(
@@ -325,8 +327,8 @@ final ThemeData darkTheme = ThemeData(
     ),
   ),
 
-  // Scaffold Background - Automotive Dark Style
-  scaffoldBackgroundColor: AppColors.darkBackground,
+  // Scaffold Background - Transparent to allow gradient wrapper to show through
+  scaffoldBackgroundColor: Colors.transparent,
 
   // List Tile Theme - Automotive Dark Style
   listTileTheme: const ListTileThemeData(
@@ -350,7 +352,7 @@ final ThemeData darkTheme = ThemeData(
   // Chip Theme - Automotive Dark Style
   chipTheme: ChipThemeData(
     backgroundColor: AppColors.darkSurfaceVariant,
-    selectedColor: AppColors.primaryBlueLight,
+    selectedColor: AppColors.primaryOrange,
     disabledColor: AppColors.darkSurfaceVariant,
     labelStyle: const TextStyle(
       fontSize: 14,

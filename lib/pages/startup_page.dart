@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carhive/auth/loginscreen.dart';
+import 'package:carhive/auth/signupscreen.dart';
 // import removed: app_colors not directly used, theme colors pulled from Theme.of(context)
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -72,22 +73,10 @@ class _StartupPageState extends State<StartupPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colorScheme.background,
-              colorScheme.background.withOpacity(0.95),
-              Theme.of(context).colorScheme.primary.withOpacity(0.05),
-            ],
-          ),
-        ),
-        child: SafeArea(
+      body: SafeArea(
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -98,107 +87,90 @@ class _StartupPageState extends State<StartupPage>
                       MediaQuery.of(context).padding.bottom,
                 ),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
 
-                    // Car Image with Animation
+                    // Orange Car Image at the top
                     FadeTransition(
                       opacity: _fadeAnimation,
                       child: SlideTransition(
                         position: _slideAnimation,
-                        child: Container(
-                          height: 240,
-                          width: 240,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withOpacity(0.1),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withOpacity(0.2),
-                                blurRadius: 30,
-                                offset: const Offset(0, 10),
+                        child: Image.asset(
+                          'assets/images/orange_car.png',
+                          height: 350,
+                          width: 350,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 200,
+                              width: 200,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.1),
-                              child: Image.asset(
-                                'assets/images/car-image.png',
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Icon(
-                                      Icons.car_rental,
-                                      size: 120,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                    ),
-                                  );
-                                },
+                              child: const Icon(
+                                Icons.car_rental,
+                                size: 100,
+                                color: Colors.grey,
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 20),
 
-                    // App Title with Animation
+                    // CarHive Title
                     FadeTransition(
                       opacity: _fadeAnimation,
-                      child: Column(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'CarHive',
-                            style: theme.textTheme.displayLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -1,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Your Ultimate Car Marketplace',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              color: colorScheme.onSurface.withOpacity(0.7),
-                              fontWeight: FontWeight.w500,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Buy, sell, and discover amazing cars',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
+                        'Car',
+                        style: theme.textTheme.displayLarge?.copyWith(
+                          color: Color(0xFFf48c25),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 42,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      Text(
+                        'Hive',
+                        style: theme.textTheme.displayLarge?.copyWith(
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 42,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
                         ],
+                      )
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Subtitle
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Text(
+                        'Your Ultimate Car Marketplace\nBuy, sell, and discover amazing cars',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: isDark
+                              ? Colors.white.withOpacity(0.8)
+                              : Colors.black87.withOpacity(0.7),
+                          fontSize: 16,
+                          height: 1.5,
+                        ),
                       ),
                     ),
 
                     const SizedBox(height: 60),
 
-                    // Action Buttons with Animation
+                    // Action Buttons
                     SlideTransition(
                       position: Tween<Offset>(
                         begin: const Offset(0, 0.5),
@@ -218,7 +190,7 @@ class _StartupPageState extends State<StartupPage>
                         )),
                         child: Column(
                           children: [
-                            // Sign Up Button
+                            // Create Account Button
                             SizedBox(
                               width: double.infinity,
                               height: 56,
@@ -228,37 +200,26 @@ class _StartupPageState extends State<StartupPage>
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const Loginscreen(),
+                                      builder: (context) =>
+                                          const Signupscreen(),
                                     ),
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      Theme.of(context).colorScheme.primary,
+                                  backgroundColor: const Color(0xFFf48c25),
                                   foregroundColor: Colors.white,
-                                  elevation: 8,
-                                  shadowColor: Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withOpacity(0.3),
+                                  elevation: 0,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.person_add, size: 20),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Signin/Signup',
-                                      style:
-                                          theme.textTheme.titleLarge?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  'Create an Account',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
                                 ),
                               ),
                             ),
@@ -266,49 +227,76 @@ class _StartupPageState extends State<StartupPage>
                             const SizedBox(height: 16),
 
                             // Sign In Button
-
-                            const SizedBox(height: 24),
-
-                            // Browse as Guest Button
                             SizedBox(
                               width: double.infinity,
-                              height: 48,
-                              child: TextButton(
+                              height: 56,
+                              child: OutlinedButton(
                                 onPressed: () async {
                                   await _markStartupAsSeen();
-                                  Navigator.pushNamedAndRemoveUntil(
+                                  Navigator.push(
                                     context,
-                                    '/home',
-                                    (route) => false,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const Loginscreen(),
+                                    ),
                                   );
                                 },
-                                style: TextButton.styleFrom(
-                                  foregroundColor:
-                                      colorScheme.onSurface.withOpacity(0.7),
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: isDark
+                                      ? const Color(0xFF221910)
+                                      : Colors.white,
+                                  foregroundColor: Colors.black,
+                                  side: BorderSide(
+                                    color: isDark
+                                      ? Colors.white
+                                      : Colors.black,
+                                    width: 1.5,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.visibility,
-                                      size: 18,
-                                      color: colorScheme.onSurface
-                                          .withOpacity(0.7),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Browse as Guest',
-                                      style:
-                                          theme.textTheme.titleMedium?.copyWith(
-                                        color: colorScheme.onSurface
-                                            .withOpacity(0.7),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  'Sign in',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: isDark
+                                      ? Colors.white
+                                      : Colors.black,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Browse as Guest Button
+                            TextButton(
+                              onPressed: () async {
+                                await _markStartupAsSeen();
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  '/home',
+                                  (route) => false,
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: isDark
+                                    ? Colors.white
+                                    : Colors.black87,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                              ),
+                              child: Text(
+                                'Browse as guest',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: isDark
+                                      ? Colors.white
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -324,7 +312,6 @@ class _StartupPageState extends State<StartupPage>
             ),
           ),
         ),
-      ),
     );
   }
 }

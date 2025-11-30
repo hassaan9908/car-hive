@@ -35,7 +35,6 @@ class _LoginscreenState extends State<Loginscreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     
     return Scaffold(
-      backgroundColor: colorScheme.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -47,15 +46,15 @@ class _LoginscreenState extends State<Loginscreen> {
                 children: [
                   // Logo or App Title
                   Image.asset(
-                    'assets/images/car-image.png',
-                    width: 100,
-                    height: 100,
+                    'assets/images/orange_car.png',
+                    width: 200,
+                    height: 200,
                     ),
                   const SizedBox(height: 24),
                   
                   // Title
                   Text(
-                    'Welcome Back',
+                    'Welcome To CarHive',
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.primary,

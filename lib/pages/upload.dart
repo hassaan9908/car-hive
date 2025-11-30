@@ -37,8 +37,7 @@ class Upload extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
           title: const Text("Choose a plan"),
           elevation: 0,
         ),
@@ -145,6 +144,58 @@ class Upload extends StatelessWidget {
                             color: colorScheme.primary,
                             letterSpacing: 0.5,
                           ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Icon(Icons.check, color: Colors.green, size: 18),
+                            SizedBox(width: 5),
+                            Text(
+                              "Post an ad in 2 minutes",
+                              style: TextStyle(color: colorScheme.onSurface),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Icon(Icons.check, color: Colors.green, size: 18),
+                            SizedBox(width: 5),
+                            Text(
+                              "20 million users",
+                              style: TextStyle(color: colorScheme.onSurface),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Icon(Icons.check, color: Colors.green, size: 18),
+                            SizedBox(width: 5),
+                            Text(
+                              "Connect directly with buyers",
+                              style: TextStyle(color: colorScheme.onSurface),
+                            ),
+                          ],
+                        ),
+                        // const Spacer(),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const PostAdCar()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFf48c25),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                          ),
+                          child: const Text("Post Your Ad"),
                         ),
                       ],
                     ),
@@ -324,14 +375,25 @@ class Upload extends StatelessWidget {
                               color: Colors.white.withOpacity(0.4),
                               width: 1,
                             ),
-                          ),
-                          child: Text(
-                            badge,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.8,
+                          ],
+                        ),
+                        // const Spacer(),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const CombinedInfoScreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFf48c25),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
                             ),
                           ),
                         ),
