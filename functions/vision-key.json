@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "carhive-bf048",
+  "private_key_id": "bd4a5a04e7debf67773089225b22937b8ff3afe4",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCes+0p+3vI8VPk\nSpTWL+BDguAJdbGwPxFlXzpr3O4tGbk7IUlK5esAQjlgX4LCBgv40ScUPjN4T1Z8\nH6/az6B4SXfacCJ14niXpHeZVBGa+iHxiJtmE987DBG+q5W+Awvb7Bk8YTH7xPCE\n+M7xNcnYL/ZNfd4SyyFHTr0RMsFHqDelcjWt8l3OsWkSwa5A9JXaXSCspH3VCQve\nCuFCwmmkfRoPKbUXanMXo7wMXkZB5e3CuKiltCQ+rymVzXIVysIwYGN5DoJrRzq1\nyOr85bS4OeR0Txu5ta5xm08Bf+PPfhv2+fwlFEtOLkbPDG7WqXKDs/mSNrqyA4xs\ns5V4584XAgMBAAECggEATM67y4PA5wGVHnnSCs9k9IeUsj9Z3fjIDI3IEof8Zat7\ncFitxif8UkW6yx+ugwS2KpffF/b6phGPw8b6LyYpfc3gycFXjEItJwccMwLy+lRw\ntRruSrr3YPZ4aBVXBX0n8ioUFJrdvAIWfeSFE0x7AbxEskBmiCXzVzWOX5J25JyM\nJTHjnQWarpdxktu+jgc1vl5eXVHJDKygVAaaTI8gLmMWvSBShh0bj4BImj4wXq0U\ntWGufPC/jGMyWQa+S0cC4WSOuIT2qfCHrzyev2pbkSdExU2TctoyfKOiLH1t97Ki\n5uPsc2M8kx+zPM1bgTL9Oj2bsbU02OrnKIKl+CZjwQKBgQDLUvVMQ2G9MAnoZZcj\ns7UGkYIVFPDQneIZCzdJ4e/QbuUgl2PuHrTR87tT0xkK7CwdSmgf7TeXMH4LmFLv\ndodtHqC7Kr7npmr7UvfJIq9kYKbp0h8T+fwjxLiVQhdVTpQE51N5q7pWvxk3RVtz\nJvJ+595yEhcjd7LIUSL1lHbScQKBgQDH0Y86Chrrpbk93Hfukixu15GC6ywYSIYZ\nWY7zq5UCglsgD+/hCalttMUJ4laIBQ0hJS3H5Xssyj48ID17W6Hw1ryz1sOTvWSa\nsD+08LjAX47Mfo8R3d1+7uPt/8l0dP8eXHsbxDSeWzsrbXhKAQ0uGSwFIAFRzIi2\n6HXK0wVdBwKBgBTrcS+qkyjbA3n00esrd0m4uPCgWfKs+/FltQeWBo2ki1CiIvcC\nE8qyUCjcxGvaRuOwnywBxUF6DM32mznmMSLqDtGTIVdGSSWYsMPyHKewRhwysV3l\nz6qCeBdrWGk/j309q9oN8DsyqE6GhVVAwZyLENkdwWG11CBGMNmhr+QRAoGADYc1\nkDNg8TVOHk8P25oP4g08L8XmPVqjoZG7qOmj9ACJVNlfXzf9PY0wjePCAgF9ixHu\nUItL1JN4tS9lmjVw+FJBgld29EitR//IwGJPz85oZ5Xl78q6lT5tNg7MP9Mv9olC\nWHXnLhV1IxKNQ01g7A8OOOaa0EPtuZxxZSL2SP8CgYBTwH50PqiM0oDVqgriFdwl\nhBiO4Z6HZRpZVyRfKp0AqfeZUav9x73L6kCddydjRs4GBtzEcQTSPOOc+EmvCLd2\n6WX7Hgp47M1oLDvsas4pCAo7tN4tjsf0AuEJpxfxYAQRKR7QY8aG3+ov/iUp55PY\n94c3AwqJVmjNnOHCNGdN6w==\n-----END PRIVATE KEY-----\n",
+  "client_email": "vision-api-service-account@carhive-bf048.iam.gserviceaccount.com",
+  "client_id": "116399850722609937710",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/vision-api-service-account%40carhive-bf048.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

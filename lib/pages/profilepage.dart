@@ -42,11 +42,8 @@ class Profilepage extends StatelessWidget {
         appBar: AppBar(
           title: const Text(
             'Profile',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
           ),
+          backgroundColor: Colors.transparent,
           centerTitle: true,
         ),
         body: SafeArea(
@@ -209,6 +206,12 @@ class Profilepage extends StatelessWidget {
 
   Widget _buildGreetingMessage(BuildContext context, AuthProvider authProvider, ColorScheme colorScheme) {
     final displayName = authProvider.getDisplayName();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color card_greeting = isDark 
+        ? const Color.fromARGB(255, 43, 42, 42) 
+        : Colors.grey.shade400;
     
     return Center(
       child: Container(
@@ -220,7 +223,7 @@ class Profilepage extends StatelessWidget {
           // User avatar
           CircleAvatar(
             radius: 26,
-            backgroundColor: colorScheme.primary.withOpacity(0.12),
+            backgroundColor: card_greeting,
             child: Text(
               displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
               style: TextStyle(
@@ -321,9 +324,16 @@ class Profilepage extends StatelessWidget {
 
   // Modern card container for grouped settings
   Widget _settingsCard(BuildContext context, List<Widget> children) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color card_settings = isDark 
+        ? const Color.fromARGB(255, 15, 15, 15) 
+        : Colors.grey.shade200;
+
     return Card(
       elevation: 0,
-      color: Theme.of(context).colorScheme.surface,
+      color: card_settings,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.2)),
@@ -464,9 +474,16 @@ class Profilepage extends StatelessWidget {
 
   Widget _buildEngagementCard(BuildContext context, ColorScheme colorScheme, int score, String rank, 
       int adsSold, int positiveRatings, int totalRatings, bool isLoading) {
+        final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color card_engagement = isDark 
+        ? const Color.fromARGB(255, 15, 15, 15) 
+        : Colors.grey.shade200;
+
     return Card(
       elevation: 2,
-      color: colorScheme.surface,
+      color: card_engagement,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: colorScheme.primary.withOpacity(0.2)),

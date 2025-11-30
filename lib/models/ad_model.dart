@@ -20,6 +20,8 @@ class AdModel {
   final String? phone;
   final String? previousStatus; // used to restore from removed to prior state
   final List<String>? imageUrls; // Cloudinary image URLs
+  final Map<String, double>? locationCoordinates; // {lat: double, lng: double}
+  final List<String>? images360Urls; // 360° view images (8 angles)
 
   AdModel({
     required this.title,
@@ -41,6 +43,8 @@ class AdModel {
     this.phone,
     this.previousStatus,
     this.imageUrls,
+    this.locationCoordinates,
+    this.images360Urls,
   });
 
   static DateTime? _parseCreatedAt(dynamic value) {
@@ -77,11 +81,53 @@ class AdModel {
       }
     }
     
+    // Parse images360Urls from Firestore
+    List<String>? images360UrlsList;
+    if (data['images360Urls'] != null) {
+      if (data['images360Urls'] is List) {
+        images360UrlsList = List<String>.from(data['images360Urls']);
+      }
+    }
+    
+    // Parse location - can be string or coordinates object
+    String locationString = '';
+    Map<String, double>? locationCoords;
+    
+    if (data['locationString'] != null) {
+      // New format: locationString has the text, location has coordinates
+      locationString = data['locationString'] as String;
+      if (data['location'] != null && data['location'] is Map) {
+        final loc = data['location'] as Map<String, dynamic>;
+        if (loc['lat'] != null && loc['lng'] != null) {
+          locationCoords = {
+            'lat': (loc['lat'] as num).toDouble(),
+            'lng': (loc['lng'] as num).toDouble(),
+          };
+        }
+      }
+    } else if (data['location'] != null) {
+      // Old format: location is a string, or new format without locationString
+      if (data['location'] is String) {
+        locationString = data['location'] as String;
+      } else if (data['location'] is Map) {
+        // New format: location is coordinates object
+        final loc = data['location'] as Map<String, dynamic>;
+        if (loc['lat'] != null && loc['lng'] != null) {
+          locationCoords = {
+            'lat': (loc['lat'] as num).toDouble(),
+            'lng': (loc['lng'] as num).toDouble(),
+          };
+        }
+        // Try to get locationString from elsewhere or use empty
+        locationString = data['locationString'] as String? ?? '';
+      }
+    }
+    
     return AdModel(
       id: documentId,
       title: data['title'] ?? '',
       price: data['price'] ?? '',
-      location: data['location'] ?? '',
+      location: locationString,
       year: data['year'] ?? '',
       mileage: data['mileage'] ?? '',
       fuel: data['fuel'] ?? '',
@@ -97,15 +143,17 @@ class AdModel {
       phone: data['phone'],
       previousStatus: data['previousStatus'],
       imageUrls: imageUrlsList,
+      locationCoordinates: locationCoords,
+      images360Urls: images360UrlsList,
     );
   }
 
   // Convert AdModel to Map for Firestore
   Map<String, dynamic> toFirestore() {
-    return {
+    final Map<String, dynamic> data = {
       'title': title,
       'price': price,
-      'location': location,
+      'location': location, // String location for backward compatibility
       'year': year,
       'mileage': mileage,
       'fuel': fuel,
@@ -121,6 +169,19 @@ class AdModel {
       'phone': phone,
       'previousStatus': previousStatus,
       'imageUrls': imageUrls,
+      'images360Urls': images360Urls,
     };
+    
+    // Add location coordinates if available (overwrites 'location' string with coordinates object)
+    if (locationCoordinates != null) {
+      data['location'] = {
+        'lat': locationCoordinates!['lat'],
+        'lng': locationCoordinates!['lng'],
+      };
+      // Keep string location in a separate field for display
+      data['locationString'] = location;
+    }
+    
+    return data;
   }
 }

@@ -26,7 +26,7 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Book Visit"),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
