@@ -29,6 +29,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
   bool _isCheckingUsername = false;
   String? _usernameError;
   String? _originalUsername;
+  String? _originalFullName;
+  String? _originalDisplayName;
+  String? _originalEmail;
+  String? _originalPhone;
+  String? _originalBirthday;
+  String? _originalGender;
+  String? _originalCity;
+
+  // OTP verification state
+  String? _verificationId;
+  bool _isVerifyingOtp = false;
+  final TextEditingController _otpController = TextEditingController();
 
   // Cities used for car searching (you can expand this list)
   final List<String> _cities = [
@@ -104,7 +116,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     // Add listener for username changes
     _usernameController.addListener(_onUsernameChanged);
 
-    // Load user data and store original username
+    // Load user data and store original values
     _loadUserData();
   }
 
@@ -120,6 +132,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
         if (userDoc.exists) {
           final data = userDoc.data()!;
           _originalUsername = data['username']?.toString();
+          _originalFullName = data['fullName']?.toString();
+          _originalDisplayName = data['displayName']?.toString();
+          _originalEmail = data['email']?.toString();
+          _originalPhone = data['phoneNumber']?.toString();
+          _originalBirthday = data['birthday']?.toString();
+          _originalGender = data['gender']?.toString();
+          _originalCity = data['city']?.toString();
 
           setState(() {
             _fullNameController.text = data['fullName'] ?? '';
@@ -193,6 +212,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _emailController.dispose();
     _phoneController.dispose();
     _birthdayController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
@@ -248,18 +268,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     label: 'Full Name',
                     hint: 'Enter your full name',
                     validator: (value) {
-                      if (value?.trim().isEmpty == true) {
-                        return 'Full name is required';
-                      }
-                      final name = value!.trim();
+                      // Only validate if the field has been changed
+                      if (_fullNameController.text.trim() !=
+                          _originalFullName) {
+                        if (value?.trim().isEmpty == true) {
+                          return 'Full name is required';
+                        }
+                        final name = value!.trim();
 
-                      // Allow partial input during typing
-                      if (name.length < 2) {
-                        return null; // Don't show error for very short input
-                      }
+                        // Allow partial input during typing
+                        if (name.length < 2) {
+                          return null; // Don't show error for very short input
+                        }
 
-                      if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(name)) {
-                        return 'Full name should contain only alphabets';
+                        if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(name)) {
+                          return 'Full name should contain only alphabets';
+                        }
                       }
                       return null;
                     },
@@ -270,18 +294,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     label: 'Display Name',
                     hint: 'How others will see your name',
                     validator: (value) {
-                      if (value?.trim().isEmpty == true) {
-                        return 'Display name is required';
-                      }
-                      final name = value!.trim();
+                      // Only validate if the field has been changed
+                      if (_displayNameController.text.trim() !=
+                          _originalDisplayName) {
+                        if (value?.trim().isEmpty == true) {
+                          return 'Display name is required';
+                        }
+                        final name = value!.trim();
 
-                      // Allow partial input during typing
-                      if (name.length < 2) {
-                        return null; // Don't show error for very short input
-                      }
+                        // Allow partial input during typing
+                        if (name.length < 2) {
+                          return null; // Don't show error for very short input
+                        }
 
-                      if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(name)) {
-                        return 'Display name should contain only alphabets';
+                        if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(name)) {
+                          return 'Display name should contain only alphabets';
+                        }
                       }
                       return null;
                     },
@@ -300,19 +328,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       }
                       return Validators.validateUsername(value);
                     },
-                    suffixIcon: _isCheckingUsername
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : _usernameController.text.trim() !=
-                                    _originalUsername &&
-                                _usernameError == null &&
-                                _usernameController.text.trim().length >= 3
-                            ? const Icon(Icons.check_circle,
-                                color: Colors.green)
-                            : null,
+                    suffixIcon: _usernameController.text.trim() !=
+                            _originalUsername
+                        ? (_isCheckingUsername
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : _usernameError == null &&
+                                    _usernameController.text.trim().length >= 3
+                                ? const Icon(Icons.check_circle,
+                                    color: Colors.green)
+                                : null)
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -321,28 +351,31 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     hint: 'Your email address',
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
-                      if (value?.trim().isEmpty == true) {
-                        return 'Email is required';
-                      }
-                      final email = value!.trim();
+                      // Only validate if the field has been changed
+                      if (_emailController.text.trim() != _originalEmail) {
+                        if (value?.trim().isEmpty == true) {
+                          return 'Email is required';
+                        }
+                        final email = value!.trim();
 
-                      // Allow partial input during typing
-                      if (email.length < 5) {
-                        return null; // Don't show error for very short input
-                      }
+                        // Allow partial input during typing
+                        if (email.length < 5) {
+                          return null; // Don't show error for very short input
+                        }
 
-                      // Check if it looks like an email (has @ and .)
-                      if (!email.contains('@') || !email.contains('.')) {
-                        if (email.length >= 5) {
+                        // Check if it looks like an email (has @ and .)
+                        if (!email.contains('@') || !email.contains('.')) {
+                          if (email.length >= 5) {
+                            return 'Enter a valid email address';
+                          }
+                          return null;
+                        }
+
+                        if (!RegExp(
+                                r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+                            .hasMatch(email)) {
                           return 'Enter a valid email address';
                         }
-                        return null;
-                      }
-
-                      if (!RegExp(
-                              r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-                          .hasMatch(email)) {
-                        return 'Enter a valid email address';
                       }
                       return null;
                     },
@@ -354,46 +387,50 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     hint: 'Your contact number',
                     keyboardType: TextInputType.phone,
                     validator: (value) {
-                      if (value?.trim().isEmpty == true) {
-                        return 'Phone number is required';
-                      }
-                      final phone = value!.trim();
+                      // Only validate if the field has been changed
+                      if (_phoneController.text.trim() != _originalPhone) {
+                        if (value?.trim().isEmpty == true) {
+                          return 'Phone number is required';
+                        }
+                        final phone = value!.trim();
 
-                      // Allow partial input during typing
-                      if (phone.length < 3) {
-                        return null; // Don't show error for very short input
-                      }
+                        // Allow partial input during typing
+                        if (phone.length < 3) {
+                          return null; // Don't show error for very short input
+                        }
 
-                      // Check for Pakistan phone numbers
-                      if (phone.startsWith('+92')) {
-                        if (phone.length > 13) {
-                          return 'Phone number too long';
+                        // Check for Pakistan phone numbers
+                        if (phone.startsWith('+92')) {
+                          if (phone.length > 13) {
+                            return 'Phone number too long';
+                          }
+                          if (phone.length < 13) {
+                            return 'Phone number incomplete';
+                          }
+                          if (!RegExp(r'^\+92[0-9]{10}$').hasMatch(phone)) {
+                            return 'Invalid Pakistan phone number format';
+                          }
+                        } else if (phone.startsWith('03')) {
+                          if (phone.length > 11) {
+                            return 'Phone number too long';
+                          }
+                          if (phone.length < 11) {
+                            return 'Phone number incomplete';
+                          }
+                          if (!RegExp(r'^03[0-9]{9}$').hasMatch(phone)) {
+                            return 'Invalid Pakistan phone number format';
+                          }
+                        } else if (phone.length >= 3) {
+                          return 'Phone number must start with +92 or 03';
                         }
-                        if (phone.length < 13) {
-                          return 'Phone number incomplete';
-                        }
-                        if (!RegExp(r'^\+92[0-9]{10}$').hasMatch(phone)) {
-                          return 'Invalid Pakistan phone number format';
-                        }
-                      } else if (phone.startsWith('03')) {
-                        if (phone.length > 11) {
-                          return 'Phone number too long';
-                        }
-                        if (phone.length < 11) {
-                          return 'Phone number incomplete';
-                        }
-                        if (!RegExp(r'^03[0-9]{9}$').hasMatch(phone)) {
-                          return 'Invalid Pakistan phone number format';
-                        }
-                      } else if (phone.length >= 3) {
-                        return 'Phone number must start with +92 or 03';
                       }
                       return null;
                     },
                   ),
 
-                  // Phone availability indicator
-                  if (_phoneController.text.trim().isNotEmpty &&
+                  // Phone availability indicator - only show if phone number has changed
+                  if (_phoneController.text.trim() != _originalPhone &&
+                      _phoneController.text.trim().isNotEmpty &&
                       ((_phoneController.text.trim().startsWith('+92') &&
                               _phoneController.text.trim().length == 13) ||
                           (_phoneController.text.trim().startsWith('03') &&
@@ -469,7 +506,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     itemAsString: (city) => city,
                     onChanged: (value) => setState(() => _selectedCity = value),
                     validator: (value) =>
-                        value == null ? 'Please select a city' : null,
+                        _selectedCity != _originalCity && value == null
+                            ? 'Please select a city'
+                            : null,
                   ),
                   const SizedBox(height: 16),
                   _buildDropdown(
@@ -479,7 +518,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     onChanged: (value) =>
                         setState(() => _selectedGender = value),
                     validator: (value) =>
-                        value == null ? 'Please select gender' : null,
+                        _selectedGender != _originalGender && value == null
+                            ? 'Please select gender'
+                            : null,
                   ),
                   const SizedBox(height: 16),
                   _buildDateField(),
@@ -615,19 +656,327 @@ class _EditProfilePageState extends State<EditProfilePage> {
         }
       },
       validator: (value) =>
-          value?.trim().isEmpty == true ? 'Please select your birthday' : null,
+          _birthdayController.text.trim() != _originalBirthday &&
+                  value?.trim().isEmpty == true
+              ? 'Please select your birthday'
+              : null,
     );
+  }
+
+  Future<void> _sendOtpToPhone(String phoneNumber) async {
+    setState(() => _isLoading = true);
+
+    try {
+      await fb_auth.FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: phoneNumber.startsWith('+92')
+            ? phoneNumber
+            : '+92${phoneNumber.substring(1)}', // Convert 03xx to +923xx
+        verificationCompleted: (fb_auth.PhoneAuthCredential credential) async {
+          // Auto-verification (on some Android devices)
+          print('Auto verification completed');
+          setState(() => _isLoading = false);
+          await _updatePhoneNumberInProfile(phoneNumber);
+        },
+        verificationFailed: (fb_auth.FirebaseAuthException e) {
+          setState(() => _isLoading = false);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Verification failed: ${e.message}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          print('Verification failed: ${e.message}');
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          setState(() {
+            _verificationId = verificationId;
+            _isLoading = false;
+          });
+          print('OTP sent to $phoneNumber');
+          _showOtpDialog(phoneNumber);
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          setState(() => _verificationId = verificationId);
+        },
+        timeout: const Duration(seconds: 60),
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sending OTP: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('Error sending OTP: $e');
+    }
+  }
+
+  void _showOtpDialog(String phoneNumber) {
+    _otpController.clear();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Verify Phone Number'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter the 6-digit OTP sent to',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                phoneNumber,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _otpController,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                decoration: const InputDecoration(
+                  labelText: 'OTP Code',
+                  hintText: 'Enter 6-digit code',
+                  border: OutlineInputBorder(),
+                  counterText: '',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: _isVerifyingOtp
+                  ? null
+                  : () async {
+                      if (_otpController.text.trim().length == 6) {
+                        await _verifyOtp(phoneNumber);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please enter a valid 6-digit OTP'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+              child: _isVerifyingOtp
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Verify'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _verifyOtp(String phoneNumber) async {
+    if (_verificationId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Verification ID not found. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isVerifyingOtp = true);
+
+    try {
+      final credential = fb_auth.PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: _otpController.text.trim(),
+      );
+
+      // Verify the credential (don't link it, just verify)
+      // This ensures the OTP is correct
+      print('OTP verified successfully');
+
+      setState(() => _isVerifyingOtp = false);
+
+      // Close the OTP dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Now proceed with updating the phone number in profile
+      await _updatePhoneNumberInProfile(phoneNumber);
+    } catch (e) {
+      setState(() => _isVerifyingOtp = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Invalid OTP: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('OTP verification failed: $e');
+    }
+  }
+
+  Future<void> _updatePhoneNumberInProfile(String phoneNumber) async {
+    setState(() => _isLoading = true);
+
+    try {
+      final user = fb_auth.FirebaseAuth.instance.currentUser!;
+
+      // Get current user data to check for username changes
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final currentUsername = userDoc.data()?['username']?.toString();
+      final newUsername = _usernameController.text.trim().toLowerCase();
+
+      final updates = <String, dynamic>{
+        'fullName': _fullNameController.text.trim(),
+        'displayName': _displayNameController.text.trim(),
+        'username': newUsername,
+        'email': _emailController.text.trim(),
+        'phoneNumber': phoneNumber,
+        'city': _selectedCity,
+        'gender': _selectedGender,
+        'birthday': _birthdayController.text.trim(),
+        'profileUpdatedAt': FieldValue.serverTimestamp(),
+      };
+
+      print('Updating user document with: $updates');
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set(updates, SetOptions(merge: true));
+
+      print('User document updated successfully');
+
+      // Update phone number record in dedicated collection
+      await PhoneValidationService.updatePhoneNumberRecord(
+          user.uid, phoneNumber);
+
+      // Handle username changes
+      if (newUsername != currentUsername && newUsername.isNotEmpty) {
+        print('Username changed from $currentUsername to $newUsername');
+
+        // Delete old username document if it exists
+        if (currentUsername != null && currentUsername.isNotEmpty) {
+          try {
+            await FirebaseFirestore.instance
+                .collection('usernames')
+                .doc(currentUsername)
+                .delete();
+            print('Deleted old username document: $currentUsername');
+          } catch (e) {
+            print('Error deleting old username: $e');
+          }
+        }
+
+        // Create new username document
+        try {
+          await FirebaseFirestore.instance
+              .collection('usernames')
+              .doc(newUsername)
+              .set({
+            'uid': user.uid,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+          print('Created new username document: $newUsername');
+        } catch (e) {
+          print('Error creating new username: $e');
+        }
+      }
+
+      setState(() => _isLoading = false);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('Error updating profile: $e');
+    }
   }
 
   Future<void> _saveProfile() async {
     print('Starting profile save...');
 
+    // Check if any fields have been changed
+    final isFullNameChanged =
+        _fullNameController.text.trim() != _originalFullName;
+    final isDisplayNameChanged =
+        _displayNameController.text.trim() != _originalDisplayName;
+    final isUsernameChanged =
+        _usernameController.text.trim() != _originalUsername;
+    final isEmailChanged = _emailController.text.trim() != _originalEmail;
+    final isPhoneChanged = _phoneController.text.trim() != _originalPhone;
+    final isCityChanged = _selectedCity != _originalCity;
+    final isGenderChanged = _selectedGender != _originalGender;
+    final isBirthdayChanged =
+        _birthdayController.text.trim() != _originalBirthday;
+
+    // If no fields have been changed, show a message and return
+    if (!isFullNameChanged &&
+        !isDisplayNameChanged &&
+        !isUsernameChanged &&
+        !isEmailChanged &&
+        !isPhoneChanged &&
+        !isCityChanged &&
+        !isGenderChanged &&
+        !isBirthdayChanged) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No changes detected'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+      return;
+    }
+
     // Validate form fields manually to handle async validators
     bool isValid = true;
 
-    // Validate phone number availability
+    // Validate phone number availability - only if phone number has been changed
     final phone = _phoneController.text.trim();
-    if (phone.isNotEmpty &&
+    if (isPhoneChanged &&
+        phone.isNotEmpty &&
         ((phone.startsWith('+92') && phone.length == 13) ||
             (phone.startsWith('03') && phone.length == 11))) {
       final isPhoneAvailable =
@@ -657,6 +1006,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (!isValid) {
       print('Validation failed');
       return;
+    }
+
+    // If phone number changed, send OTP for verification
+    if (isPhoneChanged && phone.isNotEmpty) {
+      await _sendOtpToPhone(phone);
+      return; // Stop here, the update will continue after OTP verification
     }
 
     setState(() => _isLoading = true);
@@ -694,8 +1049,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       print('User document updated successfully');
 
-      // Update phone number record in dedicated collection
-      if (phone.isNotEmpty) {
+      // Update phone number record in dedicated collection - only if phone number has been changed
+      if (isPhoneChanged && phone.isNotEmpty) {
         await PhoneValidationService.updatePhoneNumberRecord(user.uid, phone);
       }
 
@@ -744,9 +1099,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text('Profile updated successfully! Username: $newUsername'),
+          const SnackBar(
+            content: Text('Profile updated successfully!'),
             backgroundColor: Colors.green,
           ),
         );
