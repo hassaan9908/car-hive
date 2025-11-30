@@ -5,6 +5,9 @@ import 'package:carhive/auth/auth_provider.dart';
 import 'package:carhive/components/custom_textfield.dart';
 import 'package:carhive/utils/validators.dart';
 import 'package:carhive/services/username_service.dart';
+import 'package:carhive/services/phone_validation_service.dart';
+import 'package:carhive/services/email_validation_service.dart';
+import 'package:carhive/auth/phone_verification_screen.dart';
 
 class Signupscreen extends StatefulWidget {
   const Signupscreen({super.key});
@@ -19,7 +22,7 @@ class _SignupscreenState extends State<Signupscreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _birthdayController = TextEditingController();
+  final _phoneController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   String? _nameError;
@@ -27,18 +30,9 @@ class _SignupscreenState extends State<Signupscreen> {
   String? _emailError;
   String? _passwordError;
   String? _confirmPasswordError;
-  String? _birthdayError;
-  String? _genderError;
-  String? _selectedGender;
+  String? _phoneError;
   PasswordStrength? _passwordStrength;
   bool _isCheckingUsername = false;
-
-  final List<String> _genders = [
-    'Male',
-    'Female',
-    'Other',
-    'Prefer not to say'
-  ];
 
   @override
   void initState() {
@@ -55,7 +49,7 @@ class _SignupscreenState extends State<Signupscreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _birthdayController.dispose();
+    _phoneController.dispose();
   }
 
   void _onPasswordChanged() {
@@ -112,13 +106,12 @@ class _SignupscreenState extends State<Signupscreen> {
                 children: [
                   // Logo or App Title
 
-                 Image.asset(
+                  Image.asset(
                     'assets/images/Retro.gif',
-                     width: 140,
-                     height: 140,
+                    width: 140,
+                    height: 140,
                   ),
                   const SizedBox(height: 20),
-
 
                   // Title
                   Text(
@@ -173,6 +166,16 @@ class _SignupscreenState extends State<Signupscreen> {
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: const Icon(Icons.email),
                     errorText: _emailError,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Phone Number Field
+                  CustomTextField(
+                    controller: _phoneController,
+                    hintText: 'Phone Number (03XXXXXXXXX)',
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: const Icon(Icons.phone),
+                    errorText: _phoneError,
                   ),
                   const SizedBox(height: 16),
 
@@ -264,66 +267,6 @@ class _SignupscreenState extends State<Signupscreen> {
                         ],
                       ),
                     ),
-                  const SizedBox(height: 16),
-
-                  // Birthday Field
-                  CustomTextField(
-                    controller: _birthdayController,
-                    hintText: 'Birthday',
-                    keyboardType: TextInputType.none,
-                    prefixIcon: const Icon(Icons.calendar_today),
-                    errorText: _birthdayError,
-                    readOnly: true,
-                    onTap: () async {
-                      final DateTime? picked = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now()
-                            .subtract(const Duration(days: 365 * 20)),
-                        firstDate: DateTime(1900),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        _birthdayController.text =
-                            '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Gender Dropdown
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                          color: _genderError != null
-                              ? Colors.red
-                              : colorScheme.outline),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedGender,
-                      decoration: InputDecoration(
-                        labelText: 'Gender',
-                        hintText: 'Select your gender',
-                        prefixIcon: const Icon(Icons.person_outline),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 16),
-                        errorText: _genderError,
-                      ),
-                      items: _genders.map((String gender) {
-                        return DropdownMenuItem<String>(
-                          value: gender,
-                          child: Text(gender),
-                        );
-                      }).toList(),
-                      onChanged: (String? value) {
-                        setState(() {
-                          _selectedGender = value;
-                          _genderError = null;
-                        });
-                      },
-                    ),
-                  ),
                   const SizedBox(height: 24),
 
                   // Signup Button
@@ -403,8 +346,7 @@ class _SignupscreenState extends State<Signupscreen> {
       _emailError = null;
       _passwordError = null;
       _confirmPasswordError = null;
-      _birthdayError = null;
-      _genderError = null;
+      _phoneError = null;
     });
 
     // Validate name
@@ -436,11 +378,38 @@ class _SignupscreenState extends State<Signupscreen> {
       return;
     }
 
-    // Validate email
-    final emailError = Validators.validateEmail(_emailController.text);
+    // Validate email format and check for duplication
+    String? emailError;
+    try {
+      emailError =
+          await EmailValidationService.validateEmail(_emailController.text);
+    } catch (e) {
+      print("Error validating email: $e");
+      // Even if we can't validate due to permissions, we still check format
+      emailError = Validators.validateEmail(_emailController.text);
+    }
+
     if (emailError != null) {
       setState(() {
         _emailError = emailError;
+      });
+      return;
+    }
+
+    // Validate phone number format and check for duplication
+    String? phoneError;
+    try {
+      phoneError = await PhoneValidationService.validatePhoneNumber(
+          _phoneController.text);
+    } catch (e) {
+      print("Error validating phone number: $e");
+      // Even if we can't validate due to permissions, we still check format
+      phoneError = Validators.validatePakistanPhone(_phoneController.text);
+    }
+
+    if (phoneError != null) {
+      setState(() {
+        _phoneError = phoneError;
       });
       return;
     }
@@ -464,60 +433,45 @@ class _SignupscreenState extends State<Signupscreen> {
       return;
     }
 
-    // Validate birthday
-    if (_birthdayController.text.isEmpty) {
-      setState(() {
-        _birthdayError = 'Birthday is required';
-      });
-      return;
-    }
-
-    // Validate gender
-    if (_selectedGender == null) {
-      setState(() {
-        _genderError = 'Gender is required';
-      });
-      return;
-    }
+    // Format phone number for Firebase
+    final formattedPhoneNumber =
+        _formatPhoneNumberForFirebase(_phoneController.text);
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    try {
-      print("Creating user with data:");
-      print("Email: ${_emailController.text}");
-      print("Full Name: ${_nameController.text}");
-      print("Username: ${_usernameController.text}");
-      print("Birthday: ${_birthdayController.text}");
-      print("Gender: $_selectedGender");
-
-      final user = await authProvider.createUserWithEmailAndPassword(
-        _emailController.text,
-        _passwordController.text,
-        fullName: _nameController.text,
-        username: _usernameController.text,
-        birthday: _birthdayController.text,
-        gender: _selectedGender!,
-      );
-
-      if (user != null) {
-        print("User created successfully with UID: ${user.uid}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account created successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        goToHome(context);
-      }
-    } catch (e) {
-      print("Signup error: $e");
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Signup failed: ${e.toString()}'),
-          backgroundColor: Colors.red,
+    // Navigate to phone verification screen instead of directly creating user
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PhoneVerificationScreen(
+          phoneNumber: formattedPhoneNumber,
+          email: _emailController.text,
+          password: _passwordController.text,
+          fullName: _nameController.text,
+          username: _usernameController.text,
         ),
-      );
+      ),
+    );
+  }
+
+  /// Format phone number for Firebase authentication
+  String _formatPhoneNumberForFirebase(String phoneNumber) {
+    // Remove all non-digit characters
+    String digitsOnly = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+
+    // Ensure proper format for Pakistan phone numbers
+    if (digitsOnly.startsWith('92') && digitsOnly.length == 12) {
+      // +92 format: +92XXXXXXXXXX -> +92XXXXXXXXXX
+      return '+$digitsOnly';
+    } else if (digitsOnly.startsWith('03') && digitsOnly.length == 11) {
+      // 03XXXXXXXXX format -> +923XXXXXXXXX
+      return '+92${digitsOnly.substring(1)}';
+    } else if (digitsOnly.length == 10 && digitsOnly.startsWith('3')) {
+      // XXXXXXXXXX format (starting with 3) -> +923XXXXXXXXX
+      return '+92$digitsOnly';
     }
+
+    // If format is not recognized, return as is
+    return phoneNumber;
   }
 }

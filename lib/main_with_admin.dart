@@ -4,8 +4,13 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'providers/admin_provider.dart';
+import 'providers/content_provider.dart'; // Add ContentProvider import
 import 'pages/homepage.dart';
 import 'pages/admin/admin_main.dart';
+import 'pages/blog_list_page.dart';
+import 'pages/video_list_page.dart';
+import 'pages/blog_detail_page.dart';
+import 'pages/video_detail_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +33,7 @@ class MyApp extends StatelessWidget {
         
         // Admin provider
         ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) => ContentProvider()), // Add ContentProvider
       ],
       child: MaterialApp(
         title: 'CarHive',
@@ -43,6 +49,8 @@ class MyApp extends StatelessWidget {
           '/investment': (context) => const Homepage(), // Replace with your actual pages
           '/profile': (context) => const Homepage(), // Replace with your actual pages
           '/notifications': (context) => const Homepage(), // Replace with your actual pages
+          '/blogs': (context) => const BlogListPage(), // Add this route
+          '/videos': (context) => const VideoListPage(), // Add this route
           
           // Admin routes
           '/admin': (context) => const AdminMain(),

@@ -43,8 +43,8 @@ class AuthProvider extends ChangeNotifier {
     String password, {
     String? fullName,
     String? username,
-    String? birthday,
-    String? gender,
+    String? phoneNumber, // Changed from birthday to phoneNumber
+    String? gender, // Keep for now but will be null
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -55,8 +55,9 @@ class AuthProvider extends ChangeNotifier {
         password,
         fullName: fullName,
         username: username,
-        birthday: birthday,
-        gender: gender,
+        // Pass phone number as the new phoneNumber parameter
+        phoneNumber: phoneNumber,
+        gender: gender, // Will be null
       );
       _user = user;
       return user;
@@ -119,10 +120,10 @@ class AuthProvider extends ChangeNotifier {
 
   Future<String> getUsername() async {
     if (_user == null) return '';
-    
+
     try {
       final userDoc = await _authService.getUserDocument(_user!.uid);
-      
+
       if (userDoc != null) {
         final username = userDoc['username'] as String?;
         return username ?? '';
@@ -130,7 +131,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       print('Error getting username: $e');
     }
-    
+
     return '';
   }
 }

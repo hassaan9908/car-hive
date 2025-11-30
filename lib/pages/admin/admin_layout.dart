@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_provider.dart';
-import '../../theme/app_colors.dart';
+// app_colors not needed; we use Theme.of(context)
 import 'admin_dashboard_page.dart';
 import 'admin_ads_page.dart';
 import 'admin_users_page.dart';
+import 'admin_blog_upload_page.dart';
+import 'admin_video_upload_page.dart';
+import 'admin_blog_management_page.dart';
+import 'admin_video_management_page.dart';
 
 class AdminLayout extends StatefulWidget {
   const AdminLayout({super.key});
@@ -34,6 +38,26 @@ class _AdminLayoutState extends State<AdminLayout> {
       page: const AdminUsersPage(),
     ),
     AdminNavigationItem(
+      title: 'Upload Blog',
+      icon: Icons.article,
+      page: const AdminBlogUploadPage(),
+    ),
+    AdminNavigationItem(
+      title: 'Upload Video',
+      icon: Icons.video_library,
+      page: const AdminVideoUploadPage(),
+    ),
+    AdminNavigationItem(
+      title: 'Manage Blogs',
+      icon: Icons.manage_accounts,
+      page: const AdminBlogManagementPage(),
+    ),
+    AdminNavigationItem(
+      title: 'Manage Videos',
+      icon: Icons.slideshow,
+      page: const AdminVideoManagementPage(),
+    ),
+    AdminNavigationItem(
       title: 'Analytics',
       icon: Icons.analytics,
       page: const AdminAnalyticsPage(),
@@ -56,9 +80,9 @@ class _AdminLayoutState extends State<AdminLayout> {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 width: _isSidebarCollapsed ? 70 : 250,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryBlue,
-                  boxShadow: [
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  boxShadow: const [
                     BoxShadow(
                       color: Colors.black12,
                       blurRadius: 10,
@@ -169,8 +193,8 @@ class _AdminLayoutState extends State<AdminLayout> {
                                                 .currentAdmin?.email[0] ??
                                             'A')
                                     .toUpperCase(),
-                                style: const TextStyle(
-                                  color: AppColors.primaryBlue,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -249,7 +273,7 @@ class AdminAnalyticsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Analytics'),
-        backgroundColor: AppColors.primaryBlue,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
       body: const Center(
@@ -270,7 +294,7 @@ class AdminSettingsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: AppColors.primaryBlue,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
       body: const Center(
