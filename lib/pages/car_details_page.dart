@@ -731,10 +731,17 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  colorScheme.primary,
-                                  colorScheme.primary.withValues(alpha: 0.8),
+                                  Color(0xFFFF6B35),
+                                  Color(0xFFFF8C42),
                                 ],
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFFF6B35).withOpacity(0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: ElevatedButton.icon(
@@ -1248,7 +1255,30 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+
+              child: 
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF6B35).withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 0,
+                    
+                  ),
                 onPressed: _submitting
                     ? null
                     : () async {
@@ -1297,6 +1327,7 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                       )
                     : const Text('Submit Review'),
               ),
+            ),
             ),
           ]
         ],

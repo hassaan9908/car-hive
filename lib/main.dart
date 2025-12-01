@@ -26,8 +26,6 @@ import 'pages/admin/admin_debug_page.dart';
 import 'widgets/gradient_scaffold_wrapper.dart';
 import 'pages/blog_list_page.dart';
 import 'pages/video_list_page.dart';
-import 'pages/blog_detail_page.dart';
-import 'pages/video_detail_page.dart';
 import 'pages/help_page.dart';
 
 /// Custom route generator that maintains gradient during transitions

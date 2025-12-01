@@ -1168,9 +1168,28 @@ class _PostAdCarState extends State<PostAdCar> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFFF6B35),
+                          Color(0xFFFF8C42),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6B35).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFf48c25),
+                      backgroundColor: Colors.transparent,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     onPressed: (_isUploadingImages || _isUploading360) ? null : () async {
@@ -1325,6 +1344,7 @@ class _PostAdCarState extends State<PostAdCar> {
                             style: TextStyle(fontSize: 16, color: Colors.white),
                           ),
                   ),
+                  )
                 ),
               ),
               const SizedBox(height: 40),

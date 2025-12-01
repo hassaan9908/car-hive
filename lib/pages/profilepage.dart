@@ -209,8 +209,17 @@ class Profilepage extends StatelessWidget {
         height: 45,
         margin: const EdgeInsets.symmetric(horizontal: 17),
         decoration: BoxDecoration(
-          color: colorScheme.primary,
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+            ),
           borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF6B35).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: const Center(
           child: Text(
