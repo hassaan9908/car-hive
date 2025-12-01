@@ -32,7 +32,20 @@ class _AdminManageUsersPageState extends State<AdminManageUsersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Users'),
+        title: Text(
+          'Manage Users',
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFFf48c25)
+                : Colors.black,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFFf48c25)
+              : Colors.black,
+        ),
       ),
       body: Column(
         children: [

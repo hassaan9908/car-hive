@@ -100,11 +100,24 @@ class _LoginscreenState extends State<Loginscreen> {
                   const SizedBox(height: 24),
                   
                   // Login Button
-                  ElevatedButton(
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6B35).withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child:ElevatedButton(
                     onPressed: authProvider.isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
+                      backgroundColor: Colors.transparent,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -126,6 +139,7 @@ class _LoginscreenState extends State<Loginscreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                  ),
                   ),
                   const SizedBox(height: 24),
 
@@ -157,8 +171,28 @@ class _LoginscreenState extends State<Loginscreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                   ElevatedButton(
-                    
+                  Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF6B35).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+                    child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                     onPressed: () => _loginWithGoogle(),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -173,7 +207,7 @@ class _LoginscreenState extends State<Loginscreen> {
                       ],
                     ),
                     ),
-                  
+                  ),
                   
                 ],
               ),

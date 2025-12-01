@@ -56,8 +56,6 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Consumer<SearchProvider>(
       builder: (context, searchProvider, _) {
         return Scaffold(

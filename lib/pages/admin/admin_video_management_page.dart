@@ -28,9 +28,20 @@ class _AdminVideoManagementPageState extends State<AdminVideoManagementPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Videos'),
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
+        title: Text(
+          'Manage Videos',
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFFf48c25)
+                : Colors.black,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFFf48c25)
+              : Colors.black,
+        ),
       ),
       body: Consumer<ContentProvider>(
         builder: (context, contentProvider, child) {
