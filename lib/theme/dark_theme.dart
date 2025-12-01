@@ -20,7 +20,7 @@ final ThemeData darkTheme = ThemeData(
     onTertiary: Colors.white,
     tertiaryContainer: AppColors.secondaryOrange,
     onTertiaryContainer: AppColors.secondaryOrange,
-    background: Color.fromARGB(255, 22, 16, 10), // Custom dark background
+    background: Color.fromARGB(255, 29, 21, 14), // Custom dark background
     onBackground: AppColors.darkOnSurface,
     surface: AppColors.darkSurface,
     onSurface: AppColors.darkOnSurface,

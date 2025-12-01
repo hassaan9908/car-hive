@@ -51,11 +51,35 @@ class _MyadsState extends State<Myads> {
                 SizedBox(height: 16),
                 Text('Please login to view your ads', style: TextStyle(fontSize: 18)),
                 SizedBox(height: 24),
+                Container(
+                  width: 130,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF6B35).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+                    child: 
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   onPressed: () {
                     Navigator.pushNamed(context, 'loginscreen');
                   },
                   child: Text('Login'),
+                ),
                 ),
               ],
             ),
@@ -503,35 +527,53 @@ class _MyadsState extends State<Myads> {
 
                 // Promote / Relist CTA
                 if (ad.status != 'sold') // Sold ads don't show action buttons
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      if (ad.status == 'removed') {
-                        try {
-                          // Use the actual previousStatus from the ad, fallback to 'active' if not available
-                          final previousStatus = ad.previousStatus ?? 'active';
-                          await GlobalAdStore().reactivateAd(ad.id!, previousStatus: previousStatus);
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6B35).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        if (ad.status == 'removed') {
+                          try {
+                            // Use the actual previousStatus from the ad, fallback to 'active' if not available
+                            final previousStatus = ad.previousStatus ?? 'active';
+                            await GlobalAdStore().reactivateAd(ad.id!, previousStatus: previousStatus);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Ad relisted')),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to relist ad: $e')),
+                            );
+                          }
+                        } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Ad relisted')),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to relist ad: $e')),
+                            const SnackBar(content: Text('Promote functionality coming soon!')),
                           );
                         }
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Promote functionality coming soon!')),
-                        );
-                      }
-                    },
-                    icon: Icon(ad.status == 'removed' ? Icons.refresh : Icons.rocket_launch, size: 16),
-                    label: Text(ad.status == 'removed' ? 'Relist' : 'Promote'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ad.status == 'removed' ? Colors.green : cs.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                      textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                      },
+                      icon: Icon(ad.status == 'removed' ? Icons.refresh : Icons.rocket_launch, size: 16),
+                      label: Text(ad.status == 'removed' ? 'Relist' : 'Promote'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                        elevation: 0,
+                      ),
                     ),
                   ),
               ],

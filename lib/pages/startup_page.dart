@@ -194,7 +194,23 @@ class _StartupPageState extends State<StartupPage>
                             SizedBox(
                               width: double.infinity,
                               height: 56,
-                              child: ElevatedButton(
+                              child: 
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),                      
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF6B35).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+                                ),
+                                
+                                child: ElevatedButton(
                                 onPressed: () async {
                                   await _markStartupAsSeen();
                                   Navigator.push(
@@ -206,7 +222,7 @@ class _StartupPageState extends State<StartupPage>
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFf48c25),
+                                  backgroundColor: Colors.transparent,
                                   foregroundColor: Colors.white,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
@@ -223,7 +239,7 @@ class _StartupPageState extends State<StartupPage>
                                 ),
                               ),
                             ),
-
+                            ),
                             const SizedBox(height: 16),
 
                             // Sign In Button

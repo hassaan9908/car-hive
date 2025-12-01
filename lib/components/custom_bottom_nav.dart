@@ -53,9 +53,11 @@ class CustomBottomNav extends StatelessWidget {
         ),
         Positioned(
           bottom: 16,
-          child: FloatingActionButton(
+          
+            child: 
+          FloatingActionButton(
             onPressed: onFabPressed,
-            backgroundColor: fabColor,
+            backgroundColor: Color.fromARGB(255, 243, 103, 52),
             child: const Icon(
               Icons.add,
               size: 32,
@@ -64,6 +66,7 @@ class CustomBottomNav extends StatelessWidget {
             shape: const CircleBorder(),
           ),
         ),
+        
       ],
     );
   }
