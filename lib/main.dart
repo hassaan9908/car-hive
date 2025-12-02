@@ -27,6 +27,7 @@ import 'widgets/gradient_scaffold_wrapper.dart';
 import 'pages/blog_list_page.dart';
 import 'pages/video_list_page.dart';
 import 'pages/help_page.dart';
+import 'pages/chat_detail_page.dart';
 
 /// Custom route generator that maintains gradient during transitions
 class GradientPageRoute<T> extends PageRouteBuilder<T> {
@@ -106,6 +107,19 @@ class MyApp extends StatelessWidget {
               '/profile': (context) => const Profilepage(),
               '/help': (context) => const HelpPage(),
               '/notifications': (context) => const Chat(),
+              '/chat-detail': (context) {
+                final args = ModalRoute.of(context)?.settings.arguments;
+                if (args is Map<String, dynamic>) {
+                  return ChatDetailPage(
+                    conversationId: args['conversationId'] ?? '',
+                    otherUserId: args['otherUserId'] ?? '',
+                    otherUserName: args['otherUserName'] ?? 'User',
+                  );
+                }
+                return const Scaffold(
+                  body: Center(child: Text('Invalid chat parameters')),
+                );
+              },
               '/investment': (context) => const Mutualinvestment(),
               '/upload': (context) => const Upload(),
               'loginscreen': (context) => const Loginscreen(),

@@ -74,11 +74,28 @@ class Upload extends StatelessWidget {
             ),
           ),
           SizedBox(height: 24),
+          Container(
+            width: 130,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF6B35).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: 
           ElevatedButton(
             onPressed: () {
               Navigator.pushNamed(context, 'loginscreen');
             },
             child: Text('Login'),
+          ),
           ),
         ],
       ),
@@ -195,7 +212,7 @@ class Upload extends StatelessWidget {
                       "Professional car inspection",
                       "We handle the paperwork",
                     ],
-                    buttonText: "Get Help Selling",
+                    buttonText: "loginlling",
                     icon: Icons.support_agent_rounded,
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
