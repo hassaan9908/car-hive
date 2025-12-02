@@ -234,8 +234,8 @@ class Upload extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFF00C853),
-                        const Color(0xFF00A344),
+                        const Color(0xFFf48c25),
+                        const Color(0xFFd97706),
                       ],
                     ),
                     onPressed: () {
@@ -378,12 +378,12 @@ class Upload extends StatelessWidget {
                             margin: const EdgeInsets.only(top: 2),
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00C853).withOpacity(0.15),
+                              color: const Color(0xFFf48c25).withOpacity(0.15),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.check_rounded,
-                              color: Color(0xFF00C853),
+                              color: Color(0xFFf48c25),
                               size: 14,
                             ),
                           ),
