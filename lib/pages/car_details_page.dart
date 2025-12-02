@@ -7,6 +7,8 @@ import '../screens/car_360_viewer_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/chat_service.dart';
+import 'chat_detail_page.dart';
 
 class CarDetailsPage extends StatefulWidget {
   final AdModel ad;
@@ -62,13 +64,46 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
       return;
     }
 
-    // Navigate to chat page with seller ID
+    // Get seller info for display name
+    String sellerName = 'User';
+    try {
+      final sellerDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(sellerId)
+          .get();
+      if (sellerDoc.exists) {
+        final data = sellerDoc.data();
+        sellerName = data?['displayName'] ?? 
+                     data?['email']?.split('@')[0] ?? 
+                     'User';
+      }
+    } catch (e) {
+      print('Error getting seller info: $e');
+    }
+
+    // Navigate to chat detail page
     if (mounted) {
-      Navigator.pushNamed(
-        context,
-        '/notifications',
-        arguments: {'userId': sellerId},
-      );
+      try {
+        final chatService = ChatService();
+        final conversationId = await chatService.getOrCreateConversation(sellerId);
+        
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatDetailPage(
+              conversationId: conversationId,
+              otherUserId: sellerId,
+              otherUserName: sellerName,
+            ),
+          ),
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error opening chat: ${e.toString()}')),
+          );
+        }
+      }
     }
   }
 
