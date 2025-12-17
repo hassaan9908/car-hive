@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../components/custom_textfield.dart';
 import '../components/car_tabs.dart';
 import '../components/custom_bottom_nav.dart';
@@ -77,13 +78,15 @@ class _HomepageState extends State<Homepage> {
                   icon: const Icon(Icons.admin_panel_settings),
                   tooltip: 'Admin Panel',
                 ),
-              IconButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/map-view');
-                },
-                icon: const Icon(Icons.map),
-                tooltip: 'Map View',
-              ),
+              // Map View button - only show for logged in users
+              if (FirebaseAuth.instance.currentUser != null)
+                IconButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/map-view');
+                  },
+                  icon: const Icon(Icons.map),
+                  tooltip: 'Map View',
+                ),
               IconButton(
                   onPressed: () {
                     Navigator.pushNamed(context, '/notifications');

@@ -22,6 +22,7 @@ class AdModel {
   final List<String>? imageUrls;
   final Map<String, double>? locationCoordinates;
   final List<String>? images360Urls;
+  final DateTime? expiresAt;
 
   AdModel({
     required this.title,
@@ -45,6 +46,7 @@ class AdModel {
     this.imageUrls,
     this.locationCoordinates,
     this.images360Urls,
+    this.expiresAt,
   });
 
   // -----------------------------
@@ -201,6 +203,7 @@ class AdModel {
       imageUrls: imageUrlsList,
       locationCoordinates: locationCoords,
       images360Urls: images360UrlsList,
+      expiresAt: _parseCreatedAt(data['expiresAt']),
     );
   }
 
@@ -228,6 +231,7 @@ class AdModel {
       'previousStatus': previousStatus,
       'imageUrls': imageUrls,
       'images360Urls': images360Urls,
+      'expiresAt': expiresAt != null ? Timestamp.fromDate(expiresAt!) : null,
     };
 
     if (locationCoordinates != null) {

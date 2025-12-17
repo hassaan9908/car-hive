@@ -38,7 +38,16 @@
   <!-- Google Maps API for Web -->
   <!-- Note: You need to enable "Maps JavaScript API" in Google Cloud Console -->
   <!-- and create a Maps API key if the Firebase API key doesn't work for Maps -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCd1oSSITOW_0epwLHfNYJ1F2zFmfUHQgU"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAeUhpVe19ldAQV23mUXLRJopBih8X2qEk"></script>
+  
+  <!-- Hide reCAPTCHA badge to prevent it from covering UI elements -->
+  <style>
+    .grecaptcha-badge {
+      visibility: hidden !important;
+      opacity: 0 !important;
+      display: none !important;
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

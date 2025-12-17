@@ -229,10 +229,23 @@ class AdminService {
         throw Exception('Ad not found');
       }
 
+      // Check if ad already has an expiration date
+      final existingExpiresAt = adData['expiresAt'];
+      final DateTime expirationDate;
+      
+      if (existingExpiresAt != null && existingExpiresAt is Timestamp) {
+        // Use existing expiration date if it exists
+        expirationDate = existingExpiresAt.toDate();
+      } else {
+        // Set expiration to 30 days from approval date
+        expirationDate = DateTime.now().add(const Duration(days: 30));
+      }
+
       await _firestore.collection('ads').doc(adId).update({
         'status': 'active',
         'approvedAt': FieldValue.serverTimestamp(),
         'approvedBy': _auth.currentUser?.uid,
+        'expiresAt': Timestamp.fromDate(expirationDate),
       });
 
       // Update user's ad count

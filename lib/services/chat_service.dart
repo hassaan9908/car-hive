@@ -287,6 +287,85 @@ class ChatService {
     return userId1.compareTo(userId2) < 0;
   }
 
+  // Delete a message (deletes for all users)
+  Future<void> deleteMessage(String conversationId, String messageId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    // Get the message to check if user is sender or participant
+    final messageDoc = await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .doc(messageId)
+        .get();
+
+    if (!messageDoc.exists) {
+      throw Exception('Message not found');
+    }
+
+    final messageData = messageDoc.data()!;
+    final senderId = messageData['senderId'] as String;
+
+    // Check if user is the sender or a participant in the conversation
+    final conversationDoc = await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .get();
+
+    if (!conversationDoc.exists) {
+      throw Exception('Conversation not found');
+    }
+
+    final conversationData = conversationDoc.data()!;
+    final participant1Id = conversationData['participant1Id'] as String;
+    final participant2Id = conversationData['participant2Id'] as String;
+
+    // Only allow deletion if user is the sender or a participant
+    if (currentUser.uid != senderId &&
+        currentUser.uid != participant1Id &&
+        currentUser.uid != participant2Id) {
+      throw Exception('You do not have permission to delete this message');
+    }
+
+    // Delete the message
+    await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .doc(messageId)
+        .delete();
+
+    // Update conversation's lastMessage if this was the last message
+    final lastMessageSnapshot = await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .orderBy('timestamp', descending: true)
+        .limit(1)
+        .get();
+
+    if (lastMessageSnapshot.docs.isNotEmpty) {
+      final lastMessage = lastMessageSnapshot.docs.first.data();
+      await _firestore.collection('conversations').doc(conversationId).update({
+        'lastMessage': lastMessage['message'] ?? '',
+        'lastMessageTime': lastMessage['timestamp'],
+        'lastMessageSenderId': lastMessage['senderId'] ?? '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      // No messages left, clear last message
+      await _firestore.collection('conversations').doc(conversationId).update({
+        'lastMessage': '',
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'lastMessageSenderId': '',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
   // Get user info for display
   Future<Map<String, dynamic>?> getUserInfo(String userId) async {
     try {

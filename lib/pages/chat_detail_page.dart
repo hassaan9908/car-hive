@@ -27,12 +27,14 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _isSending = false;
   String? _otherUserPhotoUrl;
+  String? _currentUserPhotoUrl;
 
   @override
   void initState() {
     super.initState();
-    // Load other user's photo
+    // Load both users' photos
     _loadOtherUserPhoto();
+    _loadCurrentUserPhoto();
     // Mark messages as read when opening the chat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _markMessagesAsDeliveredAndRead();
@@ -48,7 +50,23 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         });
       }
     } catch (e) {
-      print('Error loading user photo: $e');
+      print('Error loading other user photo: $e');
+    }
+  }
+
+  Future<void> _loadCurrentUserPhoto() async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        final userInfo = await _chatService.getUserInfo(currentUser.uid);
+        if (mounted) {
+          setState(() {
+            _currentUserPhotoUrl = userInfo?['photoUrl'] as String?;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading current user photo: $e');
     }
   }
 
@@ -207,11 +225,18 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     final showAvatar = index == 0 ||
                         messages[index - 1].senderId != message.senderId;
 
-                    return _buildMessageBubble(
-                      message,
-                      isMe,
-                      showAvatar,
-                      isDark,
+                    return GestureDetector(
+                      onLongPress: () => _showDeleteMessageDialog(
+                        context,
+                        message,
+                        isDark,
+                      ),
+                      child: _buildMessageBubble(
+                        message,
+                        isMe,
+                        showAvatar,
+                        isDark,
+                      ),
                     );
                   },
                 );
@@ -393,11 +418,22 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             CircleAvatar(
               radius: 16,
               backgroundColor: const Color(0xFFf48c25),
-              child: const Icon(
-                Icons.person,
-                color: Colors.white,
-                size: 16,
-              ),
+              backgroundImage: _currentUserPhotoUrl != null && _currentUserPhotoUrl!.isNotEmpty
+                  ? CachedNetworkImageProvider(_currentUserPhotoUrl!)
+                  : null,
+              child: _currentUserPhotoUrl == null || _currentUserPhotoUrl!.isEmpty
+                  ? const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 16,
+                    )
+                  : null,
+              onBackgroundImageError: _currentUserPhotoUrl != null && _currentUserPhotoUrl!.isNotEmpty
+                  ? (exception, stackTrace) {
+                      // If image fails to load, show icon
+                      // This is handled by the child widget
+                    }
+                  : null,
             ),
           ] else if (isMe) ...[
             const SizedBox(width: 40),
@@ -441,6 +477,77 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       size: 14,
       color: iconColor,
     );
+  }
+
+  Future<void> _showDeleteMessageDialog(
+    BuildContext context,
+    ChatMessage message,
+    bool isDark,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
+        title: Text(
+          'Delete Message',
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to delete this message? This action cannot be undone and the message will be deleted for everyone.',
+          style: TextStyle(
+            color: isDark ? Colors.white70 : Colors.black87,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.grey[700],
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      try {
+        await _chatService.deleteMessage(
+          widget.conversationId,
+          message.id,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Message deleted'),
+              backgroundColor: isDark ? Colors.grey[800] : Colors.grey[700],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting message: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
   }
 }
 

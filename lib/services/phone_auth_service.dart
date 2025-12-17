@@ -31,18 +31,24 @@ class PhoneAuthService {
 
     // Format phone number for Firebase
     final formattedPhoneNumber = _formatPhoneNumber(phoneNumber);
+    
+    // Debug: Print the formatted phone number
+    print('Original phone number: $phoneNumber');
+    print('Formatted phone number: $formattedPhoneNumber');
 
     // Verify phone number using Firebase's built-in phone auth
     await _auth.verifyPhoneNumber(
       phoneNumber: formattedPhoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
-        // This callback is called when SMS code is auto-retrieved
+        // This callback is called when SMS code is auto-retrieved (Android only)
+        print('Auto-verification completed for $formattedPhoneNumber');
         try {
           await _auth.signInWithCredential(credential);
           if (!completer.isCompleted) {
             completer.complete('');
           }
         } catch (e) {
+          print('Error in auto-verification: $e');
           if (!completer.isCompleted) {
             completer.completeError(e);
           }
@@ -50,18 +56,22 @@ class PhoneAuthService {
       },
       verificationFailed: (FirebaseAuthException e) {
         // This callback is called when verification fails
+        print('Verification failed for $formattedPhoneNumber: ${e.code} - ${e.message}');
         if (!completer.isCompleted) {
           completer.completeError(e);
         }
       },
       codeSent: (String verificationId, [int? forceResendingToken]) {
         // This callback is called when SMS code is sent to the phone number
+        print('OTP sent to $formattedPhoneNumber');
+        print('Verification ID: $verificationId');
         if (!completer.isCompleted) {
           completer.complete(verificationId);
         }
       },
       codeAutoRetrievalTimeout: (String verificationId) {
         // This callback is called when auto-retrieval times out
+        print('Auto-retrieval timeout for $formattedPhoneNumber');
       },
       timeout: const Duration(seconds: 60),
     );

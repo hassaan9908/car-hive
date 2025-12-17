@@ -60,9 +60,18 @@ service cloud.firestore {
     // ADS - SIMPLIFIED RULES
     match /ads/{adId} {
       // Anyone can create their own ad (if signed in)
+      // Allow 'pending' status for manual review OR 'active' status for verified ads
       allow create: if isSignedIn()
         && request.resource.data.userId == currentUid()
-        && request.resource.data.status == 'pending';
+        && (
+          request.resource.data.status == 'pending' ||
+          (
+            request.resource.data.status == 'active' &&
+            request.resource.data.isVerified == true &&
+            request.resource.data.verifiedAt is timestamp &&
+            request.resource.data.vehicleVerification is map
+          )
+        );
 
       // SIMPLIFIED: Allow reading ALL ads for everyone (your app filters in memory)
       allow read: if true;
@@ -249,6 +258,10 @@ service cloud.firestore {
            (request.resource.data.diff(resource.data).changedKeys().hasOnly(['status', 'isRead']) ||
             request.resource.data.diff(resource.data).changedKeys().hasOnly(['isRead'])))
         );
+
+        // Users can delete messages in conversations they are part of
+        // This allows deletion for all users (not just sender)
+        allow delete: if isSignedIn() && isConversationParticipant();
       }
     }
 

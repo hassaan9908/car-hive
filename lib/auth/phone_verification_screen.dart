@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart' as carhive_auth;
 import 'package:carhive/services/phone_auth_service.dart';
-import 'package:carhive/pages/homepage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class PhoneVerificationScreen extends StatefulWidget {
@@ -32,7 +31,6 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
   String? _verificationId;
   bool _isLoading = false;
   String? _error;
-  bool _codeSent = false;
 
   @override
   void initState() {
@@ -51,19 +49,28 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
           await _phoneAuthService.sendVerificationCode(widget.phoneNumber);
       setState(() {
         _verificationId = verificationId;
-        _codeSent = true;
         _isLoading = false;
       });
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'Failed to send verification code. ';
+      print('Firebase Auth Error: ${e.code} - ${e.message}');
+      
       if (e.code == 'invalid-phone-number') {
-        errorMessage += 'The phone number is invalid.';
+        errorMessage += 'The phone number format is invalid. Please check and try again.';
       } else if (e.code == 'too-many-requests') {
-        errorMessage += 'Too many requests. Please try again later.';
+        errorMessage += 'Too many requests. Please wait a few minutes and try again.';
       } else if (e.code == 'quota-exceeded') {
-        errorMessage += 'Quota exceeded. Please try again later.';
+        errorMessage += 'SMS quota exceeded. Please check Firebase Console billing settings.';
+      } else if (e.code == 'missing-phone-number') {
+        errorMessage += 'Phone number is required.';
+      } else if (e.code == 'operation-not-allowed') {
+        errorMessage += 'Phone authentication is not enabled. Please check Firebase Console settings.';
+      } else if (e.code == 'invalid-app-credential') {
+        errorMessage += 'reCAPTCHA verification failed on web. Please refresh the page and try again. '
+            'If the issue persists, ensure your domain is authorized in Firebase Console '
+            'or use test phone numbers for development.';
       } else {
-        errorMessage += 'Please try again.';
+        errorMessage += 'Error: ${e.message ?? e.code}. Please try again.';
       }
 
       setState(() {
@@ -71,8 +78,9 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      print('General error sending verification code: $e');
       setState(() {
-        _error = 'Failed to send verification code. Please try again.';
+        _error = 'Failed to send verification code: ${e.toString()}. Please try again.';
         _isLoading = false;
       });
     }

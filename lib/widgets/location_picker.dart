@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -23,6 +24,7 @@ class _LocationPickerState extends State<LocationPicker> {
   String _selectedAddress = '';
   bool _isLoadingAddress = false;
   bool _isLoadingCurrentLocation = false;
+  bool _isMapInitialized = false; // Track if map has been properly initialized
 
   @override
   void initState() {
@@ -139,6 +141,26 @@ class _LocationPickerState extends State<LocationPicker> {
   }
 
   @override
+  void dispose() {
+    // On web, the GoogleMap widget handles controller disposal internally
+    // Manually disposing can cause "buildView" errors due to async lifecycle
+    // On mobile platforms, we can safely dispose manually
+    if (!kIsWeb && _mapController != null && _isMapInitialized) {
+      try {
+        _mapController!.dispose();
+      } catch (e) {
+        // Ignore disposal errors if map wasn't properly initialized
+        if (kDebugMode) {
+          print('Error disposing map controller: $e');
+        }
+      }
+    }
+    // Always clear the reference to prevent memory leaks
+    _mapController = null;
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -155,12 +177,15 @@ class _LocationPickerState extends State<LocationPicker> {
         children: [
           // Google Map
           GoogleMap(
+            key: const ValueKey('location_picker_map'), // Stable key for proper lifecycle management
             initialCameraPosition: CameraPosition(
               target: _selectedLocation ?? const LatLng(24.8607, 67.0011), // Default to Karachi
               zoom: 14.0,
             ),
             onMapCreated: (GoogleMapController controller) {
+              if (!mounted) return; // Check if widget is still mounted
               _mapController = controller;
+              _isMapInitialized = true; // Mark map as initialized
             },
             onTap: _onMapTap,
             markers: _selectedLocation != null
