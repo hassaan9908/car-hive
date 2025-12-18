@@ -2,10 +2,13 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:carhive/widgets/car_360_viewer.dart';
-import 'package:carhive/models/car_360_set.dart';
+import 'package:gesture_x_detector/gesture_x_detector.dart';
+import 'package:carhive/widgets/smooth_image_blend.dart';
+import 'package:carhive/controllers/advanced_360_controller.dart';
+import 'package:carhive/services/url_interpolation_service.dart';
+import 'package:carhive/widgets/interpolation_progress_dialog.dart';
 
-/// Full-screen 360° car viewer with controls
+/// Full-screen 360° car viewer with smooth blending and momentum physics
 class Car360ViewerScreen extends StatefulWidget {
   /// List of image URLs (from Cloudinary)
   final List<String>? imageUrls;
@@ -35,26 +38,147 @@ class Car360ViewerScreen extends StatefulWidget {
   State<Car360ViewerScreen> createState() => _Car360ViewerScreenState();
 }
 
-class _Car360ViewerScreenState extends State<Car360ViewerScreen> {
-  // Current frame index
-  int _currentIndex = 0;
-
-  // Auto-rotate toggle
-  bool _autoRotate = false;
-
-  // Show thumbnails toggle
-  bool _showThumbnails = false;
-
-  // Sensitivity value
-  double _sensitivity = 10.0;
-
+class _Car360ViewerScreenState extends State<Car360ViewerScreen>
+    with TickerProviderStateMixin {
+  late Advanced360Controller _controller;
+  
+  // Drag sensitivity (adjusted for number of frames)
+  double _sensitivity = 15.0;
+  
   // Full screen mode
   bool _isFullScreen = false;
+  
+  // Number of frames
+  int _totalFrames = 16;
+  
+  // Loaded frames (for interpolated frames from URLs)
+  List<Uint8List?>? _interpolatedFrames;
+  bool _isGeneratingFrames = false;
+  bool _useInterpolatedFrames = false;
+  bool _shouldGenerateFrames = false;
+  bool _hasGenerated = false;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
+    _controller = Advanced360Controller();
+    _controller.initialize(this);
+    
+    // Determine total frames
+    if (widget.imageUrls != null) {
+      _totalFrames = widget.imageUrls!.length;
+      // Mark that we should generate frames (will do in didChangeDependencies)
+      if (_totalFrames == 16) {
+        _shouldGenerateFrames = true;
+      }
+    } else if (widget.imageFiles != null) {
+      _totalFrames = widget.imageFiles!.length;
+    } else if (widget.imageBytes != null) {
+      _totalFrames = widget.imageBytes!.length;
+    }
+    
+    // Adjust controller for actual frame count
+    _controller.setMaxFrames(_totalFrames);
+    _controller.setIndex(widget.initialIndex.clamp(0, _totalFrames - 1), smooth: false);
+    
+    // Reset sensitivity if out of valid slider range (prevents errors from hot reload)
+    if (_sensitivity < 5.0 || _sensitivity > 30.0) {
+      _sensitivity = 15.0;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Generate frames after dependencies are ready (can use context now)
+    // Only do this once after the first build
+    if (_shouldGenerateFrames && !_isGeneratingFrames && !_hasGenerated && mounted) {
+      _hasGenerated = true;
+      _shouldGenerateFrames = false;
+      // Use double post-frame callback to ensure widget tree is fully built with all inherited widgets
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_isGeneratingFrames) {
+            _generateInterpolatedFramesFromUrls();
+          }
+        });
+      });
+    }
+  }
+  
+  /// Generate 64 interpolated frames from 16 URL images
+  Future<void> _generateInterpolatedFramesFromUrls() async {
+    if (widget.imageUrls == null || widget.imageUrls!.length != 16) return;
+    if (_isGeneratingFrames) return;
+    if (!mounted) return;
+    
+    setState(() {
+      _isGeneratingFrames = true;
+    });
+    
+    // Wait a frame to ensure context is fully available
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    if (!mounted) {
+      setState(() {
+        _isGeneratingFrames = false;
+      });
+      return;
+    }
+    
+    // Show progress dialog
+    InterpolationProgressDialog.show(
+      context,
+      current: 0,
+      total: 100,
+      message: 'Generating smooth 360° view...',
+    );
+    
+    try {
+      final frames = await UrlInterpolationService.generateFromUrls(
+        imageUrls: widget.imageUrls!,
+        onProgress: (current, total, message) {
+          if (mounted) {
+            InterpolationProgressDialog.update(
+              context,
+              current: current,
+              total: total,
+              message: message,
+            );
+          }
+        },
+      );
+      
+      if (mounted) {
+        InterpolationProgressDialog.hide(context);
+        
+        setState(() {
+          _interpolatedFrames = frames;
+          _totalFrames = 64;
+          _useInterpolatedFrames = true;
+          _isGeneratingFrames = false;
+        });
+        
+        // Update controller for 64 frames
+        _controller.setMaxFrames(64);
+        _controller.setIndex(0, smooth: false);
+      }
+    } catch (e) {
+      if (mounted) {
+        InterpolationProgressDialog.hide(context);
+        setState(() {
+          _isGeneratingFrames = false;
+        });
+        
+        // Show error but continue with 16 frames
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Using 16 frames. Smooth view generation failed: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   /// Toggle full screen mode
@@ -72,7 +196,7 @@ class _Car360ViewerScreenState extends State<Car360ViewerScreen> {
 
   @override
   void dispose() {
-    // Restore system UI
+    _controller.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
@@ -80,15 +204,17 @@ class _Car360ViewerScreenState extends State<Car360ViewerScreen> {
   /// Build the settings panel
   Widget _buildSettingsPanel() {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.8),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -117,34 +243,12 @@ class _Car360ViewerScreenState extends State<Car360ViewerScreen> {
               style: TextStyle(color: Colors.white),
             ),
             subtitle: Text(
-              _autoRotate ? 'Rotating automatically' : 'Drag to rotate',
+              _controller.autoRotate ? 'Rotating automatically' : 'Drag to rotate',
               style: const TextStyle(color: Colors.white54),
             ),
-            value: _autoRotate,
+            value: _controller.autoRotate,
             onChanged: (value) {
-              setState(() {
-                _autoRotate = value;
-              });
-              Navigator.pop(context);
-            },
-            activeColor: Theme.of(context).colorScheme.primary,
-          ),
-
-          // Show thumbnails toggle
-          SwitchListTile(
-            title: const Text(
-              'Show Thumbnails',
-              style: TextStyle(color: Colors.white),
-            ),
-            subtitle: const Text(
-              'Display thumbnail navigation',
-              style: TextStyle(color: Colors.white54),
-            ),
-            value: _showThumbnails,
-            onChanged: (value) {
-              setState(() {
-                _showThumbnails = value;
-              });
+              _controller.setAutoRotate(value);
               Navigator.pop(context);
             },
             activeColor: Theme.of(context).colorScheme.primary,
@@ -164,14 +268,14 @@ class _Car360ViewerScreenState extends State<Car360ViewerScreen> {
                   style: TextStyle(color: Colors.white54),
                 ),
                 Slider(
-                  value: _sensitivity,
+                  value: _sensitivity.clamp(5.0, 30.0),
                   min: 5.0,
                   max: 30.0,
                   divisions: 5,
-                  label: _sensitivity.round().toString(),
+                  label: _sensitivity.clamp(5.0, 30.0).round().toString(),
                   onChanged: (value) {
                     setState(() {
-                      _sensitivity = value;
+                      _sensitivity = value.clamp(5.0, 30.0);
                     });
                   },
                 ),
@@ -197,7 +301,9 @@ class _Car360ViewerScreenState extends State<Car360ViewerScreen> {
               ],
             ),
           ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -213,8 +319,6 @@ class _Car360ViewerScreenState extends State<Car360ViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final angle = Car360Set.getAngleDegrees(_currentIndex);
-    final angleName = Car360Set.getAngleName(_currentIndex);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -242,177 +346,73 @@ class _Car360ViewerScreenState extends State<Car360ViewerScreen> {
                 ),
               ],
             ),
-      body: GestureDetector(
-        onDoubleTap: _toggleFullScreen,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // 360° Viewer
-            Car360Viewer(
-              imageUrls: widget.imageUrls,
-              imageFiles: widget.imageFiles,
-              imageBytes: widget.imageBytes,
-              initialIndex: _currentIndex,
-              sensitivity: _sensitivity,
-              autoRotate: _autoRotate,
-              showAngleIndicator: !_isFullScreen,
-              showThumbnails: _showThumbnails,
-              onFrameChanged: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Smooth blended 360° Viewer
+          ListenableBuilder(
+            listenable: _controller,
+            builder: (context, child) {
+              final currentIndex = _controller.currentIndex.clamp(0, _totalFrames - 1);
+              final previousIndex = _controller.previousIndex.clamp(0, _totalFrames - 1);
+              final blendProgress = _controller.blendProgress;
+
+              return XGestureDetector(
+                onMoveUpdate: (event) {
+                  // Adjust sensitivity based on total frames
+                  final adjustedSensitivity = _sensitivity * (16.0 / _totalFrames);
+                  _controller.onDragUpdate(event.delta.dx, adjustedSensitivity);
+                },
+                onMoveStart: (event) {
+                  _controller.onDragStart();
+                },
+                onMoveEnd: (event) {
+                  final velocity = event.delta.dx * 60;
+                  _controller.onDragEnd(velocity);
+                },
+                child: SmoothImageBlend(
+                  previousFrameIndex: previousIndex,
+                  nextFrameIndex: currentIndex,
+                  blendProgress: blendProgress,
+                  imageUrls: _useInterpolatedFrames ? null : widget.imageUrls,
+                  imageFiles: widget.imageFiles,
+                  imageBytes: _useInterpolatedFrames ? _interpolatedFrames : widget.imageBytes,
+                  fit: BoxFit.contain,
+                ),
+              );
+            },
+          ),
+          
+          // Drag to rotate hint at bottom
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black38,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.swipe, color: Colors.white70, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Drag to rotate (${_totalFrames} frames)',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-
-            // Bottom info panel (only when not in full screen)
-            if (!_isFullScreen)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.8),
-                      ],
-                    ),
-                  ),
-                  child: SafeArea(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Angle info
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                '${angle.toStringAsFixed(1)}°',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              angleName,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Control buttons
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // Previous frame
-                            IconButton(
-                              icon: const Icon(Icons.chevron_left),
-                              color: Colors.white,
-                              iconSize: 32,
-                              onPressed: () {
-                                setState(() {
-                                  _currentIndex = (_currentIndex - 1 + 16) % 16;
-                                });
-                              },
-                            ),
-
-                            // Auto-rotate toggle
-                            IconButton(
-                              icon: Icon(
-                                _autoRotate
-                                    ? Icons.pause_circle_filled
-                                    : Icons.play_circle_filled,
-                              ),
-                              color: _autoRotate
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.white,
-                              iconSize: 48,
-                              onPressed: () {
-                                setState(() {
-                                  _autoRotate = !_autoRotate;
-                                });
-                              },
-                            ),
-
-                            // Next frame
-                            IconButton(
-                              icon: const Icon(Icons.chevron_right),
-                              color: Colors.white,
-                              iconSize: 32,
-                              onPressed: () {
-                                setState(() {
-                                  _currentIndex = (_currentIndex + 1) % 16;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-
-                        // Frame indicator
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(16, (index) {
-                            final isSelected = index == _currentIndex;
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _currentIndex = index;
-                                });
-                              },
-                              child: Container(
-                                width: isSelected ? 12 : 8,
-                                height: isSelected ? 12 : 8,
-                                margin: const EdgeInsets.symmetric(horizontal: 2),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.white38,
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-            // Full screen exit hint
-            if (_isFullScreen)
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 16,
-                right: 16,
-                child: IconButton(
-                  icon: const Icon(Icons.fullscreen_exit),
-                  color: Colors.white54,
-                  onPressed: _toggleFullScreen,
-                ),
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

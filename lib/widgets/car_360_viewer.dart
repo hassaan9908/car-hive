@@ -92,6 +92,7 @@ class _Car360ViewerState extends State<Car360Viewer>
 
   // Preloaded images for smooth viewing
   final Map<int, ImageProvider> _imageCache = {};
+  bool _imagesPreloaded = false;
 
   @override
   void initState() {
@@ -103,12 +104,20 @@ class _Car360ViewerState extends State<Car360Viewer>
       duration: const Duration(milliseconds: 100),
     );
 
-    // Preload images
-    _preloadImages();
-
     // Start auto-rotation if enabled
     if (widget.autoRotate) {
       _startAutoRotation();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Preload images after widget is fully initialized
+    // This ensures we have access to inherited widgets like MediaQuery
+    if (!_imagesPreloaded) {
+      _preloadImages();
+      _imagesPreloaded = true;
     }
   }
 
@@ -482,12 +491,6 @@ class _Car360ViewerState extends State<Car360Viewer>
           children: [
             // Main image
             Center(child: _buildCurrentFrame()),
-
-            // Angle indicator
-            _buildAngleIndicator(),
-
-            // Drag hint
-            _buildDragHint(),
 
             // Thumbnails
             _buildThumbnails(),

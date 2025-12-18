@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/ad_model.dart';
 import '../services/nearby_search_service.dart';
 import '../services/custom_marker_service.dart';
@@ -29,10 +30,22 @@ class _MapViewScreenState extends State<MapViewScreen> {
   Set<Marker> _markers = {};
   AdModel? _selectedAd;
   bool _isCreatingMarkers = false;
+  bool _isMapInitialized = false; // Track if map has been properly initialized
 
   @override
   void initState() {
     super.initState();
+    // Check if user is logged in
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      // Redirect to login if not authenticated
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, 'loginscreen');
+        }
+      });
+      return;
+    }
     _requestLocationPermission();
   }
 
@@ -258,20 +271,57 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   @override
   void dispose() {
-    // Only dispose if controller is initialized
-    if (_mapController != null) {
+    // On web, the GoogleMap widget handles controller disposal internally
+    // Manually disposing can cause "buildView" errors due to async lifecycle
+    // On mobile platforms, we can safely dispose manually
+    if (!kIsWeb && _mapController != null && _isMapInitialized) {
       try {
         _mapController!.dispose();
       } catch (e) {
         // Ignore disposal errors if map wasn't properly initialized
-        print('Error disposing map controller: $e');
+        if (kDebugMode) {
+          print('Error disposing map controller: $e');
+        }
       }
     }
+    // Always clear the reference to prevent memory leaks
+    _mapController = null;
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Check authentication again in build to handle logout during session
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Map View'),
+          backgroundColor: Colors.transparent,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.login, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text(
+                'Please login to access Map View',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, 'loginscreen');
+                },
+                child: const Text('Go to Login'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -355,6 +405,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
             )
           else
             GoogleMap(
+              key: const ValueKey('google_map'), // Stable key for proper lifecycle management
               initialCameraPosition: CameraPosition(
                 target: _userPosition != null
                     ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
@@ -362,12 +413,14 @@ class _MapViewScreenState extends State<MapViewScreen> {
                 zoom: 13.0,
               ),
               onMapCreated: (GoogleMapController controller) {
+                if (!mounted) return; // Check if widget is still mounted
                 _mapController = controller;
+                _isMapInitialized = true; // Mark map as initialized
                 if (_userPosition != null) {
                   _moveCameraToUserPosition();
                 }
                 // Map created successfully, clear any errors
-                if (_mapError) {
+                if (_mapError && mounted) {
                   setState(() {
                     _mapError = false;
                     _mapErrorMessage = null;

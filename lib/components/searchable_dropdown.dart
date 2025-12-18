@@ -47,11 +47,22 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
   void didUpdateWidget(SearchableDropdown<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.value != oldWidget.value) {
-      if (widget.value != null) {
-        _searchController.text = widget.itemAsString(widget.value!);
-      } else {
-        _searchController.clear();
-      }
+      // Defer the text update to avoid setState during build
+      // Use addPostFrameCallback to update after the current build phase
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (widget.value != null) {
+          final newText = widget.itemAsString(widget.value!);
+          // Only update if the text is different to avoid unnecessary notifications
+          if (_searchController.text != newText) {
+            _searchController.text = newText;
+          }
+        } else {
+          if (_searchController.text.isNotEmpty) {
+            _searchController.clear();
+          }
+        }
+      });
     }
   }
 

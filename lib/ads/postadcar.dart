@@ -2,7 +2,11 @@ import 'package:carhive/models/ad_model.dart' show AdModel;
 import 'package:carhive/store/global_ads.dart' show GlobalAdStore;
 import 'package:carhive/services/cloudinary_service.dart';
 import 'package:carhive/services/car_360_service.dart';
+import 'package:carhive/services/vehicle_service.dart';
+import 'package:carhive/utils/html_parser.dart';
+import 'package:carhive/utils/encryption_service.dart';
 import 'package:carhive/screens/capture_360_screen.dart';
+import 'package:carhive/screens/video_capture_360_screen.dart';
 import 'package:carhive/models/car_360_set.dart';
 import 'package:carhive/widgets/location_picker.dart';
 import 'package:flutter/material.dart';
@@ -94,6 +98,15 @@ class _PostAdCarState extends State<PostAdCar> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _carbrandController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  
+  // Vehicle verification fields (encrypted)
+  final TextEditingController _registrationNoController = TextEditingController();
+  final TextEditingController _registrationDateController = TextEditingController();
+  final TextEditingController _chassisNoController = TextEditingController();
+  final TextEditingController _ownerNameController = TextEditingController();
+  
+  // Vehicle verification state
+  bool _isVerifying = false;
 
   // User profile data
   String? _userName;
@@ -485,6 +498,192 @@ class _PostAdCarState extends State<PostAdCar> {
     }
   }
 
+  /// Select registration date
+  Future<void> _selectRegistrationDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      helpText: 'Select Registration Date',
+    );
+
+    if (picked != null) {
+      setState(() {
+        // Format as MM/DD/YYYY
+        _registrationDateController.text =
+            '${picked.month.toString().padLeft(2, '0')}/${picked.day.toString().padLeft(2, '0')}/${picked.year}';
+      });
+    }
+  }
+
+  /// Converts MM/DD/YYYY to YYYY-MM-DD for API
+  String _convertDateToApiFormat(String date) {
+    try {
+      final parts = date.split('/');
+      if (parts.length == 3) {
+        final month = parts[0].padLeft(2, '0');
+        final day = parts[1].padLeft(2, '0');
+        final year = parts[2];
+        return '$year-$month-$day';
+      }
+    } catch (e) {
+      // If conversion fails, return as is
+    }
+    return date;
+  }
+
+  /// Verifies vehicle details against the API
+  /// Returns true if all 4 fields match exactly, false otherwise
+  Future<bool> _verifyVehicleDetails() async {
+    try {
+      setState(() => _isVerifying = true);
+
+      // Convert date from MM/DD/YYYY to YYYY-MM-DD for API
+      final dateForApi = _convertDateToApiFormat(_registrationDateController.text.trim());
+
+      // Call the API
+      final htmlResponse = await VehicleService.fetchVehicleData(
+        registrationNo: _registrationNoController.text.trim(),
+        registrationDate: dateForApi,
+      );
+
+      // Check if record found
+      if (HtmlParser.isNoRecord(htmlResponse)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No record found in the database. Please verify the registration number and date.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        return false;
+      }
+
+      // Extract fields from HTML
+      final extractedFields = HtmlParser.extractAllFields(htmlResponse);
+
+      // Debug: Print extracted fields
+      print('=== VERIFICATION DEBUG ===');
+      print('Extracted fields: $extractedFields');
+      print('All field keys: ${extractedFields.keys.toList()}');
+
+      // Normalize values for comparison (case-insensitive, trim whitespace, handle asterisk)
+      final normalize = (String value, {bool isRegistrationNo = false}) {
+        var normalized = value
+            .trim()
+            .toUpperCase();
+        
+        // For registration numbers, handle asterisk - remove it for comparison
+        // API returns format like "LEN-310*" but user enters "LEN-310"
+        if (isRegistrationNo) {
+          normalized = normalized.replaceAll('*', ''); // Remove asterisk
+          normalized = normalized.trim(); // Trim again after removing asterisk
+        } else {
+          // For other fields, normalize spaces
+          normalized = normalized.replaceAll(RegExp(r'\s+'), ' '); // Normalize multiple spaces to single space
+        }
+        
+        return normalized;
+      };
+
+      // Get user input values
+      final userRegNo = normalize(_registrationNoController.text.trim(), isRegistrationNo: true);
+      final userChassisNo = normalize(_chassisNoController.text.trim());
+      final userOwnerName = normalize(_ownerNameController.text.trim());
+
+      // Get API values - try multiple field name variations
+      String apiRegNo = '';
+      String apiChassisNo = '';
+      String apiOwnerName = '';
+
+      // Try different field name variations
+      final rawApiRegNo = extractedFields['Registration No'] ?? 
+                         extractedFields['REGISTRATION NO'] ?? 
+                         extractedFields['Reg No'] ?? 
+                         extractedFields['Registration Number'] ?? '';
+      
+      apiRegNo = normalize(rawApiRegNo, isRegistrationNo: true); // Remove asterisk from API response
+
+      apiChassisNo = normalize(extractedFields['Chassis No'] ?? 
+                               extractedFields['CHASSIS NO'] ?? 
+                               extractedFields['Chassis Number'] ?? 
+                               extractedFields['CHASSIS NUMBER'] ?? '');
+
+      apiOwnerName = normalize(extractedFields['Owner Name'] ?? 
+                               extractedFields['OWNER NAME'] ?? 
+                               extractedFields['Owner'] ?? 
+                               extractedFields['OWNER'] ?? '');
+
+      // Debug: Print comparison values
+      print('User Reg No: "$userRegNo" | API Reg No: "$apiRegNo" | Match: ${userRegNo == apiRegNo}');
+      print('User Chassis: "$userChassisNo" | API Chassis: "$apiChassisNo" | Match: ${userChassisNo == apiChassisNo}');
+      print('User Owner: "$userOwnerName" | API Owner: "$apiOwnerName" | Match: ${userOwnerName == apiOwnerName}');
+
+      // Check if any field is empty
+      if (apiRegNo.isEmpty || apiChassisNo.isEmpty || apiOwnerName.isEmpty) {
+        print('ERROR: Some fields could not be extracted from API response');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not extract all required fields from API. Missing: ${apiRegNo.isEmpty ? "Registration No " : ""}${apiChassisNo.isEmpty ? "Chassis No " : ""}${apiOwnerName.isEmpty ? "Owner Name" : ""}'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        return false;
+      }
+
+      // Compare all 3 fields (Registration No, Chassis No, Owner Name)
+      // Note: Registration Date is already used to fetch the data, so we verify the other 3
+      final regNoMatches = userRegNo == apiRegNo;
+      final chassisNoMatches = userChassisNo == apiChassisNo;
+      final ownerNameMatches = userOwnerName == apiOwnerName;
+
+      // Debug: Print final result
+      print('Reg No Match: $regNoMatches, Chassis Match: $chassisNoMatches, Owner Match: $ownerNameMatches');
+      print('=== END VERIFICATION DEBUG ===');
+
+      // All fields must match exactly
+      if (!regNoMatches || !chassisNoMatches || !ownerNameMatches) {
+        if (mounted) {
+          final mismatches = <String>[];
+          if (!regNoMatches) mismatches.add('Registration No');
+          if (!chassisNoMatches) mismatches.add('Chassis No');
+          if (!ownerNameMatches) mismatches.add('Owner Name');
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Verification failed. Mismatched fields: ${mismatches.join(", ")}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      print('Verification error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Verification error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      return false;
+    } finally {
+      setState(() => _isVerifying = false);
+    }
+  }
+
   // Open 360° capture screen (16 angles)
   Future<void> _open360CaptureScreen() async {
     final result = await Navigator.push<Car360Set>(
@@ -505,6 +704,36 @@ class _PostAdCarState extends State<PostAdCar> {
         _car360Service.setCurrentSet(result);
         _360PreviewImages = result.imageBytes;
       });
+    }
+  }
+
+  // Open video-based 360 capture
+  Future<void> _openVideo360CaptureScreen() async {
+    final result = await Navigator.push<List<String>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoCapture360Screen(
+          onComplete: (frameUrls) {
+            // Video processing complete
+            // Note: Video capture returns frame URLs, not Car360Set
+            // You may need to handle this differently based on your needs
+          },
+        ),
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      // Handle video-based 360 frames
+      // For now, just show a message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Generated ${result.length} frames from video!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      // TODO: Integrate video frames with your upload flow
     }
   }
 
@@ -720,12 +949,15 @@ class _PostAdCarState extends State<PostAdCar> {
                     ),
                     const SizedBox(height: 12),
                     if (_360PreviewImages.isEmpty || _360PreviewImages.every((img) => img == null))
-                      // Capture button
+                      // Capture options: Photo or Video
+                      Column(
+                        children: [
+                          // Photo-based capture (existing)
                       GestureDetector(
                         onTap: _open360CaptureScreen,
                         child: Container(
                           width: double.infinity,
-                          height: 120,
+                              height: 100,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -740,7 +972,7 @@ class _PostAdCarState extends State<PostAdCar> {
                               style: BorderStyle.solid,
                             ),
                           ),
-                          child: Column(
+                              child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Container(
@@ -752,29 +984,121 @@ class _PostAdCarState extends State<PostAdCar> {
                                 child: const Icon(
                                   Icons.camera_alt,
                                   color: Colors.white,
-                                  size: 28,
+                                      size: 24,
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
                               Text(
-                                'Start 360° Capture',
+                                        'Photo Capture (16 angles)',
                                 style: TextStyle(
                                   color: const Color(0xFFf48c25),
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                          fontSize: 14,
                                 ),
                               ),
-                              const SizedBox(height: 4),
                               Text(
-                                '8 guided angles',
+                                        'Take 16 photos around car',
                                 style: TextStyle(
                                   color: const Color(0xFFf48c25).withOpacity(0.8),
-                                  fontSize: 12,
+                                          fontSize: 11,
                                 ),
                               ),
                             ],
                           ),
+                                ],
                         ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Video-based capture (new)
+                          GestureDetector(
+                            onTap: _openVideo360CaptureScreen,
+                            child: Container(
+                              width: double.infinity,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.blue.withOpacity(0.1),
+                                    Colors.blue.withOpacity(0.2),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.blue.withOpacity(0.5),
+                                  width: 2,
+                                  style: BorderStyle.solid,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.videocam,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Video Capture (90 frames)',
+                                            style: TextStyle(
+                                              color: Colors.blue,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green,
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Text(
+                                              'NEW',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        'Record 15-20 sec video',
+                                        style: TextStyle(
+                                          color: Colors.blue.withOpacity(0.8),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       )
                     else
                       // Preview captured images (16 angles)
@@ -1130,6 +1454,99 @@ class _PostAdCarState extends State<PostAdCar> {
                   ),
                 ),
               ),
+              
+              // Vehicle Verification Section
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Card(
+                  color: Colors.blue.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.verified_user, color: Colors.blue.shade700),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Vehicle Verification',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Please provide vehicle details for automatic verification. This information will be encrypted and kept secure.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextFieldTile(
+                          label: "Registration No",
+                          icon: Icons.confirmation_number,
+                          controller: _registrationNoController,
+                          hint: "ABC-123",
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Registration number is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildTextFieldTile(
+                          label: "Registration Date",
+                          icon: Icons.calendar_today,
+                          controller: _registrationDateController,
+                          hint: "MM/DD/YYYY",
+                          readOnly: true,
+                          onTap: () => _selectRegistrationDate(),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Registration date is required';
+                            }
+                            final datePattern = RegExp(r'^\d{2}/\d{2}/\d{4}$');
+                            if (!datePattern.hasMatch(value.trim())) {
+                              return 'Please enter date in MM/DD/YYYY format';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildTextFieldTile(
+                          label: "Chassis No",
+                          icon: Icons.vpn_key,
+                          controller: _chassisNoController,
+                          hint: "Enter chassis number",
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Chassis number is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildTextFieldTile(
+                          label: "Owner Name",
+                          icon: Icons.person,
+                          controller: _ownerNameController,
+                          hint: "Enter owner name",
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Owner name is required';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               // Image upload progress
               if (_isUploadingImages)
                 Padding(
@@ -1192,8 +1609,32 @@ class _PostAdCarState extends State<PostAdCar> {
                       backgroundColor: Colors.transparent,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    onPressed: (_isUploadingImages || _isUploading360) ? null : () async {
+                    onPressed: (_isUploadingImages || _isUploading360 || _isVerifying) ? null : () async {
                       if (_formKey.currentState!.validate()) {
+                        // Verify vehicle details first
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Verifying vehicle details...'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+
+                        final isVerified = await _verifyVehicleDetails();
+
+                        if (!isVerified) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Vehicle verification failed. Please ensure all details match the official records.'),
+                              backgroundColor: Colors.red,
+                              duration: Duration(seconds: 4),
+                            ),
+                          );
+                          return;
+                        }
+
+                        // Verification successful, proceed with upload
                         List<String> imageUrls = [];
                         
                         // Upload images to Cloudinary
@@ -1274,7 +1715,29 @@ class _PostAdCarState extends State<PostAdCar> {
                           }
                         }
 
-                        // Create ad with image URLs
+                        // Prepare vehicle verification data
+                        // Normalize registration number for consistent duplicate checking
+                        final plainRegistrationNo = _registrationNoController.text
+                            .trim()
+                            .toUpperCase()
+                            .replaceAll('*', '')
+                            .replaceAll(' ', '')
+                            .replaceAll(RegExp(r'[^\w\-]'), '');
+                        final vehicleData = {
+                          'registrationNo': plainRegistrationNo,
+                          'registrationDate': _registrationDateController.text.trim(),
+                          'chassisNo': _chassisNoController.text.trim(),
+                          'ownerName': _ownerNameController.text.trim(),
+                        };
+
+                        // Encrypt sensitive vehicle data
+                        final encryptedVehicleData = EncryptionService.encryptFields(vehicleData);
+                        
+                        // Add plain registration number temporarily for duplicate checking
+                        // This will be removed before storing in Firestore
+                        encryptedVehicleData['_plainRegistrationNo'] = plainRegistrationNo;
+
+                        // Create ad with image URLs and encrypted vehicle data
                         final newAd = AdModel(
                           title: _titleController.text,
                           price: _priceController.text,
@@ -1300,13 +1763,16 @@ class _PostAdCarState extends State<PostAdCar> {
                         );
 
                         try {
-                          await GlobalAdStore().addAd(newAd);
+                          // Add ad with encrypted vehicle data and auto-approve (status = 'active')
+                          await GlobalAdStore().addAdWithVerification(newAd, encryptedVehicleData);
 
                           if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'Your ad has been submitted for review. You will be notified once it\'s approved.')),
+                            SnackBar(
+                              content: const Text(
+                                  'Vehicle verified successfully! Your ad has been posted.'),
+                              backgroundColor: Colors.green,
+                            ),
                           );
 
                           await Future.delayed(const Duration(seconds: 1));
@@ -1314,8 +1780,14 @@ class _PostAdCarState extends State<PostAdCar> {
                           Navigator.pushReplacementNamed(context, '/myads');
                         } catch (e) {
                           if (!mounted) return;
+                          final errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('Failed to add verified ad: ', '');
+                          final isDuplicateError = errorMessage.contains('already exists');
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to post ad: $e')),
+                            SnackBar(
+                              content: Text(errorMessage),
+                              backgroundColor: isDuplicateError ? Colors.orange : Colors.red,
+                              duration: const Duration(seconds: 5),
+                            ),
                           );
                         }
                       }
@@ -1361,6 +1833,8 @@ class _PostAdCarState extends State<PostAdCar> {
     required TextEditingController controller,
     String? hint,
     String? Function(String?)? validator,
+    bool readOnly = false,
+    VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
