@@ -57,6 +57,7 @@ class GlobalAdStore {
       // Filter out ads without status (they should be pending)
       final validAds = ads
           .where((ad) =>
+              // ignore: unnecessary_null_comparison
               ad.status != null && ad.status.isNotEmpty && ad.status != '')
           .toList();
 

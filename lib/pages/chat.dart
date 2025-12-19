@@ -12,18 +12,16 @@ class _ChatState extends State<Chat> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-                'Chats',
-                style: TextStyle(
-                  color: Colors.white
-                ),
-                ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              centerTitle: true,
+        title: const Text(
+          'Chats',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        centerTitle: true,
       ),
-      body: Center(
+      body: const Center(
         child: Text('Chats'),
       ),
-    );;
+    );
   }
 }

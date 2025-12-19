@@ -61,6 +61,7 @@ class _PostAdCarState extends State<PostAdCar> {
 // Controllers for ads
 
   final TextEditingController _titleController = TextEditingController();
+  // ignore: unused_field
   final TextEditingController _priceadController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _mileageController = TextEditingController();
@@ -96,7 +97,7 @@ class _PostAdCarState extends State<PostAdCar> {
   String? _userCity;
   String? _userUsername;
   bool _isLoadingProfile = true;
-  
+
   // Image upload state
   bool _isUploadingImages = false;
   double _uploadProgress = 0.0;
@@ -182,7 +183,7 @@ class _PostAdCarState extends State<PostAdCar> {
   // Upload images to Cloudinary and return URLs
   Future<List<String>> _uploadImages() async {
     final List<String> imageUrls = [];
-    
+
     setState(() {
       _isUploadingImages = true;
       _uploadProgress = 0.0;
@@ -235,6 +236,7 @@ class _PostAdCarState extends State<PostAdCar> {
 
 //  this is added to test on both web and mobile =-=--=-=-=-=-=-=-=-=-=-=-=-==-=-=
 
+  // ignore: unused_element
   void _openLocationSelector() {
     showModalBottomSheet(
       context: context,
@@ -416,6 +418,7 @@ class _PostAdCarState extends State<PostAdCar> {
     super.dispose();
   }
 
+  // ignore: unused_element
   void _submitForm() {
     if ((_images.isEmpty && _webImages.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -465,16 +468,16 @@ class _PostAdCarState extends State<PostAdCar> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.login, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
-              Text('Please login to post an ad',
+              const Icon(Icons.login, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text('Please login to post an ad',
                   style: TextStyle(fontSize: 18)),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pushNamed(context, 'loginscreen');
                 },
-                child: Text('Login'),
+                child: const Text('Login'),
               ),
             ],
           ),
@@ -762,75 +765,83 @@ class _PostAdCarState extends State<PostAdCar> {
                       backgroundColor: Colors.blue.shade800,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    onPressed: (_isUploadingImages) ? null : () async {
-                      if (_formKey.currentState!.validate()) {
-                        List<String> imageUrls = [];
-                        
-                        // Upload images to Cloudinary
-                        if (_images.isNotEmpty || _webImages.isNotEmpty) {
-                          try {
-                            imageUrls = await _uploadImages();
-                            if (imageUrls.isEmpty) {
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('No images were uploaded. Please try again.'),
-                                ),
+                    onPressed: (_isUploadingImages)
+                        ? null
+                        : () async {
+                            if (_formKey.currentState!.validate()) {
+                              List<String> imageUrls = [];
+
+                              // Upload images to Cloudinary
+                              if (_images.isNotEmpty || _webImages.isNotEmpty) {
+                                try {
+                                  imageUrls = await _uploadImages();
+                                  if (imageUrls.isEmpty) {
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            'No images were uploaded. Please try again.'),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content:
+                                          Text('Failed to upload images: $e'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                              }
+
+                              // Create ad with image URLs
+                              final newAd = AdModel(
+                                title: _titleController.text,
+                                price: _priceController.text,
+                                location: selectedLocation ??
+                                    _locationController.text,
+                                year: selectedCarModel ?? '',
+                                mileage: _mileageController.text,
+                                fuel: _fuelController.text,
+                                description: _descriptionController.text,
+                                carBrand: _carbrandController.text,
+                                bodyColor: _bodyColorController.text,
+                                kmsDriven: _mileageController
+                                    .text, // Use mileage for kmsDriven
+                                registeredIn: selectedRegisteredIn,
+                                name: _nameController.text,
+                                phone: _phoneController.text,
+                                imageUrls:
+                                    imageUrls.isNotEmpty ? imageUrls : null,
                               );
-                              return;
+
+                              try {
+                                await GlobalAdStore().addAd(newAd);
+
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          'Your ad has been submitted for review. You will be notified once it\'s approved.')),
+                                );
+
+                                await Future.delayed(
+                                    const Duration(seconds: 1));
+                                if (!mounted) return;
+                                Navigator.pushReplacementNamed(
+                                    context, '/myads');
+                              } catch (e) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text('Failed to post ad: $e')),
+                                );
+                              }
                             }
-                          } catch (e) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Failed to upload images: $e'),
-                              ),
-                            );
-                            return;
-                          }
-                        }
-
-                        // Create ad with image URLs
-                        final newAd = AdModel(
-                          title: _titleController.text,
-                          price: _priceController.text,
-                          location:
-                              selectedLocation ?? _locationController.text,
-                          year: selectedCarModel ?? '',
-                          mileage: _mileageController.text,
-                          fuel: _fuelController.text,
-                          description: _descriptionController.text,
-                          carBrand: _carbrandController.text,
-                          bodyColor: _bodyColorController.text,
-                          kmsDriven: _mileageController
-                              .text, // Use mileage for kmsDriven
-                          registeredIn: selectedRegisteredIn,
-                          name: _nameController.text,
-                          phone: _phoneController.text,
-                          imageUrls: imageUrls.isNotEmpty ? imageUrls : null,
-                        );
-
-                        try {
-                          await GlobalAdStore().addAd(newAd);
-
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'Your ad has been submitted for review. You will be notified once it\'s approved.')),
-                          );
-
-                          await Future.delayed(const Duration(seconds: 1));
-                          if (!mounted) return;
-                          Navigator.pushReplacementNamed(context, '/myads');
-                        } catch (e) {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to post ad: $e')),
-                          );
-                        }
-                      }
-                    },
+                          },
                     child: _isUploadingImages
                         ? const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -840,13 +851,15 @@ class _PostAdCarState extends State<PostAdCar> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               ),
                               SizedBox(width: 12),
                               Text(
                                 "Uploading...",
-                                style: TextStyle(fontSize: 16, color: Colors.white),
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.white),
                               ),
                             ],
                           )
@@ -900,6 +913,7 @@ class _PostAdCarState extends State<PostAdCar> {
     String title,
     IconData icon,
     VoidCallback onTap, {
+    // ignore: unused_element_parameter
     String? selectedValue,
     String? subtitle,
   }) {
