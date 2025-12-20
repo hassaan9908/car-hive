@@ -1,7 +1,8 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
+    
     function isSignedIn() {
       return request.auth != null;
     }
@@ -20,6 +21,22 @@ service cloud.firestore {
          userDoc(currentUid()).data.role == 'super_admin');
     }
 
+    // PHONE NUMBERS collection for uniqueness checking
+    match /phoneNumbers/{phoneNumber} {
+      allow read: if true; // Allow anyone to check phone number availability
+      allow create: if isSignedIn() && phoneNumber == request.resource.data.phoneNumber;
+      allow update: if isSignedIn() && phoneNumber == request.resource.data.phoneNumber;
+      allow delete: if isSignedIn() && phoneNumber == resource.data.phoneNumber;
+    }
+
+    // USERNAME availability checking
+    match /usernames/{username} {
+      allow read: if true; // Allow anyone to check username availability
+      allow create: if isSignedIn() && username == request.resource.data.username;
+      allow update: if isSignedIn() && username == request.resource.data.username;
+      allow delete: if isSignedIn() && username == resource.data.username;
+    }
+
     // USERS
     match /users/{uid} {
       allow create: if isSignedIn()
@@ -27,7 +44,6 @@ service cloud.firestore {
         && request.resource.data.role == 'user';
 
       // Allow reading user data for trust badges and public profile info
-      // Users can read their own full data, others can only read public fields
       allow read: if isAdmin() || 
         (isSignedIn() && uid == currentUid()) ||
         (isSignedIn() && request.auth != null); // Allow any signed-in user to read for trust badges
@@ -41,38 +57,26 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // PHONE NUMBERS collection for uniqueness checking
-    match /phoneNumbers/{phoneNumber} {
-      allow read: if true; // Allow anyone to check phone number availability
-      allow create: if isSignedIn() && phoneNumber == request.resource.data.phoneNumber;
-      allow update: if isSignedIn() && phoneNumber == request.resource.data.phoneNumber;
-      allow delete: if isSignedIn() && phoneNumber == resource.data.phoneNumber;
-    }
-
-    // Allow username availability checking - create a separate collection for usernames
-    match /usernames/{username} {
-      allow read: if true; // Allow anyone to check username availability
-      allow create: if isSignedIn() && username == request.resource.data.username;
-      allow update: if isSignedIn() && username == request.resource.data.username;
-      allow delete: if isSignedIn() && username == resource.data.username;
-    }
-
     // ADS - SIMPLIFIED RULES
     match /ads/{adId} {
       // Anyone can create their own ad (if signed in)
+      // Allow 'pending' status for manual review OR 'active' status for verified ads
       allow create: if isSignedIn()
         && request.resource.data.userId == currentUid()
-        && request.resource.data.status == 'pending';
+        && (
+          request.resource.data.status == 'pending' ||
+          (
+            request.resource.data.status == 'active' &&
+            request.resource.data.isVerified == true &&
+            request.resource.data.verifiedAt is timestamp &&
+            request.resource.data.vehicleVerification is map
+          )
+        );
 
       // SIMPLIFIED: Allow reading ALL ads for everyone (your app filters in memory)
       allow read: if true;
 
       // Updates: owners can edit their own ads with controlled status transitions; admins can do anything.
-      // Owner permissions:
-      // - Set status to 'sold' (may clear previousStatus)
-      // - Set status to 'removed' and set previousStatus
-      // - Reactivate from 'removed' to 'active' or 'pending' and clear previousStatus
-      // - Update other non-moderation fields without touching status/previousStatus
       allow update: if isSignedIn() && (
         (
           resource.data.userId == currentUid() && (
@@ -109,7 +113,6 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (
         resource.data.userId == currentUid() || isAdmin()
       );
-
     }
 
     // REVIEWS collection (separate collection)
@@ -118,9 +121,6 @@ service cloud.firestore {
       allow read: if true;
 
       // Allow creating reviews only if:
-      // 1. User is signed in
-      // 2. User is not the owner of the ad
-      // 3. Required fields are present and valid
       allow create: if isSignedIn()
         && request.resource.data.userId == currentUid()
         && request.resource.data.adId is string
@@ -161,7 +161,111 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // Deny everything else
+    // BLOG POSTS collection
+    match /blog_posts/{postId} {
+      // Anyone can read blog posts (app filters by isPublished)
+      allow read: if true;
+      
+      // Only admins can create, update, or delete blog posts
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // VIDEOS collection
+    match /videos/{videoId} {
+      // Anyone can read videos (app filters by isPublished)
+      allow read: if true;
+      
+      // Only admins can create, update, or delete videos
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // BLOGS collection (new addition for our implementation)
+    match /blogs/{blogId} {
+      // Allow admins to create, read, update, and delete blogs
+      allow create, read, update, delete: if isAdmin();
+    }
+
+    // CONVERSATIONS collection for chat
+    match /conversations/{conversationId} {
+      // Helper function to check if user is a participant
+      function isParticipant() {
+        return isSignedIn() && (
+          (resource != null && resource.data.participant1Id == currentUid()) ||
+          (resource != null && resource.data.participant2Id == currentUid())
+        );
+      }
+
+      // Helper function to check if user will be a participant (for create)
+      function willBeParticipant() {
+        return isSignedIn() && (
+          request.resource.data.participant1Id == currentUid() ||
+          request.resource.data.participant2Id == currentUid()
+        );
+      }
+
+      // Users can read conversations they are part of
+      // Also allow read if document doesn't exist (for existence check before creation)
+      allow read: if isSignedIn() && (
+        (resource != null && (
+          resource.data.participant1Id == currentUid() ||
+          resource.data.participant2Id == currentUid()
+        )) ||
+        !exists(/databases/$(database)/documents/conversations/$(conversationId))
+      );
+
+      // Users can create conversations they are part of
+      allow create: if willBeParticipant();
+
+      // Users can update conversations they are part of (for last message, unread counts)
+      allow update: if isParticipant();
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        // Helper function to get conversation data safely
+        function getConversationData() {
+          return get(/databases/$(database)/documents/conversations/$(conversationId)).data;
+        }
+
+        // Helper function to check if user is participant in parent conversation
+        function isConversationParticipant() {
+          return isSignedIn() && (
+            getConversationData().participant1Id == currentUid() ||
+            getConversationData().participant2Id == currentUid()
+          );
+        }
+
+        // Users can read messages in conversations they are part of
+        allow read: if isConversationParticipant();
+
+        // Users can create messages where they are the sender
+        allow create: if isSignedIn() && 
+          request.resource.data.senderId == currentUid() &&
+          isConversationParticipant();
+
+        // Users can update messages:
+        // 1. If they are the sender (to mark as delivered)
+        // 2. If they are the receiver (to mark as read)
+        allow update: if isSignedIn() && isConversationParticipant() && (
+          // Sender can update their own messages (to mark as delivered)
+          (resource.data.senderId == currentUid() && 
+           request.resource.data.diff(resource.data).changedKeys().hasOnly(['status'])) ||
+          // Receiver can update messages they received (to mark as read)
+          (resource.data.receiverId == currentUid() && 
+           (request.resource.data.diff(resource.data).changedKeys().hasOnly(['status', 'isRead']) ||
+            request.resource.data.diff(resource.data).changedKeys().hasOnly(['isRead'])))
+        );
+
+        // Users can delete messages in conversations they are part of
+        // This allows deletion for all users (not just sender)
+        allow delete: if isSignedIn() && isConversationParticipant();
+      }
+    }
+
+    // Deny everything else - KEEP THIS AT THE END
     match /{document=**} {
       allow read, write: if false;
     }

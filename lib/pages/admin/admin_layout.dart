@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_provider.dart';
-import '../../theme/app_colors.dart';
 import 'admin_dashboard_page.dart';
 import 'admin_ads_page.dart';
 import 'admin_users_page.dart';
+import 'admin_blog_upload_page.dart';
+import 'admin_video_upload_page.dart';
+import 'admin_blog_management_page.dart';
+import 'admin_video_management_page.dart';
+import 'admin_insight_metrics_page.dart';
 
 class AdminLayout extends StatefulWidget {
   const AdminLayout({super.key});
@@ -24,6 +28,11 @@ class _AdminLayoutState extends State<AdminLayout> {
       page: const AdminDashboardPage(),
     ),
     AdminNavigationItem(
+      title: 'Insight Metrics',
+      icon: Icons.insights,
+      page: const AdminInsightMetricsPage(),
+    ),
+    AdminNavigationItem(
       title: 'Ad Moderation',
       icon: Icons.rate_review,
       page: const AdminAdsPage(),
@@ -34,19 +43,32 @@ class _AdminLayoutState extends State<AdminLayout> {
       page: const AdminUsersPage(),
     ),
     AdminNavigationItem(
-      title: 'Analytics',
-      icon: Icons.analytics,
-      page: const AdminAnalyticsPage(),
+      title: 'Upload Blog',
+      icon: Icons.article,
+      page: const AdminBlogUploadPage(),
     ),
     AdminNavigationItem(
-      title: 'Settings',
-      icon: Icons.settings,
-      page: const AdminSettingsPage(),
+      title: 'Upload Video',
+      icon: Icons.video_library,
+      page: const AdminVideoUploadPage(),
+    ),
+    AdminNavigationItem(
+      title: 'Manage Blogs',
+      icon: Icons.manage_accounts,
+      page: const AdminBlogManagementPage(),
+    ),
+    AdminNavigationItem(
+      title: 'Manage Videos',
+      icon: Icons.slideshow,
+      page: const AdminVideoManagementPage(),
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
         return Scaffold(
@@ -56,9 +78,21 @@ class _AdminLayoutState extends State<AdminLayout> {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 width: _isSidebarCollapsed ? 70 : 250,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryBlue,
-                  boxShadow: [
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark
+                        ? [
+                            const Color(0xFFf48c25).withOpacity(0.9),
+                            const Color(0xFFd97706),
+                          ]
+                        : [
+                            const Color(0xFFf48c25),
+                            const Color(0xFFf48c25).withOpacity(0.8),
+                          ],
+                  ),
+                  boxShadow: const [
                     BoxShadow(
                       color: Colors.black12,
                       blurRadius: 10,
@@ -169,8 +203,8 @@ class _AdminLayoutState extends State<AdminLayout> {
                                                 .currentAdmin?.email[0] ??
                                             'A')
                                     .toUpperCase(),
-                                style: const TextStyle(
-                                  color: AppColors.primaryBlue,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -218,7 +252,24 @@ class _AdminLayoutState extends State<AdminLayout> {
 
               // Main Content
               Expanded(
-                child: _navigationItems[_selectedIndex].page,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: isDark
+                          ? [
+                              const Color(0xFF221910),
+                              const Color(0xFF221910),
+                            ]
+                          : [
+                              Colors.grey.shade400,
+                              Colors.white,
+                            ],
+                    ),
+                  ),
+                  child: _navigationItems[_selectedIndex].page,
+                ),
               ),
             ],
           ),
@@ -238,47 +289,4 @@ class AdminNavigationItem {
     required this.icon,
     required this.page,
   });
-}
-
-// Placeholder pages for Analytics and Settings
-class AdminAnalyticsPage extends StatelessWidget {
-  const AdminAnalyticsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Analytics'),
-        backgroundColor: AppColors.primaryBlue,
-        foregroundColor: Colors.white,
-      ),
-      body: const Center(
-        child: Text(
-          'Analytics Dashboard - Coming Soon',
-          style: TextStyle(fontSize: 24),
-        ),
-      ),
-    );
-  }
-}
-
-class AdminSettingsPage extends StatelessWidget {
-  const AdminSettingsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: AppColors.primaryBlue,
-        foregroundColor: Colors.white,
-      ),
-      body: const Center(
-        child: Text(
-          'Admin Settings - Coming Soon',
-          style: TextStyle(fontSize: 24),
-        ),
-      ),
-    );
-  }
 }

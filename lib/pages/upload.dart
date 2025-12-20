@@ -37,9 +37,9 @@ class Upload extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
           title: const Text("Choose a plan"),
+          elevation: 0,
         ),
         body: currentUser == null
             ? _buildLoginPrompt(context)
@@ -65,7 +65,7 @@ class Upload extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.login, size: 64, color: colorScheme.onSurfaceVariant),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'Please login to upload ads',
             style: TextStyle(
@@ -73,12 +73,29 @@ class Upload extends StatelessWidget {
               color: colorScheme.onSurface,
             ),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
+          Container(
+            width: 130,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF6B35).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: 
           ElevatedButton(
             onPressed: () {
               Navigator.pushNamed(context, 'loginscreen');
             },
-            child: Text('Login'),
+            child: const Text('Login'),
+          ),
           ),
         ],
       ),
@@ -87,238 +104,346 @@ class Upload extends StatelessWidget {
 
   Widget _buildUploadOptions(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 20),
-            child: Text(
-              "How do you want to sell your car?",
-              style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(5),
-            child: Container(
-              width: double.infinity,
-              height: 200,
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: colorScheme.outline),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  const Color(0xFF1A1A2E),
+                  const Color(0xFF16213E),
+                ]
+              : [
+                  const Color(0xFFF8F9FA),
+                  const Color(0xFFE9ECEF),
+                ],
+        ),
+      ),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hero Header Section
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Text and Button Column
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Sell It Myself!",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Icon(Icons.check, color: Colors.green, size: 18),
-                            SizedBox(width: 5),
-                            Text(
-                              "Post an ad in 2 minutes",
-                              style: TextStyle(color: colorScheme.onSurface),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Icon(Icons.check, color: Colors.green, size: 18),
-                            SizedBox(width: 5),
-                            Text(
-                              "20 million users",
-                              style: TextStyle(color: colorScheme.onSurface),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Icon(Icons.check, color: Colors.green, size: 18),
-                            SizedBox(width: 5),
-                            Text(
-                              "Connect directly with buyers",
-                              style: TextStyle(color: colorScheme.onSurface),
-                            ),
-                          ],
-                        ),
-                        // const Spacer(),
-                        const SizedBox(
-                          height: 20,
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const PostAdCar()),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                          ),
-                          child: const Text("Post Your Ad"),
-                        ),
-                      ],
+                  // Badge
+                  Text(
+                    "Choose Your",
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w300,
+                      color: colorScheme.onSurface,
+                      height: 1.2,
                     ),
                   ),
-
-                  const SizedBox(width: 10),
-
-                  // Image Column
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      height: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: colorScheme.surfaceVariant,
-                        image: const DecorationImage(
-                          image: AssetImage('assets/images/car-image.png'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                  Text(
+                    "Selling Plan",
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Select the best option to reach 20M+ buyers",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                      height: 1.5,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          // ---=========-=-=-=-=-=-=-
-          Padding(
-            padding: const EdgeInsets.all(5),
-            child: Container(
-              width: double.infinity,
-              height: 200,
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: colorScheme.outline),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+            // Option Cards
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
                 children: [
-                  // Text and Button Column
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Sell It Through CarHive!",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Icon(Icons.check, color: Colors.green, size: 18),
-                            SizedBox(width: 5),
-                            Text(
-                              "Post an ad in 2 minutes",
-                              style: TextStyle(color: colorScheme.onSurface),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Icon(Icons.check, color: Colors.green, size: 18),
-                            SizedBox(width: 5),
-                            Text(
-                              "20 million users",
-                              style: TextStyle(color: colorScheme.onSurface),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Icon(Icons.check, color: Colors.green, size: 18),
-                            SizedBox(width: 5),
-                            Text(
-                              "Connect directly with buyers",
-                              style: TextStyle(color: colorScheme.onSurface),
-                            ),
-                          ],
-                        ),
-                        // const Spacer(),
-                        const SizedBox(
-                          height: 20,
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const CombinedInfoScreen()),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                          ),
-                          child: const Text("Help to sell car!"),
-                        ),
+                  // Option 1: DIY
+                  _buildModernCard(
+                    context: context,
+                    title: "Sell It Myself",
+                    subtitle: "Direct & Fast",
+                    features: [
+                      "Post your ad in 2 minutes",
+                      "Connect directly with buyers",
+                      "Full control over pricing",
+                    ],
+                    buttonText: "Post Your Ad",
+                    icon: Icons.person_outline_rounded,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF0066FF),
+                        Color(0xFF0052CC),
                       ],
                     ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const PostAdCar()),
+                      );
+                    },
+                    badge: "POPULAR",
                   ),
 
-                  const SizedBox(width: 10),
+                  const SizedBox(height: 16),
 
-                  // Image Column
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      height: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: colorScheme.surfaceVariant,
-                        image: const DecorationImage(
-                          image: AssetImage('assets/images/car-image.png'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                  // Option 2: Assisted
+                  _buildModernCard(
+                    context: context,
+                    title: "CarHive Assisted",
+                    subtitle: "Hassle-Free Service",
+                    features: [
+                      "Expert assistance included",
+                      "Professional car inspection",
+                      "We handle the paperwork",
+                    ],
+                    buttonText: "loginlling",
+                    icon: Icons.support_agent_rounded,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF00C853),
+                        Color(0xFF00A344),
+                      ],
                     ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const CombinedInfoScreen()),
+                      );
+                    },
+                    badge: "PREMIUM",
                   ),
                 ],
               ),
             ),
+
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernCard({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required List<String> features,
+    required String buttonText,
+    required IconData icon,
+    required Gradient gradient,
+    required VoidCallback onPressed,
+    String? badge,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with gradient
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: gradient,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      if (badge != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.4),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            badge,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Features & Button
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...features.asMap().entries.map((entry) {
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: entry.key < features.length - 1 ? 14 : 0,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(top: 2),
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00C853).withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check_rounded,
+                              color: Color(0xFF00C853),
+                              size: 14,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              entry.value,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.85),
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+
+                  const SizedBox(height: 24),
+
+                  // CTA Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: gradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: gradient.colors.first.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton(
+                        onPressed: onPressed,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              buttonText,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

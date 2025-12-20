@@ -27,16 +27,13 @@ class Mutualinvestment extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-              title: Text(
+              title: const Text(
                 'Mutual Investment',
-                style: TextStyle(
-                  color: Colors.white
                 ),
-                ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
+              backgroundColor: Colors.transparent,
               centerTitle: true,
             ),
-        body: Center(
+        body: const Center(
           child: Text('Mutual Investment'),
         ),
         bottomNavigationBar: CustomBottomNav(

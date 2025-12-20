@@ -47,6 +47,12 @@ class CustomTextField extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color fillColor = isDark 
+        ? const Color.fromARGB(255, 15, 15, 15) 
+        : Colors.grey.shade200;
+
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
@@ -74,7 +80,7 @@ class CustomTextField extends StatelessWidget {
         suffixIcon: suffixIcon,
         errorText: errorText,
         filled: true,
-        fillColor: colorScheme.surfaceContainerHighest,
+        fillColor: fillColor,
         hintStyle: TextStyle(
           color: colorScheme.onSurfaceVariant,
           fontSize: 16,

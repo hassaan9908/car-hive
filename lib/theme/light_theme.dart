@@ -7,10 +7,10 @@ final ThemeData lightTheme = ThemeData(
 
   // Color Scheme - Automotive Light Theme
   colorScheme: const ColorScheme.light(
-    primary: AppColors.primaryBlue,
+    primary: AppColors.primaryOrange,
     onPrimary: Colors.white,
     primaryContainer: Color(0xFFE2E8F0),
-    onPrimaryContainer: AppColors.primaryBlue,
+    onPrimaryContainer: AppColors.primaryOrange,
     secondary: AppColors.secondaryGreen,
     onSecondary: Colors.white,
     secondaryContainer: Color(0xFFE8F5E8),
@@ -19,11 +19,9 @@ final ThemeData lightTheme = ThemeData(
     onTertiary: Colors.white,
     tertiaryContainer: Color(0xFFFFF3E0),
     onTertiaryContainer: AppColors.secondaryOrange,
-    background: AppColors.lightBackground,
-    onBackground: AppColors.lightOnSurface,
     surface: AppColors.lightSurface,
     onSurface: AppColors.lightOnSurface,
-    surfaceVariant: AppColors.lightSurfaceVariant,
+    surfaceContainerHighest: AppColors.lightSurfaceVariant,
     onSurfaceVariant: AppColors.lightOnSurfaceVariant,
     outline: AppColors.lightOutline,
     outlineVariant: AppColors.lightOutlineVariant,
@@ -35,23 +33,23 @@ final ThemeData lightTheme = ThemeData(
     scrim: Color(0xFF000000),
     inverseSurface: AppColors.lightOnSurface,
     onInverseSurface: AppColors.lightSurface,
-    inversePrimary: AppColors.primaryBlueLight,
+    inversePrimary: AppColors.primaryOrangeLight,
   ),
 
   // App Bar Theme - Automotive Style
   appBarTheme: const AppBarTheme(
-    backgroundColor: AppColors.primaryBlue,
-    foregroundColor: Colors.white,
+    backgroundColor: Colors.transparent, // Same as app background
+    foregroundColor: Colors.black, // Black title and actions
     elevation: 0,
     centerTitle: true,
     titleTextStyle: TextStyle(
-      color: Colors.white,
+      color: Colors.black,
       fontSize: 20,
       fontWeight: FontWeight.w600,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
-    iconTheme: IconThemeData(color: Colors.white),
+    iconTheme: IconThemeData(color: Colors.black), // Black icons
     surfaceTintColor: Colors.transparent,
   ),
 
@@ -77,7 +75,7 @@ final ThemeData lightTheme = ThemeData(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+      borderSide: const BorderSide(color: AppColors.primaryOrange, width: 2),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
@@ -91,7 +89,7 @@ final ThemeData lightTheme = ThemeData(
       inherit: false,
     ),
     floatingLabelStyle: const TextStyle(
-      color: AppColors.primaryBlue,
+      color: AppColors.primaryOrange,
       fontSize: 16,
       fontWeight: FontWeight.w500,
       textBaseline: TextBaseline.alphabetic,
@@ -102,10 +100,10 @@ final ThemeData lightTheme = ThemeData(
   // Elevated Button Theme - Automotive Style
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
-      backgroundColor: AppColors.primaryBlue,
+      backgroundColor: AppColors.primaryOrange, // #f48c25
       foregroundColor: Colors.white,
       elevation: 0,
-      shadowColor: AppColors.primaryBlue.withOpacity(0.2),
+      shadowColor: AppColors.primaryOrange.withOpacity(0.2),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -123,7 +121,7 @@ final ThemeData lightTheme = ThemeData(
   // Text Button Theme - Automotive Style
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(
-      foregroundColor: AppColors.primaryBlue,
+      foregroundColor: AppColors.primaryOrange,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
@@ -140,8 +138,8 @@ final ThemeData lightTheme = ThemeData(
   // Outlined Button Theme - Automotive Style
   outlinedButtonTheme: OutlinedButtonThemeData(
     style: OutlinedButton.styleFrom(
-      foregroundColor: AppColors.primaryBlue,
-      side: const BorderSide(color: AppColors.primaryBlue, width: 1.5),
+      foregroundColor: AppColors.primaryOrange,
+      side: const BorderSide(color: AppColors.primaryOrange, width: 1.5),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -157,19 +155,19 @@ final ThemeData lightTheme = ThemeData(
   ),
 
   // Bottom Navigation Bar Theme - Automotive Style
-  bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-    backgroundColor: AppColors.lightSurface,
-    selectedItemColor: AppColors.primaryBlue,
+  bottomNavigationBarTheme: BottomNavigationBarThemeData(
+    backgroundColor: Colors.grey.shade200, // Light grey shade200
+    selectedItemColor: AppColors.primaryOrange,
     unselectedItemColor: AppColors.lightOnSurfaceVariant,
     type: BottomNavigationBarType.fixed,
     elevation: 8,
-    selectedLabelStyle: TextStyle(
+    selectedLabelStyle: const TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.w600,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
-    unselectedLabelStyle: TextStyle(
+    unselectedLabelStyle: const TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.w500,
       textBaseline: TextBaseline.alphabetic,
@@ -179,7 +177,7 @@ final ThemeData lightTheme = ThemeData(
 
   // Floating Action Button Theme - Automotive Style
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: AppColors.primaryBlue,
+    backgroundColor: AppColors.primaryOrange,
     foregroundColor: Colors.white,
     elevation: 4,
     shape: RoundedRectangleBorder(
@@ -324,8 +322,8 @@ final ThemeData lightTheme = ThemeData(
     ),
   ),
 
-  // Scaffold Background - Automotive Style
-  scaffoldBackgroundColor: AppColors.lightBackground,
+  // Scaffold Background - Transparent to allow gradient wrapper to show through
+  scaffoldBackgroundColor: Colors.transparent,
 
   // List Tile Theme - Automotive Style
   listTileTheme: const ListTileThemeData(
@@ -349,7 +347,7 @@ final ThemeData lightTheme = ThemeData(
   // Chip Theme - Automotive Style
   chipTheme: ChipThemeData(
     backgroundColor: AppColors.lightSurfaceVariant,
-    selectedColor: AppColors.primaryBlue,
+    selectedColor: AppColors.primaryOrange,
     disabledColor: AppColors.lightSurfaceVariant,
     labelStyle: const TextStyle(
       fontSize: 14,

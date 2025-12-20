@@ -2,41 +2,46 @@ import 'package:flutter/material.dart';
 
 class AppColors {
 
-  // Primary brand colors (CarHive blue)
-  static const Color primaryBlue = Color.fromARGB(255, 43, 128, 207);
-  static const Color primaryBlueLight = Color(0xFF3B82F6);
-  static const Color primaryBlueDark = Color(0xFF1E40AF);
+  // Primary brand colors (CarHive orange)
+  static const Color primaryOrange = Color(0xFFf48c25);
+  static const Color primaryOrangeLight = Color(0xFFf48c25);
+  static const Color primaryOrangeDark = Color(0xFFd97706);
+  
+  // Legacy blue colors (kept for backward compatibility, but should use orange)
+  static const Color primaryBlue = Color(0xFFf48c25); // Replaced with orange
+  static const Color primaryBlueLight = Color(0xFFf48c25); // Replaced with orange
+  static const Color primaryBlueDark = Color(0xFFd97706); // Replaced with orange dark
   
   // Secondary colors
   static const Color secondaryGreen = Color(0xFF10B981);
   static const Color secondaryOrange = Color(0xFFF59E0B);
   static const Color secondaryRed = Color(0xFFEF4444);
   static const Color secondaryPurple = Color(0xFF8B5CF6);
-  
+
   // Light theme colors
-  static const Color lightBackground = Color(0xFFF8FAFC);
+  static const Color lightBackground = Color(0xFFE0E0E0);
   static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightSurfaceVariant = Color(0xFFF1F5F9);
+  static const Color lightSurfaceVariant = Colors.white;
   static const Color lightOnSurface = Color(0xFF1E293B);
   static const Color lightOnSurfaceVariant = Color(0xFF64748B);
   static const Color lightOutline = Color(0xFFE2E8F0);
   static const Color lightOutlineVariant = Color(0xFFCBD5E1);
-  
+
   // Dark theme colors (matching admin panel)
   static const Color darkBackground = Color(0xFF0F172A);
-  static const Color darkSurface = Color(0xFF1E293B);
-  static const Color darkSurfaceVariant = Color(0xFF334155);
+  static const Color darkSurface = Color(0xFF212121);
+  static const Color darkSurfaceVariant = Colors.black;
   static const Color darkOnSurface = Color(0xFFF1F5F9);
   static const Color darkOnSurfaceVariant = Color(0xFFCBD5E1);
   static const Color darkOutline = Color(0xFF475569);
   static const Color darkOutlineVariant = Color(0xFF64748B);
-  
+
   // Status colors
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
-  
+
   // Neutral colors
   static const Color neutral50 = Color(0xFFF8FAFC);
   static const Color neutral100 = Color(0xFFF1F5F9);
@@ -48,11 +53,10 @@ class AppColors {
   static const Color neutral700 = Color(0xFF334155);
   static const Color neutral800 = Color(0xFF1E293B);
   static const Color neutral900 = Color(0xFF0F172A);
-  
+
   // Gradient colors
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [primaryBlue, primaryBlueLight],
-
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

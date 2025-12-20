@@ -38,17 +38,30 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(
+          color: isDark ? const Color(0xFFf48c25) : Colors.black,
+        ),
+      ),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1E3A8A),
-              Color(0xFF3B82F6),
-              Color(0xFF60A5FA),
-            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [
+                    const Color(0xFF221910),
+                    const Color(0xFF221910),
+                  ]
+                : [
+                    Colors.grey.shade400,
+                    Colors.white,
+                  ],
           ),
         ),
         child: Center(
@@ -71,8 +84,19 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E3A8A),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                           borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF6B35).withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
                         child: const Icon(
                           Icons.admin_panel_settings,
@@ -81,12 +105,12 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      const Text(
+                      Text(
                         'Admin Panel',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E3A8A),
+                          color: isDark ? const Color(0xFFf48c25) : const Color(0xFFf48c25),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -97,7 +121,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           color: Colors.grey,
                         ),
                       ),
-                      
+
                       // Admin Access Notice
                       Consumer<AdminProvider>(
                         builder: (context, adminProvider, child) {
@@ -108,11 +132,13 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                               decoration: BoxDecoration(
                                 color: Colors.orange.shade50,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.orange.shade200),
+                                border:
+                                    Border.all(color: Colors.orange.shade200),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.info_outline, color: Colors.orange.shade600),
+                                  Icon(Icons.info_outline,
+                                      color: Colors.orange.shade600),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
@@ -129,7 +155,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           );
                         },
                       ),
-                      
+
                       const SizedBox(height: 32),
 
                       // Email Field
@@ -148,14 +174,16 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
+                            borderSide: const BorderSide(
+                                color: Color(0xFFf48c25), width: 2),
                           ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your email';
                           }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                              .hasMatch(value)) {
                             return 'Please enter a valid email';
                           }
                           return null;
@@ -172,7 +200,9 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           prefixIcon: const Icon(Icons.lock_outlined),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                              _obscurePassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
                             ),
                             onPressed: () {
                               setState(() {
@@ -189,7 +219,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
+                            borderSide: const BorderSide(
+                                color: Color(0xFFf48c25), width: 2),
                           ),
                         ),
                         validator: (value) {
@@ -210,23 +241,42 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           return SizedBox(
                             width: double.infinity,
                             height: 50,
-                            child: ElevatedButton(
-                              onPressed: adminProvider.isLoading ? null : _handleLogin,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1E3A8A),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
-                                elevation: 2,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFF6B35).withOpacity(0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
                               ),
+                              child: ElevatedButton(
+                                onPressed:
+                                    adminProvider.isLoading ? null : _handleLogin,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  elevation: 0,
+                                ),
                               child: adminProvider.isLoading
                                   ? const SizedBox(
                                       height: 20,
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
                                       ),
                                     )
                                   : const Text(
@@ -234,8 +284,9 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                      ),
                                     ),
+                                  ),
+                              ),
                             ),
                           );
                         },
@@ -252,16 +303,19 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                                 decoration: BoxDecoration(
                                   color: Colors.red.shade50,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.red.shade200),
+                                  border:
+                                      Border.all(color: Colors.red.shade200),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.error_outline, color: Colors.red.shade600),
+                                    Icon(Icons.error_outline,
+                                        color: Colors.red.shade600),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         adminProvider.errorMessage!,
-                                        style: TextStyle(color: Colors.red.shade700),
+                                        style: TextStyle(
+                                            color: Colors.red.shade700),
                                       ),
                                     ),
                                   ],
@@ -274,13 +328,16 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       ),
 
                       const SizedBox(height: 24),
-                      
+
                       // Back to App Link
                       TextButton(
-                        onPressed: () => Navigator.pushReplacementNamed(context, '/'),
-                        child: const Text(
+                        onPressed: () =>
+                            Navigator.pushReplacementNamed(context, '/'),
+                        child: Text(
                           '← Back to CarHive App',
-                          style: TextStyle(color: Color(0xFF1E3A8A)),
+                          style: TextStyle(
+                            color: isDark ? const Color(0xFFf48c25) : const Color(0xFFf48c25),
+                          ),
                         ),
                       ),
                     ],
