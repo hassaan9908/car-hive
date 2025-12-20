@@ -194,6 +194,54 @@ class _MapViewScreenState extends State<MapViewScreen> {
     }
   }
 
+  // Validate coordinates are within valid ranges
+  bool _isValidCoordinate(double? value, double min, double max) {
+    return value != null && value >= min && value <= max;
+  }
+
+  // Extract and validate coordinates from ad
+  LatLng? _extractCoordinates(AdModel ad) {
+    if (ad.locationCoordinates == null) {
+      print('Ad ${ad.id}: No locationCoordinates');
+      return null;
+    }
+
+    final coords = ad.locationCoordinates!;
+    final lat = coords['lat'];
+    final lng = coords['lng'];
+
+    // Check for null values
+    if (lat == null || lng == null) {
+      print('Ad ${ad.id}: Null coordinates: lat=$lat, lng=$lng');
+      return null;
+    }
+
+    // Validate latitude (-90 to 90)
+    if (!_isValidCoordinate(lat, -90.0, 90.0)) {
+      print('Ad ${ad.id}: Invalid latitude: $lat');
+      return null;
+    }
+
+    // Validate longitude (-180 to 180)
+    if (!_isValidCoordinate(lng, -180.0, 180.0)) {
+      print('Ad ${ad.id}: Invalid longitude: $lng');
+      return null;
+    }
+
+    // Check if coordinates are swapped (common mistake: lng/lat instead of lat/lng)
+    // Pakistan coordinates: lat ~24-37, lng ~60-75
+    // If we see lat > 60 or lng < 30, they might be swapped
+    if (lat > 60.0 || lng < 30.0) {
+      // Check if swapping makes more sense
+      if (_isValidCoordinate(lng, -90.0, 90.0) && _isValidCoordinate(lat, -180.0, 180.0)) {
+        print('Ad ${ad.id}: Coordinates appear swapped, correcting: lat=$lat, lng=$lng -> lat=$lng, lng=$lat');
+        return LatLng(lng, lat); // Swap them
+      }
+    }
+
+    return LatLng(lat, lng);
+  }
+
   Future<void> _updateMarkers() async {
     if (_isCreatingMarkers) return; // Prevent multiple simultaneous marker creation
     
@@ -202,13 +250,19 @@ class _MapViewScreenState extends State<MapViewScreen> {
     });
 
     final Set<Marker> newMarkers = {};
+    int validMarkers = 0;
+    int invalidMarkers = 0;
 
     // Create markers with custom thumbnails
     for (final ad in _nearbyAds) {
-      if (ad.locationCoordinates == null) continue;
+      // Extract and validate coordinates
+      final position = _extractCoordinates(ad);
+      if (position == null) {
+        invalidMarkers++;
+        continue;
+      }
 
-      final lat = ad.locationCoordinates!['lat']!;
-      final lng = ad.locationCoordinates!['lng']!;
+      validMarkers++;
 
       try {
         // Create custom marker with car thumbnail
@@ -218,54 +272,61 @@ class _MapViewScreenState extends State<MapViewScreen> {
           title: ad.title.isNotEmpty ? ad.title : ad.carBrand,
         );
 
-      newMarkers.add(
-        Marker(
-          markerId: MarkerId(ad.id ?? '${lat}_$lng'),
-          position: LatLng(lat, lng),
-          infoWindow: InfoWindow(
-            title: ad.title.isNotEmpty ? ad.title : (ad.carBrand ?? 'Car'),
-              snippet: 'PKR ${ad.price} • ${ad.location}',
-          ),
-          onTap: () {
-            setState(() {
-              _selectedAd = ad;
-            });
-          },
-            icon: customIcon,
-          ),
-        );
-      } catch (e) {
-        print('Error creating marker for ad ${ad.id}: $e');
-        // Fallback to simple marker
-        final BitmapDescriptor fallbackIcon = await CustomMarkerService.createSimpleMarker(
-          color: const Color(0xFFf48c25),
-          text: ad.price.length > 6 ? '${ad.price.substring(0, 4)}K' : ad.price,
-        );
-
         newMarkers.add(
           Marker(
-            markerId: MarkerId(ad.id ?? '${lat}_$lng'),
-            position: LatLng(lat, lng),
+            markerId: MarkerId(ad.id ?? '${position.latitude}_${position.longitude}'),
+            position: position,
             infoWindow: InfoWindow(
               title: ad.title.isNotEmpty ? ad.title : (ad.carBrand ?? 'Car'),
               snippet: 'PKR ${ad.price} • ${ad.location}',
-          ),
+            ),
             onTap: () {
               setState(() {
                 _selectedAd = ad;
               });
             },
-            icon: fallbackIcon,
-        ),
-      );
-    }
+            icon: customIcon,
+          ),
+        );
+      } catch (e) {
+        print('Error creating custom marker for ad ${ad.id}: $e');
+        // Fallback to simple marker
+        try {
+          final BitmapDescriptor fallbackIcon = await CustomMarkerService.createSimpleMarker(
+            color: const Color(0xFFf48c25),
+            text: ad.price.length > 6 ? '${ad.price.substring(0, 4)}K' : ad.price,
+          );
+
+          newMarkers.add(
+            Marker(
+              markerId: MarkerId(ad.id ?? '${position.latitude}_${position.longitude}'),
+              position: position,
+              infoWindow: InfoWindow(
+                title: ad.title.isNotEmpty ? ad.title : (ad.carBrand ?? 'Car'),
+                snippet: 'PKR ${ad.price} • ${ad.location}',
+              ),
+              onTap: () {
+                setState(() {
+                  _selectedAd = ad;
+                });
+              },
+              icon: fallbackIcon,
+            ),
+          );
+        } catch (fallbackError) {
+          print('Error creating fallback marker for ad ${ad.id}: $fallbackError');
+          invalidMarkers++;
+        }
+      }
     }
 
+    print('Map markers: $validMarkers valid, $invalidMarkers invalid out of ${_nearbyAds.length} ads');
+
     if (mounted) {
-    setState(() {
-      _markers = newMarkers;
+      setState(() {
+        _markers = newMarkers;
         _isCreatingMarkers = false;
-    });
+      });
     }
   }
 

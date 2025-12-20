@@ -38,7 +38,14 @@
   <!-- Google Maps API for Web -->
   <!-- Note: You need to enable "Maps JavaScript API" in Google Cloud Console -->
   <!-- and create a Maps API key if the Firebase API key doesn't work for Maps -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAeUhpVe19ldAQV23mUXLRJopBih8X2qEk"></script>
+  <!-- 
+    Loading the marker library for AdvancedMarkerElement support.
+    Note: The deprecation warning about google.maps.Marker is expected.
+    The Flutter google_maps_flutter package still uses the legacy Marker API internally.
+    This warning will be resolved when the package updates to use AdvancedMarkerElement.
+    The functionality still works correctly despite the warning.
+  -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAeUhpVe19ldAQV23mUXLRJopBih8X2qEk&loading=async&libraries=marker"></script>
   
   <!-- Hide reCAPTCHA badge to prevent it from covering UI elements -->
   <style>

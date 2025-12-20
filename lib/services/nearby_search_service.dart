@@ -95,12 +95,24 @@ class NearbySearchService {
           continue;
         }
 
+        // Validate coordinates before calculating distance
+        if (adLat < -90 || adLat > 90 || adLng < -180 || adLng > 180) {
+          print('Invalid coordinates for ad ${doc.id}: lat=$adLat, lng=$adLng');
+          continue;
+        }
+
         // Calculate actual distance using Haversine formula
         final distance = _calculateDistance(userLat, userLng, adLat, adLng);
 
         // Only include if within radius
         if (distance <= radiusKm) {
           final ad = AdModel.fromFirestore(data, doc.id);
+          // Verify locationCoordinates were properly parsed
+          if (ad.locationCoordinates == null) {
+            print('Warning: Ad ${doc.id} has location in Firestore but locationCoordinates is null after parsing');
+            // Skip this ad as it won't display correctly on map
+            continue;
+          }
           nearbyAds.add(ad);
         }
       }
@@ -149,12 +161,24 @@ class NearbySearchService {
           continue;
         }
 
+        // Validate coordinates before calculating distance
+        if (adLat < -90 || adLat > 90 || adLng < -180 || adLng > 180) {
+          print('Invalid coordinates for ad ${doc.id}: lat=$adLat, lng=$adLng');
+          continue;
+        }
+
         // Calculate actual distance using Haversine formula
         final distance = _calculateDistance(userLat, userLng, adLat, adLng);
 
         // Only include if within radius
         if (distance <= radiusKm) {
           final ad = AdModel.fromFirestore(data, doc.id);
+          // Verify locationCoordinates were properly parsed
+          if (ad.locationCoordinates == null) {
+            print('Warning: Ad ${doc.id} has location in Firestore but locationCoordinates is null after parsing');
+            // Skip this ad as it won't display correctly on map
+            continue;
+          }
           nearbyAds.add(ad);
         }
       }
