@@ -265,6 +265,104 @@ service cloud.firestore {
       }
     }
 
+    // INVESTMENT VEHICLES collection
+    match /investment_vehicles/{vehicleId} {
+      // Anyone signed in can read investment vehicles
+      allow read: if isSignedIn();
+      
+      // Users can create investment vehicles they initiate
+      allow create: if isSignedIn() 
+        && request.resource.data.initiatorUserId == currentUid();
+      
+      // Initiator or admin can update
+      allow update: if isSignedIn() && (
+        resource.data.initiatorUserId == currentUid() || isAdmin()
+      );
+      
+      // Only admin can delete
+      allow delete: if isAdmin();
+    }
+
+    // INVESTMENTS collection
+    match /investments/{investmentId} {
+      // Users can read their own investments or investments for vehicles they're viewing
+      allow read: if isSignedIn();
+      
+      // Users can create investments for themselves
+      allow create: if isSignedIn() 
+        && request.resource.data.userId == currentUid();
+      
+      // Users can update their own investments (for share sale listings)
+      // System can update investment status and profit
+      allow update: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+      
+      // Only admin can delete
+      allow delete: if isAdmin();
+    }
+
+    // INVESTMENT TRANSACTIONS collection
+    match /investment_transactions/{transactionId} {
+      // Users can read their own transactions
+      allow read: if isSignedIn() && resource.data.userId == currentUid();
+      
+      // Users can create transactions for themselves
+      allow create: if isSignedIn() 
+        && request.resource.data.userId == currentUid();
+      
+      // Users can update their own transactions (for payment status)
+      // System can update transaction status
+      allow update: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+      
+      // Only admin can delete
+      allow delete: if isAdmin();
+    }
+
+    // SHARE MARKETPLACE collection
+    match /share_marketplace/{listingId} {
+      // Anyone signed in can read active listings
+      allow read: if isSignedIn();
+      
+      // Users can create listings for their own investments
+      allow create: if isSignedIn() 
+        && request.resource.data.sellerUserId == currentUid();
+      
+      // Sellers can update their own listings
+      allow update: if isSignedIn() && (
+        resource.data.sellerUserId == currentUid() || isAdmin()
+      );
+      
+      // Sellers can delete their own listings, admins can delete any
+      allow delete: if isSignedIn() && (
+        resource.data.sellerUserId == currentUid() || isAdmin()
+      );
+    }
+
+    // INVESTMENT NOTIFICATIONS collection
+    match /investment_notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if isSignedIn() && resource.data.userId == currentUid();
+      
+      // System can create notifications (users can't create their own)
+      // In production, this should be done via Cloud Functions
+      allow create: if isSignedIn();
+      
+      // Users can update their own notifications (to mark as read)
+      allow update: if isSignedIn() && 
+        resource.data.userId == currentUid() &&
+        request.resource.data.diff(resource.data)
+          .changedKeys()
+          .hasOnly(['read']);
+      
+      // Users can delete their own notifications, admins can delete any
+      allow delete: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+    }
+
     // Deny everything else - KEEP THIS AT THE END
     match /{document=**} {
       allow read, write: if false;
