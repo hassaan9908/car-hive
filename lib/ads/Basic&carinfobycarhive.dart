@@ -117,7 +117,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFFF6B35),
+                color: Color(0xFFf48c25),
               ),
             ),
             Text(
@@ -151,7 +151,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
                     title: "Basic Information",
                     subtitle: "Tell us about yourself",
                     icon: Icons.person_outline_rounded,
-                    iconColor: const Color(0xFFFF6B35),
+                    iconColor: const Color(0xFFf48c25),
                     children: [
                       _buildModernTextField(
                         label: 'Full Name',
@@ -188,7 +188,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
                     title: "Car Information",
                     subtitle: "Details about your vehicle",
                     icon: Icons.directions_car_outlined,
-                    iconColor: const Color(0xFFFF6B35),
+                    iconColor: const Color(0xFFf48c25),
                     children: [
                       _buildModernTextField(
                         label: 'Car Model',
@@ -580,13 +580,13 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
             decoration: BoxDecoration(
               gradient: isActive
                   ? const LinearGradient(
-                      colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                      colors: [Color(0xFFf48c25), Color(0xFFd97706)],
                     )
                   : null,
               color: isActive
                   ? null
                   : (isCompleted
-                      ? const Color(0xFFFF6B35)
+                      ? const Color(0xFFf48c25)
                       : isDark
                           ? Colors.white12
                           : Colors.grey.shade200),
@@ -616,7 +616,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
               fontSize: 11,
               fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
               color: isActive
-                  ? const Color(0xFFFF6B35)
+                  ? const Color(0xFFf48c25)
                   : (isDark ? Colors.white54 : Colors.grey),
             ),
           ),
@@ -634,7 +634,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
       margin: const EdgeInsets.only(bottom: 30),
       decoration: BoxDecoration(
         color: isCompleted
-            ? const Color(0xFFFF6B35)
+            ? const Color(0xFFf48c25)
             : (isDark ? Colors.white12 : Colors.grey.shade300),
         borderRadius: BorderRadius.circular(1),
       ),
@@ -767,7 +767,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(
-                color: Color(0xFFFF6B35),
+                color: Color(0xFFf48c25),
                 width: 2,
               ),
             ),
@@ -795,12 +795,12 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFFFF6B35).withOpacity(0.1)
+              ? const Color(0xFFf48c25).withOpacity(0.1)
               : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade50),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFFFF6B35)
+                ? const Color(0xFFf48c25)
                 : (isDark ? Colors.white12 : Colors.black12),
             width: isSelected ? 2 : 1,
           ),
@@ -811,7 +811,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFFFF6B35)
+                    ? const Color(0xFFf48c25)
                     : (isDark ? Colors.white12 : Colors.grey.shade200),
                 shape: BoxShape.circle,
               ),
@@ -830,7 +830,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 color: isSelected
-                    ? const Color(0xFFFF6B35)
+                    ? const Color(0xFFf48c25)
                     : (isDark ? Colors.white70 : Colors.black87),
               ),
             ),
@@ -847,12 +847,12 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
       child: Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+            colors: [Color(0xFFf48c25), Color(0xFFd97706)],
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF6B35).withOpacity(0.3),
+              color: const Color(0xFFf48c25).withOpacity(0.3),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -867,7 +867,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
                   const SnackBar(
                     content:
                         Text('Please select car assembly (Local or Imported)'),
-                    backgroundColor: Color(0xFFFF6B35),
+                    backgroundColor: Color(0xFFf48c25),
                   ),
                 );
                 return;
