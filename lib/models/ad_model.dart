@@ -143,32 +143,40 @@ class AdModel {
     String locationString = '';
     Map<String, double>? locationCoords;
 
-    if (data['locationString'] != null) {
-      // New format
-      locationString = data['locationString'] as String;
-
-      if (data['location'] != null && data['location'] is Map) {
-        final loc = data['location'] as Map<String, dynamic>;
-        if (loc['lat'] != null && loc['lng'] != null) {
-          locationCoords = {
-            'lat': (loc['lat'] as num).toDouble(),
-            'lng': (loc['lng'] as num).toDouble(),
-          };
+    // First, try to parse location coordinates from 'location' field
+    if (data['location'] != null && data['location'] is Map) {
+      final loc = data['location'] as Map<String, dynamic>;
+      if (loc['lat'] != null && loc['lng'] != null) {
+        try {
+          final lat = (loc['lat'] as num).toDouble();
+          final lng = (loc['lng'] as num).toDouble();
+          
+          // Validate coordinates are within valid ranges
+          if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+            locationCoords = {
+              'lat': lat,
+              'lng': lng,
+            };
+          } else {
+            print('Invalid coordinates in ad $documentId: lat=$lat, lng=$lng');
+          }
+        } catch (e) {
+          print('Error parsing coordinates for ad $documentId: $e');
         }
       }
+    }
+
+    // Then parse location string
+    if (data['locationString'] != null) {
+      // New format - locationString exists
+      locationString = data['locationString'] as String;
     } else if (data['location'] != null) {
-      // Old format
+      // Old format - location might be a string
       if (data['location'] is String) {
-        locationString = data['location'];
-      } else if (data['location'] is Map) {
-        final loc = data['location'] as Map<String, dynamic>;
-        if (loc['lat'] != null && loc['lng'] != null) {
-          locationCoords = {
-            'lat': (loc['lat'] as num).toDouble(),
-            'lng': (loc['lng'] as num).toDouble(),
-          };
-        }
-        locationString = data['locationString'] as String? ?? '';
+        locationString = data['location'] as String;
+      } else if (locationString.isEmpty && locationCoords != null) {
+        // If we have coordinates but no string, use empty string
+        locationString = '';
       }
     }
 
