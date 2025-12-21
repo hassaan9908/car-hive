@@ -52,8 +52,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Checkout"),
-        backgroundColor: brand,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -100,14 +99,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-                boxShadow: isDark ? [] : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                border:
+                    Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                boxShadow: isDark
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
               ),
               child: Column(
                 children: [
@@ -117,7 +119,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 12),
-                      Row(
+                      child: Row(
                         children: [
                           const Icon(Icons.directions_car,
                               color: Color(0xFFf48c25)),
@@ -125,9 +127,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           Expanded(
                             child: Text("Checkout details",
                                 style: TextStyle(
-                                    fontSize: 16, 
+                                    fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: isDark ? Colors.white : Colors.black87)),
+                                    color: isDark
+                                        ? Colors.white
+                                        : Colors.black87)),
                           ),
                           Icon(
                               showDetails
@@ -166,14 +170,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-                boxShadow: isDark ? [] : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                border:
+                    Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                boxShadow: isDark
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
               ),
               child: Column(
                 children: [
@@ -183,7 +190,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 12),
-                      Row(
+                      child: Row(
                         children: [
                           const Icon(Icons.card_giftcard,
                               color: Color(0xFFf48c25)),
@@ -191,9 +198,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           Expanded(
                             child: Text("Have a discount voucher? Add it here",
                                 style: TextStyle(
-                                    fontSize: 16, 
+                                    fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: isDark ? Colors.white : Colors.black87)),
+                                    color: isDark
+                                        ? Colors.white
+                                        : Colors.black87)),
                           ),
                           Icon(
                               showVoucher
@@ -299,8 +308,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Text(
                 "Select Payment Method",
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
               ),
             ),
             const SizedBox(height: 8),
@@ -320,32 +329,41 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
-                        color:
-                            isSelected ? brand.withOpacity(0.1) : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
+                        color: isSelected
+                            ? brand.withOpacity(0.1)
+                            : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                            color: isSelected ? brand : (isDark ? Colors.white12 : Colors.black12),
+                            color: isSelected
+                                ? brand
+                                : (isDark ? Colors.white12 : Colors.black12),
                             width: isSelected ? 2 : 1),
-                        boxShadow: isDark ? [] : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        boxShadow: isDark
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                       ),
                       child: Row(
                         children: [
                           Icon(methodIcons[method],
                               size: 24,
-                              color: isSelected ? brand : (isDark ? Colors.white70 : Colors.black54)),
+                              color: isSelected
+                                  ? brand
+                                  : (isDark ? Colors.white70 : Colors.black54)),
                           const SizedBox(width: 12),
                           Expanded(
                               child: Text(method,
                                   style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
-                                      color: isDark ? Colors.white : Colors.black87))),
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black87))),
                           if (isSelected)
                             const Icon(Icons.check_circle,
                                 color: Color(0xFFf48c25)),
@@ -453,7 +471,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           decoration: BoxDecoration(
             color: highlight
                 ? const Color(0xFFf48c25)
-                : (completed ? const Color(0xFFf48c25) : (isDark ? Colors.white24 : Colors.grey.shade300)),
+                : (completed
+                    ? const Color(0xFFf48c25)
+                    : (isDark ? Colors.white24 : Colors.grey.shade300)),
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -473,7 +493,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             fontSize: 12,
             color: highlight
                 ? const Color(0xFFf48c25)
-                : (completed ? const Color(0xFFf48c25) : (isDark ? Colors.white54 : Colors.grey)),
+                : (completed
+                    ? const Color(0xFFf48c25)
+                    : (isDark ? Colors.white54 : Colors.grey)),
           ),
         ),
       ],
@@ -504,11 +526,14 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
-          Text(value, style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : Colors.black87,
-          )),
+          Text(label,
+              style:
+                  TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+          Text(value,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : Colors.black87,
+              )),
         ],
       ),
     );

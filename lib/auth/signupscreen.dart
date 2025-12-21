@@ -86,7 +86,7 @@ class _SignupscreenState extends State<Signupscreen> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -106,10 +106,10 @@ class _SignupscreenState extends State<Signupscreen> {
                 children: [
                   // Logo or App Title
 
-                  Image.asset(
-                    'assets/images/Retro.gif',
-                    width: 140,
-                    height: 140,
+                 Image.asset(
+                    'assets/images/orange_car.png',
+                     width: 200,
+                     height: 200,
                   ),
                   const SizedBox(height: 20),
 
@@ -270,11 +270,24 @@ class _SignupscreenState extends State<Signupscreen> {
                   const SizedBox(height: 24),
 
                   // Signup Button
-                  ElevatedButton(
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6B35).withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
                     onPressed: authProvider.isLoading ? null : _signup,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
+                      backgroundColor: Colors.transparent,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -297,6 +310,7 @@ class _SignupscreenState extends State<Signupscreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                  ),
                   ),
                   const SizedBox(height: 24),
 

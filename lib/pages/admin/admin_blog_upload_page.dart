@@ -100,9 +100,20 @@ class _AdminBlogUploadPageState extends State<AdminBlogUploadPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload Blog'),
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
+        title: Text(
+          'Upload Blog',
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFFf48c25)
+                : Colors.black,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFFf48c25)
+              : Colors.black,
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -154,7 +165,7 @@ class _AdminBlogUploadPageState extends State<AdminBlogUploadPage> {
                 child: ElevatedButton(
                   onPressed: _isUploading ? null : _submitBlog,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E3A8A),
+                    backgroundColor: const Color(0xFFf48c25),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   ),

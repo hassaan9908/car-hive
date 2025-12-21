@@ -626,9 +626,13 @@ class _AdminViewAllAdsPageState extends State<AdminViewAllAdsPage> {
         final ref = FirebaseFirestore.instance.collection('ads').doc(id);
         final snap = await ref.get();
         final prev = snap.data()?['previousStatus']?.toString();
+        // Set new expiration date to 30 days from restoration
+        final newExpirationDate = DateTime.now().add(const Duration(days: 30));
+        
         await ref.update({
           'status': prev == null || prev.isEmpty ? 'active' : prev,
           'previousStatus': FieldValue.delete(),
+          'expiresAt': Timestamp.fromDate(newExpirationDate),
         });
       }
       if (mounted) {

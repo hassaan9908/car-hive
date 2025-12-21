@@ -63,7 +63,22 @@ class _AdminSystemAnalyticsPageState extends State<AdminSystemAnalyticsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('System Analytics')),
+      appBar: AppBar(
+        title: Text(
+          'System Analytics',
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFFf48c25)
+                : Colors.black,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFFf48c25)
+              : Colors.black,
+        ),
+      ),
       body: FutureBuilder<_AnalyticsData>(
         future: _future,
         builder: (context, snapshot) {

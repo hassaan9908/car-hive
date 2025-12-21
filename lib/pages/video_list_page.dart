@@ -27,11 +27,15 @@ class _VideoListPageState extends State<VideoListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Videos'),
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: colorScheme.onSurface,
       ),
       body: Consumer<ContentProvider>(
         builder: (context, contentProvider, child) {
@@ -47,7 +51,7 @@ class _VideoListPageState extends State<VideoListPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error, color: Colors.red, size: 48),
+                  const Icon(Icons.error, color: Colors.red, size: 48),
                   const SizedBox(height: 16),
                   Text(
                     contentProvider.errorMessage!,
@@ -73,7 +77,7 @@ class _VideoListPageState extends State<VideoListPage> {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             itemCount: videos.length,
             itemBuilder: (context, index) {
               final video = videos[index];
@@ -82,12 +86,21 @@ class _VideoListPageState extends State<VideoListPage> {
                       ? video.thumbnailUrl!
                       : CloudinaryService()
                           .buildVideoThumbnailUrl(video.videoUrl, second: 1);
-              return Card(
+
+              return Container(
                 margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                elevation: 3,
                 child: InkWell(
                   onTap: () {
                     Navigator.push(
@@ -97,120 +110,180 @@ class _VideoListPageState extends State<VideoListPage> {
                       ),
                     );
                   },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Video thumbnail preview with play icon overlay
-                        Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                computedThumb,
-                                height: 200,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Container(
-                                    height: 200,
-                                    color: Colors.grey.shade200,
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress
-                                                    .expectedTotalBytes !=
-                                                null
-                                            ? loadingProgress
-                                                    .cumulativeBytesLoaded /
-                                                loadingProgress
-                                                    .expectedTotalBytes!
-                                            : null,
-                                      ),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Video thumbnail preview with play icon overlay
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(16)),
+                            child: Image.network(
+                              computedThumb,
+                              height: 220,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  height: 220,
+                                  color: colorScheme.primary
+                                      .withValues(alpha: 0.1),
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      value:
+                                          loadingProgress.expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                              : null,
                                     ),
-                                  );
-                                },
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    height: 200,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade300,
-                                      borderRadius: BorderRadius.circular(8),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 220,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary
+                                        .withValues(alpha: 0.1),
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(16)),
+                                  ),
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.video_library,
+                                      size: 64,
+                                      color: colorScheme.primary,
                                     ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.video_library,
-                                        size: 64,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
+                                  ),
+                                );
+                              },
                             ),
-                            // Play icon overlay
-                            Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  color: Colors.black.withOpacity(0.3),
+                          ),
+                          // Play icon overlay
+                          Positioned.fill(
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(16)),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black26,
+                                  ],
                                 ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.play_circle_outline,
-                                    size: 72,
+                              ),
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.play_arrow_rounded,
+                                    size: 48,
                                     color: Colors.white,
                                   ),
                                 ),
                               ),
                             ),
+                          ),
+                        ],
+                      ),
+
+                      // Video details
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              video.title,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 12,
+                                  backgroundColor: colorScheme.primary
+                                      .withValues(alpha: 0.2),
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 14,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    video.author,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: colorScheme.onSurface
+                                          .withValues(alpha: 0.7),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (video.createdAt != null) ...[
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time,
+                                    size: 14,
+                                    color: colorScheme.onSurface
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Published: ${video.createdAt!.toString().split(' ').first}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: colorScheme.onSurface
+                                          .withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 10),
+                            Text(
+                              video.description.length > 100
+                                  ? '${video.description.substring(0, 100)}...'
+                                  : video.description,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: colorScheme.onSurface
+                                    .withValues(alpha: 0.8),
+                                height: 1.4,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          video.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'By ${video.author}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        if (video.createdAt != null)
-                          Text(
-                            'Published: ${video.createdAt!.toString().split(' ').first}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        const SizedBox(height: 8),
-                        Text(
-                          video.description.length > 100
-                              ? '${video.description.substring(0, 100)}...'
-                              : video.description,
-                          style: const TextStyle(
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Align(
-                          alignment: Alignment.centerRight,
-                          child: Icon(Icons.arrow_forward_ios,
-                              size: 16, color: Colors.red),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               );

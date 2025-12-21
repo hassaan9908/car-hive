@@ -7,7 +7,9 @@ import 'package:carhive/pages/chat.dart';
 import 'package:carhive/pages/profilepage.dart';
 import 'package:carhive/pages/upload.dart';
 import 'package:carhive/pages/car_details_page.dart';
+import 'package:carhive/pages/map_view_screen.dart';
 import 'package:carhive/models/ad_model.dart';
+import 'package:carhive/store/global_ads.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -22,11 +24,35 @@ import 'providers/admin_provider.dart';
 import 'providers/search_provider.dart';
 import 'providers/content_provider.dart'; // Add ContentProvider import
 import 'pages/admin/admin_debug_page.dart';
+import 'widgets/gradient_scaffold_wrapper.dart';
 import 'pages/blog_list_page.dart';
 import 'pages/video_list_page.dart';
-import 'pages/blog_detail_page.dart';
-import 'pages/video_detail_page.dart';
 import 'pages/help_page.dart';
+import 'pages/chat_detail_page.dart';
+import 'screens/video_capture_360_screen.dart';
+import 'screens/debug_360_screen.dart';
+
+/// Custom route generator that maintains gradient during transitions
+class GradientPageRoute<T> extends PageRouteBuilder<T> {
+  final Widget page;
+
+  GradientPageRoute({
+    required this.page,
+    RouteSettings? settings,
+  }) : super(
+          pageBuilder: (context, animation, secondaryAnimation) => page,
+          settings: settings,
+          transitionDuration: const Duration(milliseconds: 200),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // Use fade transition to prevent glitches
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+        );
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +63,11 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     print('Firebase initialized successfully');
+    
+    // Cleanup expired ads on app startup (non-blocking)
+    GlobalAdStore().cleanupExpiredAds().catchError((e) {
+      print('Error cleaning up expired ads on startup: $e');
+    });
   } catch (e) {
     print('Firebase initialization failed: $e');
     // Continue without Firebase for now
@@ -66,6 +97,15 @@ class MyApp extends StatelessWidget {
             theme: lightTheme,
             darkTheme: darkTheme,
             themeMode: themeProvider.themeMode,
+            builder: (context, child) {
+              if (child == null) return const SizedBox();
+              // Use RepaintBoundary to prevent glitches during navigation
+              return RepaintBoundary(
+                child: GradientScaffoldWrapper(
+                  child: child,
+                ),
+              );
+            },
             home: const AppInitializer(),
             debugShowCheckedModeBanner: false,
             routes: {
@@ -75,6 +115,19 @@ class MyApp extends StatelessWidget {
               '/profile': (context) => const Profilepage(),
               '/help': (context) => const HelpPage(),
               '/notifications': (context) => const Chat(),
+              '/chat-detail': (context) {
+                final args = ModalRoute.of(context)?.settings.arguments;
+                if (args is Map<String, dynamic>) {
+                  return ChatDetailPage(
+                    conversationId: args['conversationId'] ?? '',
+                    otherUserId: args['otherUserId'] ?? '',
+                    otherUserName: args['otherUserName'] ?? 'User',
+                  );
+                }
+                return const Scaffold(
+                  body: Center(child: Text('Invalid chat parameters')),
+                );
+              },
               '/investment': (context) => const Mutualinvestment(),
               '/upload': (context) => const Upload(),
               'loginscreen': (context) => const Loginscreen(),
@@ -82,6 +135,8 @@ class MyApp extends StatelessWidget {
               '/admin-debug': (context) => const AdminDebugPage(),
               '/blogs': (context) => const BlogListPage(), // Add this route
               '/videos': (context) => const VideoListPage(), // Add this route
+              '/video-360-capture': (context) => const VideoCapture360Screen(),
+              '/debug-360': (context) => const Debug360Screen(),
               '/car-details': (context) {
                 final args = ModalRoute.of(context)?.settings.arguments;
                 if (args is AdModel) {
@@ -111,6 +166,18 @@ class MyApp extends StatelessWidget {
                   ),
                 );
               },
+              '/map-view': (context) => const MapViewScreen(),
+            },
+            onGenerateRoute: (settings) {
+              // Handle routes that need custom transitions
+              if (settings.name == '/car-details') {
+                final ad = settings.arguments as AdModel;
+                return GradientPageRoute(
+                  page: CarDetailsPage(ad: ad),
+                  settings: settings,
+                );
+              }
+              return null; // Let MaterialApp handle other routes
             },
           );
         },

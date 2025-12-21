@@ -40,14 +40,25 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'CarHive Admin Dashboard',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: isDark ? const Color(0xFFf48c25) : Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        iconTheme: IconThemeData(
+          color: isDark ? const Color(0xFFf48c25) : Colors.black,
+        ),
+        actionsIconTheme: IconThemeData(
+          color: isDark ? const Color(0xFFf48c25) : Colors.black,
+        ),
         actions: [
           Consumer<AdminProvider>(
             builder: (context, adminProvider, child) {
@@ -111,9 +122,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                        colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6B35).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,25 +172,25 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         'Total Users',
                         stats.totalUsers.toString(),
                         Icons.people,
-                        Colors.blue,
+                        const Color(0xFFf48c25),
                       ),
                       _buildStatCard(
                         'Total Ads',
                         stats.totalAds.toString(),
                         Icons.car_rental,
-                        Colors.green,
+                        const Color(0xFFf48c25),
                       ),
                       _buildStatCard(
                         'Pending Ads',
                         stats.pendingAds.toString(),
                         Icons.pending_actions,
-                        Colors.orange,
+                        const Color(0xFFFF6B35),
                       ),
                       _buildStatCard(
                         'Active Ads',
                         stats.activeAds.toString(),
                         Icons.check_circle,
-                        Colors.teal,
+                        const Color(0xFFf48c25),
                       ),
                     ],
                   ),
@@ -196,7 +216,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         child: _buildActionCard(
                           'Manage Users',
                           Icons.people_outline,
-                          Colors.blue,
+                          const Color(0xFFf48c25),
                           () => Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -210,7 +230,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         child: _buildActionCard(
                           'System Analytics',
                           Icons.analytics,
-                          Colors.purple,
+                          const Color(0xFFFF6B35),
                           () => Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -226,18 +246,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     children: [
                       Expanded(
                         child: _buildActionCard(
-                          'Settings',
-                          Icons.settings,
-                          Colors.grey,
-                          () => Navigator.pushNamed(context, '/admin/settings'),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildActionCard(
                           'View All Ads',
                           Icons.list_alt,
-                          Colors.teal,
+                          const Color(0xFFFF8C42),
                           () => Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -656,20 +667,38 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     Container(
                       width: double.infinity,
                       margin: const EdgeInsets.only(top: 12),
-                      child: ElevatedButton.icon(
-                        onPressed: () =>
-                            Navigator.pushNamed(context, '/admin/ads'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange.shade600,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF6B35).withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
-                        icon: const Icon(Icons.visibility, size: 18),
-                        label:
-                            Text('View All ${pendingAds.length} Pending Ads'),
+                        child: ElevatedButton.icon(
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/admin/ads'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.visibility, size: 18),
+                          label:
+                              Text('View All ${pendingAds.length} Pending Ads'),
+                        ),
                       ),
                     ),
                 ],

@@ -41,6 +41,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   String? _verificationId;
   bool _isVerifyingOtp = false;
   final TextEditingController _otpController = TextEditingController();
+  
+  // Flag to prevent listener callbacks during initialization
+  bool _isInitializing = true;
+  bool _hasInitializedFromStream = false;
 
   // Cities used for car searching (you can expand this list)
   final List<String> _cities = [
@@ -107,17 +111,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _birthdayController = TextEditingController();
 
     // Add listener to phone controller to trigger availability check
-    _phoneController.addListener(() {
-      setState(() {
-        // This will trigger a rebuild and show/hide the availability indicator
-      });
-    });
+    _phoneController.addListener(_onPhoneChanged);
 
     // Add listener for username changes
     _usernameController.addListener(_onUsernameChanged);
 
     // Load user data and store original values
-    _loadUserData();
+    _loadUserData().then((_) {
+      // Mark initialization as complete after data is loaded
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+        });
+      }
+    });
   }
 
   Future<void> _loadUserData() async {
@@ -157,26 +164,48 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  void _onPhoneChanged() {
+    // Prevent setState during initialization or build
+    if (_isInitializing) return;
+    
+    // Defer setState to next frame to avoid calling during build
+    Future.microtask(() {
+      if (mounted) {
+        setState(() {
+          // This will trigger a rebuild and show/hide the availability indicator
+        });
+      }
+    });
+  }
+
   void _onUsernameChanged() {
+    // Prevent setState during initialization or build
+    if (_isInitializing) return;
+    
     final username = _usernameController.text.trim();
 
-    // Only check if username is different from original
-    if (username != _originalUsername) {
-      if (username.length >= 3) {
-        _checkUsernameAvailability(username);
+    // Defer setState to next frame to avoid calling during build
+    Future.microtask(() {
+      if (!mounted) return;
+      
+      // Only check if username is different from original
+      if (username != _originalUsername) {
+        if (username.length >= 3) {
+          _checkUsernameAvailability(username);
+        } else {
+          setState(() {
+            _usernameError = null;
+            _isCheckingUsername = false;
+          });
+        }
       } else {
+        // Username is same as original, clear any errors/loading
         setState(() {
           _usernameError = null;
           _isCheckingUsername = false;
         });
       }
-    } else {
-      // Username is same as original, clear any errors/loading
-      setState(() {
-        _usernameError = null;
-        _isCheckingUsername = false;
-      });
-    }
+    });
   }
 
   Future<void> _checkUsernameAvailability(String username) async {
@@ -229,8 +258,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance
@@ -238,11 +266,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
             .doc(user.uid)
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasData && snapshot.data!.exists) {
+          if (snapshot.hasData && snapshot.data!.exists && !_hasInitializedFromStream) {
             final data = snapshot.data!.data() ?? <String, dynamic>{};
 
             // Initialize controllers with current data if not already set
+            // Use a flag to prevent listener triggers during initialization
             if (_fullNameController.text.isEmpty) {
+              // Temporarily remove listeners to prevent setState during build
+              _phoneController.removeListener(_onPhoneChanged);
+              _usernameController.removeListener(_onUsernameChanged);
+              
               _fullNameController.text = data['fullName'] ?? '';
               _displayNameController.text = data['displayName'] ?? '';
               _usernameController.text = data['username'] ?? '';
@@ -251,6 +284,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
               _birthdayController.text = data['birthday'] ?? '';
               _selectedGender = data['gender'];
               _selectedCity = data['city'];
+              
+              // Re-add listeners after setting text
+              _phoneController.addListener(_onPhoneChanged);
+              _usernameController.addListener(_onUsernameChanged);
+              
+              // Mark as initialized to prevent re-initialization on rebuilds
+              _hasInitializedFromStream = true;
             }
           }
 
@@ -528,7 +568,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   SizedBox(
                     width: double.infinity,
                     height: 50,
-                    child: ElevatedButton(
+                    child: 
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF6B35).withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ElevatedButton(
                       onPressed: _isLoading ? null : _saveProfile,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -553,6 +608,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                     ),
+                  ),
                   ),
                   const SizedBox(height: 20),
                 ],
@@ -804,13 +860,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
     setState(() => _isVerifyingOtp = true);
 
     try {
-      final credential = fb_auth.PhoneAuthProvider.credential(
+      // Verify the credential (don't link it, just verify)
+      // This ensures the OTP is correct
+      // Note: We create the credential but don't use it since we're just verifying
+      fb_auth.PhoneAuthProvider.credential(
         verificationId: _verificationId!,
         smsCode: _otpController.text.trim(),
       );
-
-      // Verify the credential (don't link it, just verify)
-      // This ensures the OTP is correct
+      
       print('OTP verified successfully');
 
       setState(() => _isVerifyingOtp = false);

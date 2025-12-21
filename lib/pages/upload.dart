@@ -37,8 +37,7 @@ class Upload extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
           title: const Text("Choose a plan"),
           elevation: 0,
         ),
@@ -75,11 +74,27 @@ class Upload extends StatelessWidget {
             ),
           ),
           SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(context, 'loginscreen');
-            },
-            child: Text('Login'),
+          Container(
+            width: 130,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF6B35).withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, 'loginscreen');
+              },
+              child: Text('Login'),
+            ),
           ),
         ],
       ),
@@ -91,21 +106,8 @@ class Upload extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  const Color(0xFF1A1A2E),
-                  const Color(0xFF16213E),
-                ]
-              : [
-                  const Color(0xFFF8F9FA),
-                  const Color(0xFFE9ECEF),
-                ],
-        ),
-      ),
+      // Remove page-wide navy gradient; use transparent background
+      color: Colors.transparent,
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
@@ -117,39 +119,7 @@ class Upload extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: colorScheme.primary.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.directions_car_rounded,
-                          size: 16,
-                          color: colorScheme.primary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          "Sell Your Car",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.primary,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  // Badge
                   Text(
                     "Choose Your",
                     style: TextStyle(
@@ -228,7 +198,7 @@ class Upload extends StatelessWidget {
                       "Professional car inspection",
                       "We handle the paperwork",
                     ],
-                    buttonText: "Get Help Selling",
+                    buttonText: "Get Started",
                     icon: Icons.support_agent_rounded,
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -329,9 +299,8 @@ class Upload extends StatelessWidget {
                             badge,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.8,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),

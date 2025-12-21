@@ -51,11 +51,8 @@ class Profilepage extends StatelessWidget {
         appBar: AppBar(
           title: const Text(
             'Profile',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
           ),
+          backgroundColor: Colors.transparent,
           centerTitle: true,
         ),
         body: SafeArea(
@@ -212,8 +209,17 @@ class Profilepage extends StatelessWidget {
         height: 45,
         margin: const EdgeInsets.symmetric(horizontal: 17),
         decoration: BoxDecoration(
-          color: colorScheme.primary,
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+            ),
           borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF6B35).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: const Center(
           child: Text(
@@ -512,9 +518,16 @@ class Profilepage extends StatelessWidget {
 
   // Modern card container for grouped settings
   Widget _settingsCard(BuildContext context, List<Widget> children) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color card_settings = isDark 
+        ? const Color.fromARGB(255, 15, 15, 15) 
+        : Colors.grey.shade200;
+
     return Card(
       elevation: 0,
-      color: Theme.of(context).colorScheme.surface,
+      color: card_settings,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side:
@@ -659,18 +672,18 @@ class Profilepage extends StatelessWidget {
     );
   }
 
-  Widget _buildEngagementCard(
-      BuildContext context,
-      ColorScheme colorScheme,
-      int score,
-      String rank,
-      int adsSold,
-      int positiveRatings,
-      int totalRatings,
-      bool isLoading) {
+  Widget _buildEngagementCard(BuildContext context, ColorScheme colorScheme, int score, String rank, 
+      int adsSold, int positiveRatings, int totalRatings, bool isLoading) {
+        final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final Color card_engagement = isDark 
+        ? const Color.fromARGB(255, 15, 15, 15) 
+        : Colors.grey.shade200;
+
     return Card(
       elevation: 2,
-      color: colorScheme.surface,
+      color: card_engagement,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: colorScheme.primary.withOpacity(0.2)),

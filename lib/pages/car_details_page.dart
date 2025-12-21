@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import '../models/ad_model.dart';
 import '../services/review_service.dart';
 import '../models/review_model.dart';
+import '../widgets/car_360_viewer.dart';
+import '../screens/car_360_viewer_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/chat_service.dart';
+import 'chat_detail_page.dart';
+import '../features/inspection/screens/inspection_start_page.dart';
 
 class CarDetailsPage extends StatefulWidget {
   final AdModel ad;
@@ -28,9 +33,14 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    // Sanitize number (remove spaces, dashes)
+    final sanitized = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
+    final Uri phoneUri = Uri(scheme: 'tel', path: sanitized);
     if (await canLaunchUrl(phoneUri)) {
-      await launchUrl(phoneUri);
+      await launchUrl(
+        phoneUri,
+        mode: LaunchMode.externalApplication,
+      );
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -60,13 +70,46 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
       return;
     }
 
-    // Navigate to chat page with seller ID
+    // Get seller info for display name
+    String sellerName = 'User';
+    try {
+      final sellerDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(sellerId)
+          .get();
+      if (sellerDoc.exists) {
+        final data = sellerDoc.data();
+        sellerName =
+            data?['displayName'] ?? data?['email']?.split('@')[0] ?? 'User';
+      }
+    } catch (e) {
+      print('Error getting seller info: $e');
+    }
+
+    // Navigate to chat detail page
     if (mounted) {
-      Navigator.pushNamed(
-        context,
-        '/notifications',
-        arguments: {'userId': sellerId},
-      );
+      try {
+        final chatService = ChatService();
+        final conversationId =
+            await chatService.getOrCreateConversation(sellerId);
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatDetailPage(
+              conversationId: conversationId,
+              otherUserId: sellerId,
+              otherUserName: sellerName,
+            ),
+          ),
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error opening chat: ${e.toString()}')),
+          );
+        }
+      }
     }
   }
 
@@ -76,24 +119,10 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     final ad = widget.ad;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Car Details'),
-        backgroundColor: colorScheme.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colorScheme.primary,
-                colorScheme.primary.withValues(alpha: 0.8),
-              ],
-            ),
-          ),
-        ),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -222,6 +251,82 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                 ],
               ),
             ),
+
+            // 360° View Section (if available)
+            if (ad.images360Urls != null && ad.images360Urls!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.rotate_right,
+                            color: colorScheme.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '360° View',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
+                                  ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                colorScheme.primary,
+                                colorScheme.primary.withValues(alpha: 0.8),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${ad.images360Urls!.length} angles',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Car360PreviewWidget(
+                      imageUrls: ad.images360Urls!,
+                      size: 220,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => Car360ViewerScreen(
+                              imageUrls: ad.images360Urls!,
+                              title: ad.title,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
 
             // Main content with enhanced styling
             Container(
@@ -668,10 +773,18 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  colorScheme.primary,
-                                  colorScheme.primary.withValues(alpha: 0.8),
+                                  Color(0xFFFF6B35),
+                                  Color(0xFFFF8C42),
                                 ],
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      const Color(0xFFFF6B35).withOpacity(0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: ElevatedButton.icon(
@@ -762,6 +875,164 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Buyer Inspection Tool
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          colorScheme.primary.withValues(alpha: 0.1),
+                          colorScheme.secondary.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.primary.withValues(alpha: 0.2),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.fact_check,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Guided Inspection',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: colorScheme.onSurface,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Evaluate this car before buying',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: colorScheme.onSurface
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.black.withValues(alpha: 0.2)
+                                    : Colors.white.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.checklist, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text('27 inspection points'),
+                                  const Spacer(),
+                                  const Icon(Icons.timer_outlined, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text('15-20 mins'),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              const Row(
+                                children: [
+                                  Icon(Icons.analytics_outlined, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Get condition score (0-100)'),
+                                  Spacer(),
+                                  Icon(Icons.save_outlined, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Save report'),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              final currentUser =
+                                  FirebaseAuth.instance.currentUser;
+                              if (currentUser == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Please sign in to start an inspection'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) {
+                                    return InspectionStartPage(
+                                      carId: ad.id ?? '',
+                                      carTitle: ad.title,
+                                      carBrand: ad.carBrand ?? ad.title,
+                                      buyerId: currentUser.uid,
+                                      sellerId: ad.userId ?? '',
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.start),
+                            label: const Text(
+                              'Start Inspection',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                           ),
@@ -1185,54 +1456,75 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _submitting
-                    ? null
-                    : () async {
-                        final adId = ad.id;
-                        if (adId == null || adId.isEmpty) return;
-                        if (_rating == 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Please select a star rating')),
-                          );
-                          return;
-                        }
-                        setState(() {
-                          _submitting = true;
-                        });
-                        try {
-                          await _reviewService.addReview(
-                            adId: adId,
-                            rating: _rating,
-                            comment: _commentController.text,
-                          );
-                          _commentController.clear();
-                          setState(() {
-                            _rating = 0;
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Review submitted')),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed: $e')),
-                          );
-                        } finally {
-                          if (mounted) {
-                            setState(() {
-                              _submitting = false;
-                            });
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF6B35).withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 0,
+                  ),
+                  onPressed: _submitting
+                      ? null
+                      : () async {
+                          final adId = ad.id;
+                          if (adId == null || adId.isEmpty) return;
+                          if (_rating == 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Please select a star rating')),
+                            );
+                            return;
                           }
-                        }
-                      },
-                child: _submitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Submit Review'),
+                          setState(() {
+                            _submitting = true;
+                          });
+                          try {
+                            await _reviewService.addReview(
+                              adId: adId,
+                              rating: _rating,
+                              comment: _commentController.text,
+                            );
+                            _commentController.clear();
+                            setState(() {
+                              _rating = 0;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Review submitted')),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed: $e')),
+                            );
+                          } finally {
+                            if (mounted) {
+                              setState(() {
+                                _submitting = false;
+                              });
+                            }
+                          }
+                        },
+                  child: _submitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Submit Review'),
+                ),
               ),
             ),
           ]
