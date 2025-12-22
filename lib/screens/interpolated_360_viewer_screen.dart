@@ -42,7 +42,7 @@ class _Interpolated360ViewerScreenState extends State<Interpolated360ViewerScree
   late Advanced360Controller _controller;
   
   // Drag sensitivity
-  double _sensitivity = 40.0; // More sensitive for 64 frames
+  final double _sensitivity = 40.0; // More sensitive for 64 frames
   
   // Full screen mode
   bool _isFullScreen = false;
@@ -170,9 +170,9 @@ class _Interpolated360ViewerScreenState extends State<Interpolated360ViewerScree
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: Colors.black,
-        body: const Center(
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -268,7 +268,7 @@ class _Interpolated360ViewerScreenState extends State<Interpolated360ViewerScree
                     const Icon(Icons.swipe, color: Colors.white70, size: 16),
                     const SizedBox(width: 6),
                     Text(
-                      'Drag to rotate (${_totalFrames} frames)',
+                      'Drag to rotate ($_totalFrames frames)',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 12,

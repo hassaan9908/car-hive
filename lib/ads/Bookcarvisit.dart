@@ -1,3 +1,4 @@
+// ignore: file_names
 import 'package:carhive/ads/checkout.dart';
 import 'package:flutter/material.dart';
 
@@ -85,7 +86,7 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Book Visit"),
@@ -115,26 +116,30 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: isDark ? [] : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-                border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                boxShadow: isDark
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                border:
+                    Border.all(color: isDark ? Colors.white12 : Colors.black12),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.event_available, color: Color(0xFFf48c25)),
+                      const Icon(Icons.event_available,
+                          color: Color(0xFFFF6B35)),
                       const SizedBox(width: 8),
                       Text(
                         "Visit Details",
                         style: TextStyle(
-                            fontSize: 18, 
+                            fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: isDark ? Colors.white : Colors.black),
                       ),
@@ -142,31 +147,33 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text("Select City",
-                      style:
-                          TextStyle(
-                              fontSize: 14, 
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : Colors.black87)),
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : Colors.black87)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.location_city, color: isDark ? Colors.white70 : Colors.black54),
+                      prefixIcon: Icon(Icons.location_city,
+                          color: isDark ? Colors.white70 : Colors.black54),
                       filled: true,
-                      fillColor: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade50,
+                      fillColor: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.grey.shade50,
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none),
                       enabledBorder: OutlineInputBorder(
-                          borderRadius: const BorderRadius.all(Radius.circular(14)),
-                          borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.black12)),
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(14)),
+                          borderSide: BorderSide(
+                              color: isDark ? Colors.white12 : Colors.black12)),
                       focusedBorder: const OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(14)),
                           borderSide:
                               BorderSide(color: Color(0xFFf48c25), width: 2)),
                     ),
-                    dropdownColor: isDark ? const Color(0xFF1E1E1E) : null,
-                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                    value: selectedCity,
+                    initialValue: selectedCity,
                     items: cityAreas.keys
                         .map((city) => DropdownMenuItem(
                               value: city,
@@ -185,29 +192,33 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                     const SizedBox(height: 16),
                     Text("Select Area",
                         style: TextStyle(
-                            fontSize: 14, 
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: isDark ? Colors.white : Colors.black87)),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.place_outlined, color: isDark ? Colors.white70 : Colors.black54),
+                        prefixIcon: Icon(Icons.place_outlined,
+                            color: isDark ? Colors.white70 : Colors.black54),
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade50,
+                        fillColor: isDark
+                            ? const Color(0xFF2A2A2A)
+                            : Colors.grey.shade50,
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
                             borderSide: BorderSide.none),
                         enabledBorder: OutlineInputBorder(
-                            borderRadius: const BorderRadius.all(Radius.circular(14)),
-                            borderSide: BorderSide(color: isDark ? Colors.white12 : Colors.black12)),
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(14)),
+                            borderSide: BorderSide(
+                                color:
+                                    isDark ? Colors.white12 : Colors.black12)),
                         focusedBorder: const OutlineInputBorder(
                             borderRadius: BorderRadius.all(Radius.circular(14)),
                             borderSide:
                                 BorderSide(color: Color(0xFFf48c25), width: 2)),
                       ),
-                      dropdownColor: isDark ? const Color(0xFF1E1E1E) : null,
-                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-                      value: selectedArea,
+                      initialValue: selectedArea,
                       items: (cityAreas[selectedCity] ?? [])
                           .map((area) => DropdownMenuItem(
                                 value: area,
@@ -234,14 +245,17 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: isDark ? [] : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                  boxShadow: isDark
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                  border: Border.all(
+                      color: isDark ? Colors.white12 : Colors.black12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,12 +263,12 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                     Row(
                       children: [
                         const Icon(Icons.calendar_today_rounded,
-                            color: Color(0xFFf48c25)),
+                            color: Color(0xFFFF6B35)),
                         const SizedBox(width: 8),
                         Text(
                           "Available Dates",
                           style: TextStyle(
-                              fontSize: 18, 
+                              fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: isDark ? Colors.white : Colors.black),
                         ),
@@ -302,7 +316,7 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                       const SizedBox(height: 14),
                       Text("Available Time Slots",
                           style: TextStyle(
-                              fontSize: 14, 
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: isDark ? Colors.white : Colors.black87)),
                       const SizedBox(height: 8),
@@ -392,7 +406,7 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
   /// Step Circle Widget
   Widget _buildStepCircle(String number, String label,
       {bool active = false, bool completed = false}) {
-    final Color brand = const Color(0xFFf48c25);
+    const Color brand = Color(0xFFFF6B35);
     final Color color = completed || active ? brand : Colors.grey;
     return Column(
       children: [
@@ -430,11 +444,14 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color:
-                  isSelected ? const Color(0xFFf48c25) : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100),
+              color: isSelected
+                  ? const Color(0xFFf48c25)
+                  : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: isSelected ? const Color(0xFFf48c25) : (isDark ? Colors.white12 : Colors.black12)),
+                  color: isSelected
+                      ? const Color(0xFFf48c25)
+                      : (isDark ? Colors.white12 : Colors.black12)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -544,11 +561,14 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color:
-              isSelectedSlot ? const Color(0xFFf48c25) : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100),
+          color: isSelectedSlot
+              ? const Color(0xFFf48c25)
+              : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-              color: isSelectedSlot ? const Color(0xFFf48c25) : (isDark ? Colors.white12 : Colors.black12)),
+              color: isSelectedSlot
+                  ? const Color(0xFFf48c25)
+                  : (isDark ? Colors.white12 : Colors.black12)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

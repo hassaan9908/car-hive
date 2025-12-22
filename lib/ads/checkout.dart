@@ -48,7 +48,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color brand = const Color(0xFFf48c25);
+    const Color brand = Color(0xFFFF6B35);
     return Scaffold(
       appBar: AppBar(
         title: const Text("Checkout"),
@@ -283,9 +283,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             border: Border.all(color: brand),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
+                            children: [
                               Icon(Icons.local_offer,
                                   color: Color(0xFFf48c25), size: 16),
                               SizedBox(width: 6),
@@ -399,7 +399,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       const Text("Discount:", style: TextStyle(fontSize: 16)),
                       Text(
                         "- PKR ${discount.toStringAsFixed(0)}",
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontSize: 16,
                             color: brand,
                             fontWeight: FontWeight.w600),
@@ -515,8 +515,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
-  const _DetailRow({Key? key, required this.label, required this.value})
-      : super(key: key);
+  const _DetailRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

@@ -1,3 +1,4 @@
+
 import 'package:carhive/ads/Bookcarvisit.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -309,7 +310,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
                                 ],
                         ),
                         child: DropdownButtonFormField<String>(
-                          value: registeredCity,
+                          initialValue: registeredCity,
                           decoration: InputDecoration(
                             prefixIcon: Icon(
                               Icons.location_on_outlined,
@@ -406,7 +407,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
             ),
           ),
           child: DropdownButtonFormField<String>(
-            value: city,
+            initialValue: city,
             decoration: InputDecoration(
               prefixIcon: Icon(
                 Icons.location_city_outlined,
@@ -475,7 +476,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
             ),
           ),
           child: DropdownButtonFormField<String>(
-            value: carYear,
+            initialValue: carYear,
             decoration: InputDecoration(
               prefixIcon: Icon(
                 Icons.calendar_today_outlined,

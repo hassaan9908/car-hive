@@ -80,7 +80,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
               Text('Update role for ${user.displayName ?? user.email}'),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 decoration: const InputDecoration(
                   labelText: 'Role',
                   border: OutlineInputBorder(),

@@ -291,8 +291,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
                         colors: [
                           Color(0xFFf48c25),
                           Color(0xFFd97706),
@@ -344,6 +344,12 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               backgroundImage: _otherUserPhotoUrl != null && _otherUserPhotoUrl!.isNotEmpty
                   ? CachedNetworkImageProvider(_otherUserPhotoUrl!)
                   : null,
+              onBackgroundImageError: _otherUserPhotoUrl != null && _otherUserPhotoUrl!.isNotEmpty
+                  ? (exception, stackTrace) {
+                      // If image fails to load, show initials
+                      // This is handled by the child widget
+                    }
+                  : null,
               child: _otherUserPhotoUrl == null || _otherUserPhotoUrl!.isEmpty
                   ? Text(
                       widget.otherUserName.isNotEmpty
@@ -354,12 +360,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                         fontSize: 12,
                       ),
                     )
-                  : null,
-              onBackgroundImageError: _otherUserPhotoUrl != null && _otherUserPhotoUrl!.isNotEmpty
-                  ? (exception, stackTrace) {
-                      // If image fails to load, show initials
-                      // This is handled by the child widget
-                    }
                   : null,
             ),
             const SizedBox(width: 8),
@@ -421,18 +421,18 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               backgroundImage: _currentUserPhotoUrl != null && _currentUserPhotoUrl!.isNotEmpty
                   ? CachedNetworkImageProvider(_currentUserPhotoUrl!)
                   : null,
+              onBackgroundImageError: _currentUserPhotoUrl != null && _currentUserPhotoUrl!.isNotEmpty
+                  ? (exception, stackTrace) {
+                      // If image fails to load, show icon
+                      // This is handled by the child widget
+                    }
+                  : null,
               child: _currentUserPhotoUrl == null || _currentUserPhotoUrl!.isEmpty
                   ? const Icon(
                       Icons.person,
                       color: Colors.white,
                       size: 16,
                     )
-                  : null,
-              onBackgroundImageError: _currentUserPhotoUrl != null && _currentUserPhotoUrl!.isNotEmpty
-                  ? (exception, stackTrace) {
-                      // If image fails to load, show icon
-                      // This is handled by the child widget
-                    }
                   : null,
             ),
           ] else if (isMe) ...[
@@ -550,4 +550,3 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     }
   }
 }
-

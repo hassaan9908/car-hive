@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import "package:intl/intl.dart";
 import '../models/inspection_model.dart';
 import '../services/inspection_service.dart';
 import '../services/share_service.dart';
@@ -195,7 +195,7 @@ class _InspectionHistoryPageState extends State<InspectionHistoryPage> {
                         child: Column(
                           children: [
                             Text(
-                              '${score.toStringAsFixed(0)}',
+                              score.toStringAsFixed(0),
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,

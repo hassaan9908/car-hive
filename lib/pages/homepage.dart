@@ -7,6 +7,7 @@ import '../components/car_tabs.dart';
 import '../components/custom_bottom_nav.dart';
 import '../providers/search_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'chat.dart';
 
 class Homepage extends StatefulWidget {
   final int initialTab;
@@ -24,7 +25,6 @@ class _HomepageState extends State<Homepage> {
   @override
   void initState() {
     super.initState();
-    // Initialize search provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SearchProvider>().initializeAds();
     });
@@ -57,12 +57,15 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Consumer<SearchProvider>(
       builder: (context, searchProvider, _) {
         return Scaffold(
           appBar: AppBar(
             title: const Text(
-              'CarHive',          
+              'CarHive',
             ),
             backgroundColor: Colors.transparent,
             centerTitle: true,
@@ -87,51 +90,70 @@ class _HomepageState extends State<Homepage> {
                   icon: const Icon(Icons.map),
                   tooltip: 'Map View',
                 ),
-              IconButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/notifications');
-                  },
-                  icon: const Icon(Icons.chat)),
+              // Chat icon - use StreamBuilder with auth state
+              StreamBuilder<User?>(
+                stream: FirebaseAuth.instance.authStateChanges(),
+                builder: (context, authSnapshot) {
+                  final isLoggedIn = authSnapshot.data != null;
+
+                  return IconButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/notifications');
+                    },
+                    icon: isLoggedIn
+                        ? ChatBadgeIcon(
+                            icon: Icons.chat_bubble_outline,
+                            size: 24,
+                            color: isDark ? const Color(0xFFf48c25) : null,
+                          )
+                        : Icon(
+                            Icons.chat_bubble_outline,
+                            color: isDark ? const Color(0xFFf48c25) : null,
+                          ),
+                    tooltip: 'Messages',
+                  );
+                },
+              ),
             ],
           ),
           body: Column(
-              children: [
-                // Search Bar
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: CustomTextField(
-                    controller: _searchController,
-                    hintText: 'Search cars, brands, models...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              searchProvider.clearSearch();
-                              setState(() {
-                                _isSearchActive = false;
-                              });
-                            },
-                          )
-                        : null,
-                    onChanged: (value) {
-                      setState(() {
-                        _isSearchActive = value.isNotEmpty;
-                      });
-                      searchProvider.updateSearchQuery(value);
-                    },
-                  ),
+            children: [
+              // Search Bar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: CustomTextField(
+                  controller: _searchController,
+                  hintText: 'Search cars, brands, models...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            searchProvider.clearSearch();
+                            setState(() {
+                              _isSearchActive = false;
+                            });
+                          },
+                        )
+                      : null,
+                  onChanged: (value) {
+                    setState(() {
+                      _isSearchActive = value.isNotEmpty;
+                    });
+                    searchProvider.updateSearchQuery(value);
+                  },
                 ),
+              ),
 
-                // Search Results or Car Tabs
-                Expanded(
-                  child: _isSearchActive
-                      ? _buildSearchResults(searchProvider)
-                      : CarTabs(initialTab: widget.initialTab),
-                ),
-              ],
-            ),
+              // Search Results or Car Tabs
+              Expanded(
+                child: _isSearchActive
+                    ? _buildSearchResults(searchProvider)
+                    : CarTabs(initialTab: widget.initialTab),
+              ),
+            ],
+          ),
           bottomNavigationBar: CustomBottomNav(
             selectedIndex: _selectedIndex,
             onTabSelected: (index) => _onTabSelected(context, index),
@@ -241,7 +263,7 @@ class _HomepageState extends State<Homepage> {
                 child: Container(
                   width: 100,
                   height: 64,
-                  color: colorScheme.surfaceVariant,
+                  color: colorScheme.surfaceContainerHighest,
                   child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
                       ? Image.network(
                           ad.imageUrls![0],
@@ -384,7 +406,7 @@ class _HomepageState extends State<Homepage> {
                 Icon(Icons.star, size: 14, color: Colors.amber[600]),
                 const SizedBox(width: 2),
                 Text(
-                  '${avgRating.toStringAsFixed(1)} (${ratingCount})',
+                  '${avgRating.toStringAsFixed(1)} ($ratingCount)',
                   style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                 ),
               ],

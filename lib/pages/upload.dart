@@ -65,7 +65,7 @@ class Upload extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.login, size: 64, color: colorScheme.onSurfaceVariant),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'Please login to upload ads',
             style: TextStyle(
@@ -73,7 +73,7 @@ class Upload extends StatelessWidget {
               color: colorScheme.onSurface,
             ),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Container(
             width: 130,
             decoration: BoxDecoration(
@@ -93,7 +93,14 @@ class Upload extends StatelessWidget {
               onPressed: () {
                 Navigator.pushNamed(context, 'loginscreen');
               },
-              child: Text('Login'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text('Login'),
             ),
           ),
         ],
@@ -168,12 +175,12 @@ class Upload extends StatelessWidget {
                     ],
                     buttonText: "Post Your Ad",
                     icon: Icons.person_outline_rounded,
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFF0066FF),
-                        const Color(0xFF0052CC),
+                        Color(0xFF0066FF),
+                        Color(0xFF0052CC),
                       ],
                     ),
                     onPressed: () {
@@ -200,12 +207,12 @@ class Upload extends StatelessWidget {
                     ],
                     buttonText: "Get Started",
                     icon: Icons.support_agent_rounded,
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFFf48c25),
-                        const Color(0xFFd97706),
+                        Color(0xFF00C853),
+                        Color(0xFF00A344),
                       ],
                     ),
                     onPressed: () {
@@ -373,7 +380,7 @@ class Upload extends StatelessWidget {
                         ],
                       ),
                     );
-                  }).toList(),
+                  }),
 
                   const SizedBox(height: 24),
 

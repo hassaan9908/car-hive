@@ -1,4 +1,5 @@
 import 'dart:io';
+// ignore: unused_import
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:share_plus/share_plus.dart' as share_plus;
