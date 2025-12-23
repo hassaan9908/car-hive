@@ -161,39 +161,59 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   const SizedBox(height: 24),
 
                   // Statistics Cards
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 1.5,
-                    children: [
-                      _buildStatCard(
-                        'Total Users',
-                        stats.totalUsers.toString(),
-                        Icons.people,
-                        const Color(0xFFf48c25),
-                      ),
-                      _buildStatCard(
-                        'Total Ads',
-                        stats.totalAds.toString(),
-                        Icons.car_rental,
-                        const Color(0xFFf48c25),
-                      ),
-                      _buildStatCard(
-                        'Pending Ads',
-                        stats.pendingAds.toString(),
-                        Icons.pending_actions,
-                        const Color(0xFFFF6B35),
-                      ),
-                      _buildStatCard(
-                        'Active Ads',
-                        stats.activeAds.toString(),
-                        Icons.check_circle,
-                        const Color(0xFFf48c25),
-                      ),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      final crossAxisCount = width >= 1400
+                          ? 4
+                          : width >= 1100
+                              ? 3
+                              : width >= 700
+                                  ? 2
+                                  : 1;
+                      final aspectRatio = width >= 1400
+                          ? 1.35
+                          : width >= 1100
+                              ? 1.25
+                              : width >= 700
+                                  ? 1.2
+                                  : 1.6;
+
+                      return GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: aspectRatio,
+                        children: [
+                          _buildStatCard(
+                            'Total Users',
+                            stats.totalUsers.toString(),
+                            Icons.people,
+                            const Color(0xFFf48c25),
+                          ),
+                          _buildStatCard(
+                            'Total Ads',
+                            stats.totalAds.toString(),
+                            Icons.car_rental,
+                            const Color(0xFFf48c25),
+                          ),
+                          _buildStatCard(
+                            'Pending Ads',
+                            stats.pendingAds.toString(),
+                            Icons.pending_actions,
+                            const Color(0xFFFF6B35),
+                          ),
+                          _buildStatCard(
+                            'Active Ads',
+                            stats.activeAds.toString(),
+                            Icons.check_circle,
+                            const Color(0xFFf48c25),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 
@@ -297,30 +317,50 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Widget _buildStatCard(
       String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
+            Icon(icon, size: 42, color: color),
+            const SizedBox(height: 12),
             Text(
               value,
               style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
                 color: color,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+              style: TextStyle(
+                fontSize: 15,
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                letterSpacing: 0.1,
               ),
               textAlign: TextAlign.center,
             ),
@@ -387,21 +427,46 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
         final pendingAds = adminProvider.pendingAds;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
-        return Card(
-          elevation: 4,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+                  : [Colors.grey.shade100, Colors.grey.shade200],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.06)
+                  : Colors.grey.shade400,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Colors.orange.shade50,
-                  Colors.orange.shade100,
-                ],
+                colors: isDark
+                    ? [
+                        Colors.orange.shade900.withOpacity(0.2),
+                        Colors.orange.shade800.withOpacity(0.1),
+                      ]
+                    : [
+                        Colors.orange.shade50,
+                        Colors.orange.shade100,
+                      ],
               ),
             ),
             child: Padding(

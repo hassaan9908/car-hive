@@ -60,9 +60,9 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
               if (reasonController.text.trim().isNotEmpty) {
                 Navigator.pop(context);
                 final success = await context.read<AdminProvider>().rejectAd(
-                  ad.id!,
-                  reasonController.text.trim(),
-                );
+                      ad.id!,
+                      reasonController.text.trim(),
+                    );
                 if (success && mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Ad rejected successfully')),
@@ -148,60 +148,79 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardGradient = LinearGradient(
+      colors: isDark
+          ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+          : [Colors.grey.shade100, Colors.grey.shade200],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+    final borderColor =
+        isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400;
+
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: Text(
-          'Ad Moderation',
-          style: TextStyle(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFFf48c25)
-                : Colors.black,
-          ),
-        ),
         backgroundColor: Colors.transparent,
-        iconTheme: IconThemeData(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFFf48c25)
-              : Colors.black,
-        ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFFf48c25)
-                : Colors.black,
-          ),
-          onPressed: () => Navigator.pop(context),
+        elevation: 0,
+        titleSpacing: 0,
+        title: const Text(
+          'Ad Moderation',
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       body: Column(
         children: [
           // Search Bar
           Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search ads by title, brand, or description...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {
-                      _searchQuery = '';
-                    });
-                  },
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: cardGradient,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: borderColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search ads by title, brand, or description...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: borderColor),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: const Color(0xFFF48C25).withOpacity(0.8),
+                      width: 1.2,
+                    ),
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
             ),
           ),
 
@@ -215,9 +234,17 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
 
                 final ads = adminProvider.pendingAds.where((ad) {
                   if (_searchQuery.isEmpty) return true;
-                  return ad.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                         (ad.carBrand?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-                         (ad.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+                  return ad.title
+                          .toLowerCase()
+                          .contains(_searchQuery.toLowerCase()) ||
+                      (ad.carBrand
+                              ?.toLowerCase()
+                              .contains(_searchQuery.toLowerCase()) ??
+                          false) ||
+                      (ad.description
+                              ?.toLowerCase()
+                              .contains(_searchQuery.toLowerCase()) ??
+                          false);
                 }).toList();
 
                 if (ads.isEmpty) {
@@ -250,11 +277,19 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
                   itemCount: ads.length,
                   itemBuilder: (context, index) {
                     final ad = ads[index];
-                    return Card(
+                    return Container(
                       margin: const EdgeInsets.only(bottom: 12),
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      decoration: BoxDecoration(
+                        gradient: cardGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: borderColor),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 16,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -265,32 +300,41 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         ad.title,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 18,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.w800,
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black,
                                         ),
                                       ),
                                       const SizedBox(height: 8),
                                       Row(
                                         children: [
-                                          Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+                                          Icon(Icons.location_on,
+                                              size: 16,
+                                              color: Colors.grey.shade500),
                                           const SizedBox(width: 4),
                                           Text(
                                             ad.location,
-                                            style: TextStyle(color: Colors.grey.shade600),
+                                            style: TextStyle(
+                                                color: Colors.grey.shade500),
                                           ),
                                           const SizedBox(width: 16),
-                                          Icon(Icons.attach_money, size: 16, color: Colors.grey.shade600),
+                                          Icon(Icons.attach_money,
+                                              size: 16,
+                                              color: Colors.grey.shade500),
                                           const SizedBox(width: 4),
                                           Text(
                                             ad.price,
                                             style: TextStyle(
-                                              color: Colors.grey.shade600,
-                                              fontWeight: FontWeight.w500,
+                                              color: Colors.grey.shade500,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                         ],
@@ -328,7 +372,8 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
                                       value: 'approve',
                                       child: Row(
                                         children: [
-                                          Icon(Icons.check_circle, color: Colors.green),
+                                          Icon(Icons.check_circle,
+                                              color: Colors.green),
                                           SizedBox(width: 8),
                                           Text('Approve'),
                                         ],
@@ -354,7 +399,8 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
                                 Expanded(
                                   child: Text(
                                     '${ad.carBrand ?? 'N/A'} • ${ad.year} • ${ad.fuel}',
-                                    style: TextStyle(color: Colors.grey.shade600),
+                                    style:
+                                        TextStyle(color: Colors.grey.shade400),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -433,7 +479,7 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
     if (date == null) return 'Unknown';
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
     } else if (difference.inHours > 0) {
@@ -445,5 +491,3 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
     }
   }
 }
-
-

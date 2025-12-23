@@ -27,28 +27,32 @@ class _VideoDetailPageState extends State<VideoDetailPage> {
         foregroundColor: colorScheme.onSurface,
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Unified player at top with consistent look & feel
-          UnifiedVideoPlayer(
-            videoUrl: widget.video.videoUrl,
-            title: widget.video.title,
-            thumbnailUrl: widget.video.thumbnailUrl,
-            autoPlay: true,
-            looping: false,
-            aspectRatio: 16 / 9,
+      body: CustomScrollView(
+        slivers: [
+          // Player section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: UnifiedVideoPlayer(
+                videoUrl: widget.video.videoUrl,
+                title: widget.video.title,
+                thumbnailUrl: widget.video.thumbnailUrl,
+                autoPlay: true,
+                looping: false,
+                aspectRatio: 16 / 9,
+              ),
+            ),
           ),
 
-          // Video information
-          Expanded(
+          // Info section
+          SliverToBoxAdapter(
             child: Container(
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              child: SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
