@@ -1,89 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/store/global_ads.dart';
+import 'package:carhive/services/car_brand_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CarTabs extends StatelessWidget {
   final int initialTab;
+  final String? selectedBrandId; // For brand filtering
 
-  const CarTabs({Key? key, this.initialTab = 0}) : super(key: key);
+  const CarTabs({Key? key, this.initialTab = 0, this.selectedBrandId})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DefaultTabController(
-      length: 2,
-      initialIndex: initialTab,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TabBar(
-              isScrollable: false,
-              indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(color: colorScheme.primary, width: 2),
-              ),
-              labelColor: colorScheme.primary,
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-                textBaseline: TextBaseline.alphabetic,
-                inherit: false,
-              ),
-              unselectedLabelColor: colorScheme.onSurfaceVariant,
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-                textBaseline: TextBaseline.alphabetic,
-                inherit: false,
-              ),
-              dividerColor: Colors.transparent,
-              tabs: const [
-                Tab(text: 'Used Cars'),
-                Tab(text: 'New Cars'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _UsedCarsTab(),
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.car_rental,
-                        size: 64,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'New Cars Coming Soon',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Stay tuned for new car listings',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    // Simplified - just show Used Cars tab content
+    return _UsedCarsTab(selectedBrandId: selectedBrandId);
   }
 }
 
 class _UsedCarsTab extends StatelessWidget {
+  final String? selectedBrandId;
+
+  const _UsedCarsTab({this.selectedBrandId});
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<AdModel>>(
@@ -141,7 +80,25 @@ class _UsedCarsTab extends StatelessWidget {
           );
         }
 
-        final ads = snapshot.data ?? [];
+        var ads = snapshot.data ?? [];
+
+        // Filter by brand if selected
+        if (selectedBrandId != null && selectedBrandId!.isNotEmpty) {
+          // Get brand display name from ID
+          final brandService = CarBrandService();
+          final brand = brandService.getBrandById(selectedBrandId!);
+          final brandName = brand?.displayName ?? selectedBrandId!;
+          
+          ads = ads.where((ad) {
+            if (ad.carBrand == null) return false;
+            // Match by brand display name (case-insensitive)
+            final adBrandLower = ad.carBrand!.toLowerCase();
+            final selectedBrandLower = brandName.toLowerCase();
+            return adBrandLower == selectedBrandLower ||
+                adBrandLower.contains(selectedBrandLower) ||
+                selectedBrandLower.contains(adBrandLower);
+          }).toList();
+        }
 
         if (ads.isEmpty) {
           return Center(
@@ -170,6 +127,8 @@ class _UsedCarsTab extends StatelessWidget {
         }
 
         return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: ads.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -213,8 +172,8 @@ class _UsedCarsTab extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  width: 100,
-                  height: 64,
+                  width: 120,
+                  height: 100,
                   color: colorScheme.surfaceVariant,
                   child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
                       ? Image.network(
@@ -257,11 +216,7 @@ class _UsedCarsTab extends StatelessWidget {
                             color: colorScheme.onSurfaceVariant, fontSize: 12)),
                     const SizedBox(height: 6),
                     Text(
-                      (ad.title.isNotEmpty
-                          ? ad.title
-                          : (ad.carBrand != null && ad.carBrand!.isNotEmpty
-                              ? ad.carBrand!
-                              : 'Car')),
+                      _getCarDisplayName(ad),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: Theme.of(context).colorScheme.onSurface,
@@ -369,6 +324,27 @@ class _UsedCarsTab extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _getCarDisplayName(AdModel ad) {
+    // Prefer title if available
+    if (ad.title.isNotEmpty) {
+      return ad.title;
+    }
+    
+    // Otherwise, combine brand + name
+    final brand = ad.carBrand ?? '';
+    final name = ad.carName ?? '';
+    
+    if (brand.isNotEmpty && name.isNotEmpty) {
+      return '$brand $name';
+    } else if (brand.isNotEmpty) {
+      return brand;
+    } else if (name.isNotEmpty) {
+      return name;
+    }
+    
+    return 'Car';
   }
 
   Color _levelColor(String level, ColorScheme cs) {

@@ -66,6 +66,8 @@ dependencies:
   photo_view: ^0.14.0
   palette_generator: ^0.3.3+2
   flutter_cache_manager: ^3.4.1
+  flutter_stripe: ^11.1.0
+  cloud_functions: ^5.1.4
 
 dev_dependencies:
   flutter_test:
@@ -92,6 +94,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/car-log/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

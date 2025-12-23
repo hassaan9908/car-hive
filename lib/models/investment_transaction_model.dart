@@ -10,8 +10,11 @@ class InvestmentTransactionModel {
   final double amount;
   final String status; // pending, completed, failed, refunded
 
-  final String? paymentMethod; // jazzcash, easypay, bank_transfer, card
+  final String? paymentMethod; // jazzcash, easypay, bank_transfer, card, stripe
   final String? paymentReference;
+  final String? stripePaymentIntentId;
+  final String? stripePayoutId;
+  final String? payoutStatus;
 
   final double? profitAmount; // For profit distribution transactions
   final DateTime? distributionDate;
@@ -33,6 +36,9 @@ class InvestmentTransactionModel {
     this.status = 'pending',
     this.paymentMethod,
     this.paymentReference,
+    this.stripePaymentIntentId,
+    this.stripePayoutId,
+    this.payoutStatus,
     this.profitAmount,
     this.distributionDate,
     this.sharePrice,
@@ -99,6 +105,15 @@ class InvestmentTransactionModel {
       paymentReference: _asString(data['paymentReference']).isEmpty
           ? null
           : _asString(data['paymentReference']),
+      stripePaymentIntentId: _asString(data['stripePaymentIntentId']).isEmpty
+          ? null
+          : _asString(data['stripePaymentIntentId']),
+      stripePayoutId: _asString(data['stripePayoutId']).isEmpty
+          ? null
+          : _asString(data['stripePayoutId']),
+      payoutStatus: _asString(data['payoutStatus']).isEmpty
+          ? null
+          : _asString(data['payoutStatus']),
       profitAmount: data['profitAmount'] != null
           ? _asDouble(data['profitAmount'])
           : null,
@@ -125,6 +140,9 @@ class InvestmentTransactionModel {
       'status': status,
       'paymentMethod': paymentMethod,
       'paymentReference': paymentReference,
+      'stripePaymentIntentId': stripePaymentIntentId,
+      'stripePayoutId': stripePayoutId,
+      'payoutStatus': payoutStatus,
       'profitAmount': profitAmount,
       'distributionDate': distributionDate != null
           ? Timestamp.fromDate(distributionDate!)

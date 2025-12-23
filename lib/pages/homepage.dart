@@ -6,6 +6,9 @@ import '../components/custom_textfield.dart';
 import '../components/car_tabs.dart';
 import '../components/custom_bottom_nav.dart';
 import '../providers/search_provider.dart';
+import '../widgets/car_brand_grid.dart';
+import '../models/car_brand_model.dart';
+import '../services/car_brand_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Homepage extends StatefulWidget {
@@ -20,6 +23,7 @@ class Homepage extends StatefulWidget {
 class _HomepageState extends State<Homepage> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearchActive = false;
+  String? _selectedBrandId;
 
   @override
   void initState() {
@@ -44,6 +48,33 @@ class _HomepageState extends State<Homepage> {
     '/investment',
     '/profile'
   ];
+
+  String _getBrandName(String brandId) {
+    final brandService = CarBrandService();
+    final brand = brandService.getBrandById(brandId);
+    return brand?.displayName ?? brandId;
+  }
+
+  String _getCarDisplayName(dynamic ad) {
+    // Prefer title if available
+    if (ad.title != null && ad.title.toString().isNotEmpty) {
+      return ad.title.toString();
+    }
+    
+    // Otherwise, combine brand + name
+    final brand = ad.carBrand?.toString() ?? '';
+    final name = ad.carName?.toString() ?? '';
+    
+    if (brand.isNotEmpty && name.isNotEmpty) {
+      return '$brand $name';
+    } else if (brand.isNotEmpty) {
+      return brand;
+    } else if (name.isNotEmpty) {
+      return name;
+    }
+    
+    return 'Car';
+  }
 
   void _onTabSelected(BuildContext context, int index) {
     if (_selectedIndex == index) return;
@@ -94,7 +125,8 @@ class _HomepageState extends State<Homepage> {
                   icon: const Icon(Icons.chat)),
             ],
           ),
-          body: Column(
+          body: SingleChildScrollView(
+            child: Column(
               children: [
                 // Search Bar
                 Padding(
@@ -124,14 +156,47 @@ class _HomepageState extends State<Homepage> {
                   ),
                 ),
 
+                // Brand Filter Chip (if brand is selected)
+                if (_selectedBrandId != null && !_isSearchActive)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      children: [
+                        Chip(
+                          label: Text('Filtered by: ${_getBrandName(_selectedBrandId!)}'),
+                          onDeleted: () {
+                            setState(() {
+                              _selectedBrandId = null;
+                            });
+                          },
+                          deleteIcon: const Icon(Icons.close, size: 18),
+                          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Car Brand Grid (only show when not searching)
+                if (!_isSearchActive)
+                  CarBrandGrid(
+                    selectedBrandId: _selectedBrandId,
+                    onBrandSelected: (CarBrand brand) {
+                      setState(() {
+                        _selectedBrandId = brand.id;
+                      });
+                    },
+                  ),
+
                 // Search Results or Car Tabs
-                Expanded(
-                  child: _isSearchActive
-                      ? _buildSearchResults(searchProvider)
-                      : CarTabs(initialTab: widget.initialTab),
-                ),
+                _isSearchActive
+                    ? _buildSearchResults(searchProvider)
+                    : CarTabs(
+                        initialTab: widget.initialTab,
+                        selectedBrandId: _selectedBrandId,
+                      ),
               ],
             ),
+          ),
           bottomNavigationBar: CustomBottomNav(
             selectedIndex: _selectedIndex,
             onTabSelected: (index) => _onTabSelected(context, index),
@@ -205,6 +270,8 @@ class _HomepageState extends State<Homepage> {
     }
 
     return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: searchProvider.filteredAds.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -283,11 +350,7 @@ class _HomepageState extends State<Homepage> {
                             color: colorScheme.onSurfaceVariant, fontSize: 12)),
                     const SizedBox(height: 6),
                     Text(
-                      (ad.title.isNotEmpty
-                          ? ad.title
-                          : (ad.carBrand != null && ad.carBrand!.isNotEmpty
-                              ? ad.carBrand!
-                              : 'Car')),
+                      _getCarDisplayName(ad),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: Theme.of(context).colorScheme.onSurface,

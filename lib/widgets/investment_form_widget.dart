@@ -39,7 +39,7 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
     'jazzcash',
     'easypay',
     'bank_transfer',
-    'card',
+    'stripe',
   ];
 
   @override
@@ -130,6 +130,11 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
         paymentMethod: _selectedPaymentMethod!,
         transactionId: transactionId,
         description: 'Investment in ${widget.vehicle.title}',
+        additionalData: {
+          'vehicleInvestmentId': widget.vehicle.id,
+          'investmentId': investmentId,
+          'type': 'investment',
+        },
       );
 
       if (paymentResult['success'] == true) {
@@ -361,8 +366,8 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
         return 'EasyPay';
       case 'bank_transfer':
         return 'Bank Transfer';
-      case 'card':
-        return 'Debit/Credit Card';
+      case 'stripe':
+        return 'Debit/Credit Card (Stripe)';
       default:
         return method;
     }

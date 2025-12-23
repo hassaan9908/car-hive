@@ -139,10 +139,30 @@ class _ChatState extends State<Chat> {
               return FutureBuilder<Map<String, dynamic>?>(
                 future: _chatService.getUserInfo(otherUserId),
                 builder: (context, userSnapshot) {
+                  // Handle loading state
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
+                    return const ListTile(
+                      leading: CircularProgressIndicator(strokeWidth: 2),
+                      title: Text('Loading...'),
+                    );
+                  }
+
+                  // Handle error state
+                  if (userSnapshot.hasError) {
+                    return ListTile(
+                      title: Text(
+                        'Error loading user',
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.grey[700],
+                        ),
+                      ),
+                    );
+                  }
+
                   final userData = userSnapshot.data;
-                  final displayName = userData?['displayName'] ?? 'Unknown User';
-                  final userEmail = userData?['email'] ?? '';
-                  final photoUrl = userData?['photoUrl'] as String?;
+                  final displayName = userData?['displayName']?.toString() ?? 'Unknown User';
+                  final userEmail = userData?['email']?.toString() ?? '';
+                  final photoUrl = userData?['photoUrl']?.toString();
 
                   return ListTile(
                     leading: CircleAvatar(
@@ -152,7 +172,7 @@ class _ChatState extends State<Chat> {
                           : null,
                       child: photoUrl == null || photoUrl.isEmpty
                           ? Text(
-                              displayName.isNotEmpty
+                              displayName.isNotEmpty && displayName != 'Unknown User'
                                   ? displayName[0].toUpperCase()
                                   : userEmail.isNotEmpty
                                       ? userEmail[0].toUpperCase()
@@ -164,6 +184,7 @@ class _ChatState extends State<Chat> {
                           ? (exception, stackTrace) {
                               // If image fails to load, show initials
                               // This is handled by the child widget
+                              print('Error loading avatar image: $exception');
                             }
                           : null,
                     ),
@@ -177,7 +198,9 @@ class _ChatState extends State<Chat> {
                       ),
                     ),
                     subtitle: Text(
-                      conversation.lastMessage,
+                      conversation.lastMessage.isNotEmpty 
+                          ? conversation.lastMessage 
+                          : 'No messages yet',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

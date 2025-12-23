@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/chat_message_model.dart';
@@ -178,40 +179,57 @@ class ChatService {
             .map((doc) => Conversation.fromFirestore(doc.data(), doc.id))
             .toList());
 
-    // Combine both streams - use a StreamController to merge them
-    return Stream.multi((controller) {
-      List<Conversation> conversations1 = [];
-      List<Conversation> conversations2 = [];
-      bool hasStream1 = false;
-      bool hasStream2 = false;
+    // Combine both streams using StreamController for better compatibility
+    final controller = StreamController<List<Conversation>>();
+    List<Conversation> conversations1 = [];
+    List<Conversation> conversations2 = [];
+    bool hasStream1 = false;
+    bool hasStream2 = false;
 
-      void emitIfReady() {
-        if (hasStream1 && hasStream2) {
-          final allConversations = [...conversations1, ...conversations2];
-          allConversations.sort((a, b) =>
-              b.lastMessageTime.compareTo(a.lastMessageTime));
+    void emitIfReady() {
+      if (hasStream1 && hasStream2) {
+        final allConversations = [...conversations1, ...conversations2];
+        allConversations.sort((a, b) =>
+            b.lastMessageTime.compareTo(a.lastMessageTime));
+        if (!controller.isClosed) {
           controller.add(allConversations);
         }
       }
+    }
 
-      stream1.listen(
-        (list) {
-          conversations1 = list;
-          hasStream1 = true;
-          emitIfReady();
-        },
-        onError: controller.addError,
-      );
+    final subscription1 = stream1.listen(
+      (list) {
+        conversations1 = list;
+        hasStream1 = true;
+        emitIfReady();
+      },
+      onError: (error) {
+        if (!controller.isClosed) {
+          controller.addError(error);
+        }
+      },
+    );
 
-      stream2.listen(
-        (list) {
-          conversations2 = list;
-          hasStream2 = true;
-          emitIfReady();
-        },
-        onError: controller.addError,
-      );
-    });
+    final subscription2 = stream2.listen(
+      (list) {
+        conversations2 = list;
+        hasStream2 = true;
+        emitIfReady();
+      },
+      onError: (error) {
+        if (!controller.isClosed) {
+          controller.addError(error);
+        }
+      },
+    );
+
+    // Cancel subscriptions when controller is closed
+    controller.onCancel = () {
+      subscription1.cancel();
+      subscription2.cancel();
+    };
+
+    return controller.stream;
   }
 
   // Mark messages as read

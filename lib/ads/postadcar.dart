@@ -3,6 +3,8 @@ import 'package:carhive/store/global_ads.dart' show GlobalAdStore;
 import 'package:carhive/services/cloudinary_service.dart';
 import 'package:carhive/services/car_360_service.dart';
 import 'package:carhive/services/vehicle_service.dart';
+import 'package:carhive/services/car_brand_service.dart';
+import 'package:carhive/models/car_brand_model.dart';
 import 'package:carhive/utils/html_parser.dart';
 import 'package:carhive/utils/encryption_service.dart';
 import 'package:carhive/screens/capture_360_screen.dart';
@@ -96,8 +98,12 @@ class _PostAdCarState extends State<PostAdCar> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _carbrandController = TextEditingController();
+  final TextEditingController _carbrandController = TextEditingController(); // Keep for backward compatibility
+  final TextEditingController _carNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  
+  // Car brand selection
+  CarBrand? _selectedBrand;
   
   // Vehicle verification fields (encrypted)
   final TextEditingController _registrationNoController = TextEditingController();
@@ -759,6 +765,7 @@ class _PostAdCarState extends State<PostAdCar> {
     _nameController.dispose();
     _phoneController.dispose();
     _carbrandController.dispose();
+    _carNameController.dispose();
 
     super.dispose();
   }
@@ -1346,11 +1353,21 @@ class _PostAdCarState extends State<PostAdCar> {
                   "Car model${selectedCarModel != null ? " ($selectedCarModel)" : ""}",
                   Icons.directions_car,
                   _openModelYearSelector),
+              // Car Brand Dropdown
+              _buildCarBrandDropdown(),
+              // Car Name Field
               _buildTextFieldTile(
-                  label: "Car Brand",
-                  icon: Icons.directions_car,
-                  controller: _carbrandController,
-                  hint: "Honda Civic 1.8-VTEC CVT"),
+                label: "Car Name / Model",
+                icon: Icons.label,
+                controller: _carNameController,
+                hint: "Civic, Corolla, Camry, etc.",
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Car name/model is required';
+                  }
+                  return null;
+                },
+              ),
               _buildFormTile(
                   "Registered${selectedRegisteredIn != null ? " ($selectedRegisteredIn)" : ""}",
                   Icons.how_to_reg,
@@ -1748,7 +1765,8 @@ class _PostAdCarState extends State<PostAdCar> {
                           mileage: _mileageController.text,
                           fuel: _fuelController.text,
                           description: _descriptionController.text,
-                          carBrand: _carbrandController.text,
+                          carBrand: _selectedBrand?.displayName ?? '',
+                          carName: _carNameController.text.trim(),
                           bodyColor: _bodyColorController.text,
                           kmsDriven: _mileageController
                               .text, // Use mileage for kmsDriven
@@ -1863,6 +1881,101 @@ class _PostAdCarState extends State<PostAdCar> {
           border: InputBorder.none,
           fillColor: fill_color,
         ),
+      ),
+    );
+  }
+
+  Widget _buildCarBrandDropdown() {
+    final carBrandService = CarBrandService();
+    final brands = carBrandService.getAllBrands();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.directions_car,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Car Brand',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const Text(
+                ' *',
+                style: TextStyle(color: Colors.red),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<CarBrand>(
+            value: _selectedBrand,
+            decoration: InputDecoration(
+              hintText: 'Select car brand',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: isDark ? Colors.grey[900] : Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+            items: brands.map((brand) {
+              return DropdownMenuItem<CarBrand>(
+                value: brand,
+                child: Row(
+                  children: [
+                    Image.asset(
+                      brand.logoPath,
+                      width: 32,
+                      height: 32,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(Icons.directions_car, size: 24);
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      brand.displayName,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: (CarBrand? brand) {
+              setState(() {
+                _selectedBrand = brand;
+              });
+            },
+            validator: (value) {
+              if (value == null) {
+                return 'Please select a car brand';
+              }
+              return null;
+            },
+            icon: Icon(
+              Icons.arrow_drop_down,
+              color: theme.colorScheme.primary,
+            ),
+            dropdownColor: isDark ? Colors.grey[900] : Colors.white,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }
