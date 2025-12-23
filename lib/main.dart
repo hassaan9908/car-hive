@@ -41,10 +41,9 @@ class GradientPageRoute<T> extends PageRouteBuilder<T> {
 
   GradientPageRoute({
     required this.page,
-    RouteSettings? settings,
+    super.settings,
   }) : super(
           pageBuilder: (context, animation, secondaryAnimation) => page,
-          settings: settings,
           transitionDuration: const Duration(milliseconds: 200),
           reverseTransitionDuration: const Duration(milliseconds: 200),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {

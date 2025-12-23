@@ -20,11 +20,9 @@ final ThemeData darkTheme = ThemeData(
     onTertiary: Colors.white,
     tertiaryContainer: AppColors.secondaryOrange,
     onTertiaryContainer: AppColors.secondaryOrange,
-    background: Color.fromARGB(255, 29, 21, 14), // Custom dark background
-    onBackground: AppColors.darkOnSurface,
     surface: AppColors.darkSurface,
     onSurface: AppColors.darkOnSurface,
-    surfaceVariant: AppColors.darkSurfaceVariant,
+    surfaceContainerHighest: AppColors.darkSurfaceVariant,
     onSurfaceVariant: AppColors.darkOnSurfaceVariant,
     outline: AppColors.darkOutline,
     outlineVariant: AppColors.darkOutlineVariant,

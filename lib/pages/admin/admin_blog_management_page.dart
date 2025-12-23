@@ -57,7 +57,7 @@ class _AdminBlogManagementPageState extends State<AdminBlogManagementPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error, color: Colors.red, size: 48),
+                  const Icon(Icons.error, color: Colors.red, size: 48),
                   const SizedBox(height: 16),
                   Text(
                     contentProvider.errorMessage!,

@@ -41,7 +41,7 @@ class _Advanced360ViewerScreenState extends State<Advanced360ViewerScreen>
   late Advanced360Controller _controller;
   
   // Drag sensitivity
-  double _sensitivity = 50.0;
+  final double _sensitivity = 50.0;
   
   // Full screen mode
   bool _isFullScreen = false;

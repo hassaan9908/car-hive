@@ -39,7 +39,7 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
     _searchController = TextEditingController();
     _filteredItems = widget.items;
     if (widget.value != null) {
-      _searchController.text = widget.itemAsString(widget.value!);
+      _searchController.text = widget.itemAsString(widget.value as T);
     }
   }
 
@@ -52,7 +52,7 @@ class _SearchableDropdownState<T> extends State<SearchableDropdown<T>> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         if (widget.value != null) {
-          final newText = widget.itemAsString(widget.value!);
+          final newText = widget.itemAsString(widget.value as T);
           // Only update if the text is different to avoid unnecessary notifications
           if (_searchController.text != newText) {
             _searchController.text = newText;

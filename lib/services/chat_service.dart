@@ -122,7 +122,8 @@ class ChatService {
   }
 
   // Mark a message as delivered
-  Future<void> _markMessageAsDelivered(String conversationId, String messageId) async {
+  Future<void> _markMessageAsDelivered(
+      String conversationId, String messageId) async {
     try {
       await _firestore
           .collection('conversations')
@@ -242,10 +243,8 @@ class ChatService {
     final currentUserId = currentUser.uid;
 
     // Get conversation to determine which participant is reading
-    final conversationDoc = await _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .get();
+    final conversationDoc =
+        await _firestore.collection('conversations').doc(conversationId).get();
 
     if (!conversationDoc.exists) {
       return;
@@ -300,6 +299,28 @@ class ChatService {
     await batch.commit();
   }
 
+  /// Get total unread message count across all conversations for current user
+  Stream<int> getTotalUnreadCount() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return Stream.value(0);
+    }
+
+    return _firestore
+        .collection('conversations')
+        .where('participants', arrayContains: currentUser.uid)
+        .snapshots()
+        .map((snapshot) {
+      int totalUnread = 0;
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final unreadCount = data['unreadCount'] as Map<String, dynamic>? ?? {};
+        totalUnread += (unreadCount[currentUser.uid] ?? 0) as int;
+      }
+      return totalUnread;
+    });
+  }
+
   // Helper method to determine if current user is participant1
   bool _isParticipant1(String userId1, String userId2) {
     return userId1.compareTo(userId2) < 0;
@@ -328,10 +349,8 @@ class ChatService {
     final senderId = messageData['senderId'] as String;
 
     // Check if user is the sender or a participant in the conversation
-    final conversationDoc = await _firestore
-        .collection('conversations')
-        .doc(conversationId)
-        .get();
+    final conversationDoc =
+        await _firestore.collection('conversations').doc(conversationId).get();
 
     if (!conversationDoc.exists) {
       throw Exception('Conversation not found');
@@ -398,4 +417,3 @@ class ChatService {
     }
   }
 }
-

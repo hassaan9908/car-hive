@@ -12,13 +12,13 @@ class PhoneVerificationScreen extends StatefulWidget {
   final String username;
 
   const PhoneVerificationScreen({
-    Key? key,
+    super.key,
     required this.phoneNumber,
     required this.email,
     required this.password,
     required this.fullName,
     required this.username,
-  }) : super(key: key);
+  });
 
   @override
   State<PhoneVerificationScreen> createState() =>

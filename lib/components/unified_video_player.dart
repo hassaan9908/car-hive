@@ -410,6 +410,8 @@ class _UnifiedControlsBar extends StatefulWidget {
 class _UnifiedControlsBarState extends State<_UnifiedControlsBar> {
   late VoidCallback _listener;
   bool _muted = false;
+  bool _visible = true;
+  Timer? _hideTimer;
 
   @override
   void initState() {
@@ -420,12 +422,33 @@ class _UnifiedControlsBarState extends State<_UnifiedControlsBar> {
       setState(() {});
     };
     widget.video.addListener(_listener);
+    _startHideTimer();
   }
 
   @override
   void dispose() {
+    _hideTimer?.cancel();
     widget.video.removeListener(_listener);
     super.dispose();
+  }
+
+  void _startHideTimer() {
+    _hideTimer?.cancel();
+    setState(() => _visible = true);
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && widget.video.value.isPlaying) {
+        setState(() => _visible = false);
+      }
+    });
+  }
+
+  void _toggleVisibility() {
+    if (_visible) {
+      setState(() => _visible = false);
+      _hideTimer?.cancel();
+    } else {
+      _startHideTimer();
+    }
   }
 
   String _format(Duration d) {
@@ -443,112 +466,146 @@ class _UnifiedControlsBarState extends State<_UnifiedControlsBar> {
     final duration =
         v.duration == Duration.zero ? const Duration(seconds: 1) : v.duration;
 
-    return Container(
-      padding: const EdgeInsets.only(left: 8, right: 8, bottom: 6, top: 8),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0x00000000), Color(0x88000000)],
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Progress bar on top
-          VideoProgressIndicator(
-            widget.video,
-            allowScrubbing: true,
-            colors: const VideoProgressColors(
-              playedColor: Color(0xFFFF9100),
-              bufferedColor: Colors.white24,
-              backgroundColor: Colors.white12,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _toggleVisibility,
+      child: AnimatedOpacity(
+        opacity: _visible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: IgnorePointer(
+          ignoring: !_visible,
+          child: Container(
+            padding:
+                const EdgeInsets.only(left: 8, right: 8, bottom: 6, top: 8),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0x00000000), Color(0x88000000)],
+              ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-          ),
-          const SizedBox(height: 6),
-          // Single line of controls
-          Row(
-            children: [
-              IconButton(
-                icon: Icon(
-                    v.isPlaying
-                        ? Icons.pause_rounded
-                        : Icons.play_arrow_rounded,
-                    color: Colors.white),
-                onPressed: () =>
-                    v.isPlaying ? widget.video.pause() : widget.video.play(),
-              ),
-              IconButton(
-                icon: Icon(
-                    _muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                    color: Colors.white),
-                onPressed: () async {
-                  _muted = !_muted;
-                  await widget.video.setVolume(_muted ? 0 : 1);
-                  setState(() {});
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.replay_10, color: Colors.white),
-                onPressed: () => widget.skip(const Duration(seconds: -10)),
-              ),
-              IconButton(
-                icon: const Icon(Icons.forward_10, color: Colors.white),
-                onPressed: () => widget.skip(const Duration(seconds: 10)),
-              ),
-
-              const SizedBox(width: 8),
-              Text('${_format(position)} / ${_format(duration)}',
-                  style: const TextStyle(color: Colors.white, fontSize: 12)),
-
-              const Spacer(),
-
-              // Speed selector, compact
-              PopupMenuButton<double>(
-                tooltip: 'Speed',
-                initialValue: widget.getSpeed(),
-                color: const Color(0xFF111111),
-                itemBuilder: (context) =>
-                    const [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
-                        .map((s) => PopupMenuItem<double>(
-                              value: s,
-                              child: Text('${s}x',
-                                  style: TextStyle(color: Colors.white)),
-                            ))
-                        .toList(),
-                onSelected: (s) => widget.setSpeed(s),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Progress bar on top
+                GestureDetector(
+                  onTapDown: (_) => _startHideTimer(),
+                  child: VideoProgressIndicator(
+                    widget.video,
+                    allowScrubbing: true,
+                    colors: const VideoProgressColors(
+                      playedColor: Color(0xFFFF9100),
+                      bufferedColor: Colors.white24,
+                      backgroundColor: Colors.white12,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // Single line of controls
+                Row(
                   children: [
-                    const Icon(Icons.speed, color: Colors.white, size: 18),
-                    const SizedBox(width: 4),
-                    Text('${widget.getSpeed()}x',
+                    IconButton(
+                      icon: Icon(
+                          v.isPlaying
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          color: Colors.white),
+                      onPressed: () {
+                        v.isPlaying
+                            ? widget.video.pause()
+                            : widget.video.play();
+                        _startHideTimer();
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(
+                          _muted
+                              ? Icons.volume_off_rounded
+                              : Icons.volume_up_rounded,
+                          color: Colors.white),
+                      onPressed: () async {
+                        _muted = !_muted;
+                        await widget.video.setVolume(_muted ? 0 : 1);
+                        setState(() {});
+                        _startHideTimer();
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.replay_10, color: Colors.white),
+                      onPressed: () {
+                        widget.skip(const Duration(seconds: -10));
+                        _startHideTimer();
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.forward_10, color: Colors.white),
+                      onPressed: () {
+                        widget.skip(const Duration(seconds: 10));
+                        _startHideTimer();
+                      },
+                    ),
+
+                    const SizedBox(width: 8),
+                    Text('${_format(position)} / ${_format(duration)}',
                         style:
                             const TextStyle(color: Colors.white, fontSize: 12)),
+
+                    const Spacer(),
+
+                    // Speed selector, compact
+                    PopupMenuButton<double>(
+                      tooltip: 'Speed',
+                      initialValue: widget.getSpeed(),
+                      color: const Color(0xFF111111),
+                      itemBuilder: (context) =>
+                          const [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+                              .map((s) => PopupMenuItem<double>(
+                                    value: s,
+                                    child: Text('${s}x',
+                                        style: TextStyle(color: Colors.white)),
+                                  ))
+                              .toList(),
+                      onSelected: (s) {
+                        widget.setSpeed(s);
+                        _startHideTimer();
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.speed,
+                              color: Colors.white, size: 18),
+                          const SizedBox(width: 4),
+                          Text('${widget.getSpeed()}x',
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: Icon(
+                        widget.chewie.isFullScreen
+                            ? Icons.fullscreen_exit_rounded
+                            : Icons.fullscreen_rounded,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        if (widget.chewie.isFullScreen) {
+                          widget.chewie.exitFullScreen();
+                        } else {
+                          widget.chewie.enterFullScreen();
+                        }
+                        _startHideTimer();
+                      },
+                    ),
                   ],
                 ),
-              ),
-
-              const SizedBox(width: 8),
-              IconButton(
-                icon: Icon(
-                  widget.chewie.isFullScreen
-                      ? Icons.fullscreen_exit_rounded
-                      : Icons.fullscreen_rounded,
-                  color: Colors.white,
-                ),
-                onPressed: () {
-                  if (widget.chewie.isFullScreen) {
-                    widget.chewie.exitFullScreen();
-                  } else {
-                    widget.chewie.enterFullScreen();
-                  }
-                },
-              ),
-            ],
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

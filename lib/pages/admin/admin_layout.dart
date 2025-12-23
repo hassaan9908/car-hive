@@ -8,6 +8,7 @@ import 'admin_blog_upload_page.dart';
 import 'admin_video_upload_page.dart';
 import 'admin_blog_management_page.dart';
 import 'admin_video_management_page.dart';
+import 'admin_insight_metrics_page.dart';
 
 class AdminLayout extends StatefulWidget {
   const AdminLayout({super.key});
@@ -25,6 +26,11 @@ class _AdminLayoutState extends State<AdminLayout> {
       title: 'Dashboard',
       icon: Icons.dashboard,
       page: const AdminDashboardPage(),
+    ),
+    AdminNavigationItem(
+      title: 'Insight Metrics',
+      icon: Icons.insights,
+      page: const AdminInsightMetricsPage(),
     ),
     AdminNavigationItem(
       title: 'Ad Moderation',
@@ -62,7 +68,7 @@ class _AdminLayoutState extends State<AdminLayout> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
         return Scaffold(
@@ -284,4 +290,3 @@ class AdminNavigationItem {
     required this.page,
   });
 }
-

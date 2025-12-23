@@ -571,7 +571,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     child: 
                     Container(
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
+                        gradient: const LinearGradient(
                           colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
                         ),
                         boxShadow: [
@@ -665,7 +665,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     String? Function(String?)? validator,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(

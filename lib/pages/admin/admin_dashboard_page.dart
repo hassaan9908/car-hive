@@ -1,12 +1,13 @@
+import 'package:carhive/models/ad_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_provider.dart';
 
-import '../../models/ad_model.dart';
 import 'admin_manage_users_page.dart';
 import 'admin_system_analytics_page.dart';
 import 'admin_view_all_ads_page.dart';
+import 'admin_insight_metrics_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -26,7 +27,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Future<void> _loadAllData() async {
     final adminProvider = context.read<AdminProvider>();
-    print('AdminDashboard: Loading all data...');
+    print('AdminDashboard: Loading all data.. .');
 
     // Load all data in parallel
     await Future.wait([
@@ -42,7 +43,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -257,6 +258,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildActionCard(
+                          'Insight Metrics',
+                          Icons.insights,
+                          const Color(0xFF9C27B0),
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AdminInsightMetricsPage(),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -447,7 +462,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       // Debug Button
                       IconButton(
                         onPressed: () {
-                          print('AdminDashboard: Debugging ad statuses...');
+                          print('AdminDashboard:  Debugging ad statuses...');
                           adminProvider.debugAndFixAdStatuses();
                         },
                         icon: Icon(
@@ -492,7 +507,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Debug Info:',
+                            'Debug Info: ',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.blue.shade700,
@@ -501,7 +516,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           Text('Loading: ${adminProvider.isLoading}'),
                           Text('Pending Ads Count: ${pendingAds.length}'),
                           Text(
-                              'Error: ${adminProvider.errorMessage ?? 'None'}'),
+                              'Error:  ${adminProvider.errorMessage ?? 'None'}'),
                         ],
                       ),
                     ),
@@ -539,7 +554,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'All ads have been reviewed!',
+                            'All ads have been reviewed! ',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey.shade600,
@@ -817,12 +832,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             elevation: 2,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+            child: const Padding(
+              padding: EdgeInsets.all(16),
               child: Center(
                 child: Text(
                   'No recent activities',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey,
                   ),

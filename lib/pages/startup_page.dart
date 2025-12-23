@@ -131,7 +131,7 @@ class _StartupPageState extends State<StartupPage>
                           Text(
                         'Car',
                         style: theme.textTheme.displayLarge?.copyWith(
-                          color: Color(0xFFf48c25),
+                          color: const Color(0xFFf48c25),
                           fontWeight: FontWeight.bold,
                           fontSize: 42,
                           letterSpacing: -0.5,

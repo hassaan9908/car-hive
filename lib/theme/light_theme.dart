@@ -19,11 +19,9 @@ final ThemeData lightTheme = ThemeData(
     onTertiary: Colors.white,
     tertiaryContainer: Color(0xFFFFF3E0),
     onTertiaryContainer: AppColors.secondaryOrange,
-    background: AppColors.lightBackground,
-    onBackground: AppColors.lightOnSurface,
     surface: AppColors.lightSurface,
     onSurface: AppColors.lightOnSurface,
-    surfaceVariant: AppColors.lightSurfaceVariant,
+    surfaceContainerHighest: AppColors.lightSurfaceVariant,
     onSurfaceVariant: AppColors.lightOnSurfaceVariant,
     outline: AppColors.lightOutline,
     outlineVariant: AppColors.lightOutlineVariant,
@@ -39,19 +37,19 @@ final ThemeData lightTheme = ThemeData(
   ),
 
   // App Bar Theme - Automotive Style
-  appBarTheme: AppBarTheme(
+  appBarTheme: const AppBarTheme(
     backgroundColor: Colors.transparent, // Same as app background
     foregroundColor: Colors.black, // Black title and actions
     elevation: 0,
     centerTitle: true,
-    titleTextStyle: const TextStyle(
+    titleTextStyle: TextStyle(
       color: Colors.black,
       fontSize: 20,
       fontWeight: FontWeight.w600,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
-    iconTheme: const IconThemeData(color: Colors.black), // Black icons
+    iconTheme: IconThemeData(color: Colors.black), // Black icons
     surfaceTintColor: Colors.transparent,
   ),
 
@@ -163,13 +161,13 @@ final ThemeData lightTheme = ThemeData(
     unselectedItemColor: AppColors.lightOnSurfaceVariant,
     type: BottomNavigationBarType.fixed,
     elevation: 8,
-    selectedLabelStyle: TextStyle(
+    selectedLabelStyle: const TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.w600,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
-    unselectedLabelStyle: TextStyle(
+    unselectedLabelStyle: const TextStyle(
       fontSize: 12,
       fontWeight: FontWeight.w500,
       textBaseline: TextBaseline.alphabetic,
