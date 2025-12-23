@@ -279,16 +279,6 @@ service cloud.firestore {
       );
     }
 
-    // INSPECTIONS collection for vehicle inspection reports
-    match /inspections/{inspectionId} {
-      // Anyone signed in can read inspections
-      allow read: if isSignedIn();
-
-      // Create: signed-in users can save their own inspection reports
-      allow create: if isSignedIn() && request.resource.data.userId == currentUid();
-
-      // Update/Delete: owners or admins
-      allow update, delete: if isSignedIn() && (
     // INVESTMENT VEHICLES collection
     match /investment_vehicles/{vehicleId} {
       // Anyone signed in can read investment vehicles

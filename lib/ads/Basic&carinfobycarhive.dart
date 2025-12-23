@@ -310,7 +310,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
                                 ],
                         ),
                         child: DropdownButtonFormField<String>(
-                          initialValue: registeredCity,
+                          value: registeredCity,
                           decoration: InputDecoration(
                             prefixIcon: Icon(
                               Icons.location_on_outlined,
@@ -407,7 +407,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
             ),
           ),
           child: DropdownButtonFormField<String>(
-            initialValue: city,
+            value: city,
             decoration: InputDecoration(
               prefixIcon: Icon(
                 Icons.location_city_outlined,
@@ -476,7 +476,7 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
             ),
           ),
           child: DropdownButtonFormField<String>(
-            initialValue: carYear,
+            value: carYear,
             decoration: InputDecoration(
               prefixIcon: Icon(
                 Icons.calendar_today_outlined,

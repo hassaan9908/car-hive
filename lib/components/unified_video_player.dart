@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:chewie/chewie.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
@@ -85,7 +86,8 @@ class _UnifiedVideoPlayerState extends State<UnifiedVideoPlayer> {
         allowMuting: true,
         allowFullScreen: true,
         allowPlaybackSpeedChanging: true,
-        showControls: false,
+        // Use Chewie's native controls across all platforms
+        showControls: true,
         materialProgressColors: ChewieProgressColors(
           playedColor: const Color(0xFFFF9100),
           handleColor: const Color(0xFFFFB74D),
@@ -260,27 +262,8 @@ class _UnifiedVideoPlayerState extends State<UnifiedVideoPlayer> {
         ),
         child: Chewie(controller: _chewieController!),
       );
-      // Custom bottom controls bar combining skip and speed on same line
-      return Stack(children: [
-        Positioned.fill(child: player),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: _UnifiedControlsBar(
-            video: _videoController!,
-            chewie: _chewieController!,
-            getSpeed: () => _playbackSpeed,
-            setSpeed: (s) async {
-              setState(() => _playbackSpeed = s);
-              try {
-                await _videoController?.setPlaybackSpeed(s);
-              } catch (_) {}
-            },
-            skip: _skip,
-          ),
-        ),
-      ]);
+      // Return Chewie player with its native controls only
+      return player;
     }
 
     return AspectRatio(
@@ -433,6 +416,12 @@ class _UnifiedControlsBarState extends State<_UnifiedControlsBar> {
   }
 
   void _startHideTimer() {
+    // Keep controls visible on web (no auto-hide)
+    if (kIsWeb) {
+      _hideTimer?.cancel();
+      setState(() => _visible = true);
+      return;
+    }
     _hideTimer?.cancel();
     setState(() => _visible = true);
     _hideTimer = Timer(const Duration(seconds: 3), () {
@@ -470,10 +459,10 @@ class _UnifiedControlsBarState extends State<_UnifiedControlsBar> {
       behavior: HitTestBehavior.opaque,
       onTap: _toggleVisibility,
       child: AnimatedOpacity(
-        opacity: _visible ? 1.0 : 0.0,
+        opacity: _visible ? 1.0 : (kIsWeb ? 1.0 : 0.0),
         duration: const Duration(milliseconds: 300),
         child: IgnorePointer(
-          ignoring: !_visible,
+          ignoring: !_visible && !kIsWeb,
           child: Container(
             padding:
                 const EdgeInsets.only(left: 8, right: 8, bottom: 6, top: 8),

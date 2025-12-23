@@ -251,7 +251,7 @@ class _Car360ViewerScreenState extends State<Car360ViewerScreen>
               _controller.setAutoRotate(value);
               Navigator.pop(context);
             },
-            activeThumbColor: Theme.of(context).colorScheme.primary,
+            activeColor: Theme.of(context).colorScheme.primary,
           ),
 
           // Sensitivity slider

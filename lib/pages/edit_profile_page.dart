@@ -665,7 +665,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     String? Function(String?)? validator,
   }) {
     return DropdownButtonFormField<String>(
-      initialValue: value,
+      value: value,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(

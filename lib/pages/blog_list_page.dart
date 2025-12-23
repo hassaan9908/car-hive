@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/content_provider.dart';
+import '../models/blog_model.dart';
 import 'blog_detail_page.dart';
 
 class BlogListPage extends StatefulWidget {
@@ -21,14 +22,36 @@ class _BlogListPageState extends State<BlogListPage> {
     'Tips',
     'News',
     'Buying Guide',
-    'Maintenance'
+    'Maintenance',
+    'Electric Cars',
+    'Hybrid',
+    'Car Care',
+    'DIY Repairs',
+    'Accessories',
+    'Insurance',
+    'Financing',
+    'Safety',
+    'Road Trips',
+    'Detailing',
+    'Modifications'
   ];
   final List<String> _popularTags = [
     'Reviews',
     'Tips',
     'Buying Guide',
     'News',
-    'Maintenance'
+    'Maintenance',
+    'Electric Cars',
+    'Hybrid',
+    'Car Care',
+    'DIY Repairs',
+    'Accessories',
+    'Insurance',
+    'Financing',
+    'Safety',
+    'Road Trips',
+    'Detailing',
+    'Modifications'
   ];
 
   @override
@@ -50,12 +73,12 @@ class _BlogListPageState extends State<BlogListPage> {
     await contentProvider.loadAllBlogs();
   }
 
-  List<dynamic> _getFilteredBlogs(List<dynamic> blogs) {
-    var filtered = blogs;
+  List<BlogModel> _getFilteredBlogs(List<BlogModel> blogs) {
+    List<BlogModel> filtered = blogs;
 
     // Filter by search query
     if (_searchQuery.isNotEmpty) {
-      filtered = filtered.where((blog) {
+      filtered = filtered.where((BlogModel blog) {
         return blog.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
             blog.content.toLowerCase().contains(_searchQuery.toLowerCase()) ||
             blog.author.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -64,10 +87,15 @@ class _BlogListPageState extends State<BlogListPage> {
 
     // Filter by category
     if (_selectedCategory != 'All') {
-      filtered = filtered.where((blog) {
-        return blog.tags != null &&
-            blog.tags!.any(
-                (tag) => tag.toLowerCase() == _selectedCategory.toLowerCase());
+      final keyword = _selectedCategory.toLowerCase();
+      filtered = filtered.where((BlogModel blog) {
+        final tags = List<String>.from(blog.tags ?? const [])
+            .map((t) => t.toLowerCase())
+            .toList();
+        final tagMatch = tags.any((t) => t.contains(keyword));
+        final textMatch = blog.title.toLowerCase().contains(keyword) ||
+            blog.content.toLowerCase().contains(keyword);
+        return tagMatch || textMatch;
       }).toList();
     }
 

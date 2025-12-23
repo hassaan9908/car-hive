@@ -173,7 +173,7 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                           borderSide:
                               BorderSide(color: Color(0xFFf48c25), width: 2)),
                     ),
-                    initialValue: selectedCity,
+                    value: selectedCity,
                     items: cityAreas.keys
                         .map((city) => DropdownMenuItem(
                               value: city,
@@ -218,7 +218,7 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                             borderSide:
                                 BorderSide(color: Color(0xFFf48c25), width: 2)),
                       ),
-                      initialValue: selectedArea,
+                      value: selectedArea,
                       items: (cityAreas[selectedCity] ?? [])
                           .map((area) => DropdownMenuItem(
                                 value: area,

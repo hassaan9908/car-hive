@@ -418,7 +418,9 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
           labelColor: const Color(0xFFf48c25),
           unselectedLabelColor: Colors.grey,
           indicatorColor: const Color(0xFFf48c25),
-          isScrollable: true,
+          isScrollable: false,
+          indicatorSize: TabBarIndicatorSize.tab,
+          labelPadding: EdgeInsets.zero,
           tabs: const [
             Tab(text: 'Overview', icon: Icon(Icons.dashboard, size: 20)),
             Tab(text: 'Trends', icon: Icon(Icons.trending_up, size: 20)),
@@ -512,67 +514,114 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         ? (_totalConversions / _totalAds * 100).toStringAsFixed(1)
         : '0';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Key Metrics',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.4,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 720;
+        final isTablet = constraints.maxWidth < 1080;
+        final veryWide = constraints.maxWidth > 1400;
+        final crossAxisCount = isCompact
+            ? 2
+            : isTablet
+                ? 3
+                : (veryWide ? 4 : 3);
+        final aspectRatio = isCompact
+            ? 1.05
+            : isTablet
+                ? 1.2
+                : (veryWide ? 1.35 : 1.15);
+        final textScale = isCompact
+            ? 0.94
+            : isTablet
+                ? 1.02
+                : 1.12; // bump typography on desktop widths
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildMetricCard(
-              'Total Views',
-              _totalViews.toString(),
-              Icons.visibility,
-              const Color(0xFF4CAF50),
-              _formatWeeklyChange(_viewsWeeklyChange),
-              _viewsWeeklyChange >= 0,
+            const Text(
+              'Key Metrics',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            _buildMetricCard(
-              'Messages',
-              _totalMessages.toString(),
-              Icons.message,
-              const Color(0xFF2196F3),
-              _formatWeeklyChange(_messagesWeeklyChange),
-              _messagesWeeklyChange >= 0,
-            ),
-            _buildMetricCard(
-              'Conversions',
-              _totalConversions.toString(),
-              Icons.shopping_cart,
-              const Color(0xFFFF9800),
-              '$conversionRate% rate',
-              true,
-            ),
-            _buildMetricCard(
-              'Avg. Time to Sell',
-              '${_avgTimeToSell.toStringAsFixed(1)} days',
-              Icons.timer,
-              const Color(0xFF9C27B0),
-              'From listing to sold',
-              true,
+            const SizedBox(height: 16),
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: aspectRatio,
+              children: [
+                _buildMetricCard(
+                  'Total Views',
+                  _totalViews.toString(),
+                  Icons.visibility,
+                  const Color(0xFF4CAF50),
+                  _formatWeeklyChange(_viewsWeeklyChange),
+                  _viewsWeeklyChange >= 0,
+                  scale: textScale,
+                ),
+                _buildMetricCard(
+                  'Messages',
+                  _totalMessages.toString(),
+                  Icons.message,
+                  const Color(0xFF2196F3),
+                  _formatWeeklyChange(_messagesWeeklyChange),
+                  _messagesWeeklyChange >= 0,
+                  scale: textScale,
+                ),
+                _buildMetricCard(
+                  'Conversions',
+                  _totalConversions.toString(),
+                  Icons.shopping_cart,
+                  const Color(0xFFFF9800),
+                  '$conversionRate% rate',
+                  true,
+                  scale: textScale,
+                ),
+                _buildMetricCard(
+                  'Avg. Time to Sell',
+                  '${_avgTimeToSell.toStringAsFixed(1)} days',
+                  Icons.timer,
+                  const Color(0xFF9C27B0),
+                  'From listing to sold',
+                  true,
+                  scale: textScale,
+                ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
   Widget _buildMetricCard(String title, String value, IconData icon,
-      Color color, String subtitle, bool isPositive) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      Color color, String subtitle, bool isPositive,
+      {double scale = 1}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12 * scale),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
@@ -592,17 +641,17 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: EdgeInsets.all(6 * scale),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(icon, color: color, size: 18),
+                  child: Icon(icon, color: color, size: 20 * scale),
                 ),
                 Icon(
                   isPositive ? Icons.trending_up : Icons.trending_down,
                   color: isPositive ? Colors.green : Colors.red,
-                  size: 14,
+                  size: 16 * scale,
                 ),
               ],
             ),
@@ -612,15 +661,15 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 26 * scale,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
                 ),
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: 13 * scale,
                     fontWeight: FontWeight.w500,
                     color: Colors.grey,
                   ),
@@ -628,7 +677,7 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 9,
+                    fontSize: 11 * scale,
                     color: isPositive ? Colors.green : Colors.red,
                   ),
                 ),
@@ -641,52 +690,82 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   }
 
   Widget _buildQuickStatsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Quick Statistics',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 720;
+        final columns = isCompact ? 2 : 3;
+        final itemWidth =
+            (constraints.maxWidth - ((columns - 1) * 12)) / columns;
+        final scale = isCompact ? 0.95 : 1.0;
+
+        final items = [
+          {
+            'label': 'Brands',
+            'value': _brandStats.length.toString(),
+            'icon': Icons.car_repair
+          },
+          {
+            'label': 'Cities',
+            'value': _locationStats.length.toString(),
+            'icon': Icons.location_city
+          },
+          {
+            'label': 'Total Ads',
+            'value': _totalAds.toString(),
+            'icon': Icons.list_alt
+          },
+          {
+            'label': 'Contacts',
+            'value': _totalContacts.toString(),
+            'icon': Icons.phone
+          },
+          {
+            'label': 'Saves',
+            'value': _totalSaves.toString(),
+            'icon': Icons.bookmark
+          },
+          {
+            'label': 'Sold',
+            'value': _totalConversions.toString(),
+            'icon': Icons.sell
+          },
+        ];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-                child: _buildStatChip(
-                    'Brands', _brandStats.length.toString(), Icons.car_repair)),
-            const SizedBox(width: 8),
-            Expanded(
-                child: _buildStatChip('Cities',
-                    _locationStats.length.toString(), Icons.location_city)),
-            const SizedBox(width: 8),
-            Expanded(
-                child: _buildStatChip(
-                    'Total Ads', _totalAds.toString(), Icons.list_alt)),
+            const Text(
+              'Quick Statistics',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: items
+                  .map(
+                    (item) => SizedBox(
+                      width: itemWidth,
+                      child: _buildStatChip(
+                        item['label'] as String,
+                        item['value'] as String,
+                        item['icon'] as IconData,
+                        scale: scale,
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
           ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-                child: _buildStatChip(
-                    'Contacts', _totalContacts.toString(), Icons.phone)),
-            const SizedBox(width: 8),
-            Expanded(
-                child: _buildStatChip(
-                    'Saves', _totalSaves.toString(), Icons.bookmark)),
-            const SizedBox(width: 8),
-            Expanded(
-                child: _buildStatChip(
-                    'Sold', _totalConversions.toString(), Icons.sell)),
-          ],
-        ),
-      ],
+        );
+      },
     );
   }
 
-  Widget _buildStatChip(String label, String value, IconData icon) {
+  Widget _buildStatChip(String label, String value, IconData icon,
+      {double scale = 1}) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: EdgeInsets.all(10 * scale),
       decoration: BoxDecoration(
         color: const Color(0xFFf48c25).withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
@@ -694,19 +773,19 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
       ),
       child: Column(
         children: [
-          Icon(icon, color: const Color(0xFFf48c25), size: 20),
-          const SizedBox(height: 4),
+          Icon(icon, color: const Color(0xFFf48c25), size: 20 * scale),
+          SizedBox(height: 4 * scale),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 16 * scale,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFf48c25),
+              color: const Color(0xFFf48c25),
             ),
           ),
           Text(
             label,
-            style: const TextStyle(fontSize: 9, color: Colors.grey),
+            style: TextStyle(fontSize: 9 * scale, color: Colors.grey),
             textAlign: TextAlign.center,
           ),
         ],
@@ -743,10 +822,31 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         else
           ...List.generate(_topPerformingAds.length, (index) {
             final ad = _topPerformingAds[index];
-            return Card(
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            return Container(
               margin: const EdgeInsets.only(bottom: 8),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+                      : [Colors.grey.shade100, Colors.grey.shade200],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.06)
+                      : Colors.grey.shade400,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: const Color(0xFFf48c25).withOpacity(0.2),
@@ -821,10 +921,29 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
     final maxValue = _dailyListings.values.isEmpty
         ? 1.0
         : (_dailyListings.values.reduce((a, b) => a > b ? a : b)).toDouble();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -936,10 +1055,29 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
       const Color(0xFF607D8B),
       const Color(0xFFCDDC39),
     ];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1036,10 +1174,29 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
 
   Widget _buildPriceRangeChart() {
     final total = _priceRangeStats.values.fold(0, (a, b) => a + b);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1113,9 +1270,28 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   }
 
   Widget _buildLocationPerformanceSection() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1197,9 +1373,28 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   }
 
   Widget _buildYearDistributionSection() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1282,9 +1477,60 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         ? (_totalConversions / _totalAds * 100).toStringAsFixed(1)
         : '0';
 
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    final steps = [
+      {
+        'label': 'Total Listings',
+        'display': _totalAds.toString(),
+        'value': _totalAds.toDouble(),
+        'color': const Color(0xFF4CAF50),
+      },
+      {
+        'label': 'Avg. Views/Listing',
+        'display': viewRate,
+        'value': double.tryParse(viewRate) ?? 0,
+        'color': const Color(0xFF2196F3),
+      },
+      {
+        'label': 'Message Rate',
+        'display': '$messageRate%',
+        'value': double.tryParse(messageRate) ?? 0,
+        'color': const Color(0xFFFF9800),
+      },
+      {
+        'label': 'Conversion Rate',
+        'display': '$conversionRate%',
+        'value': double.tryParse(conversionRate) ?? 0,
+        'color': const Color(0xFFf48c25),
+      },
+    ];
+
+    final maxValue = steps
+        .map((s) => s['value'] as double)
+        .fold<double>(0, (a, b) => b > a ? b : a);
+    final safeMax = maxValue <= 0 ? 1 : maxValue;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1293,14 +1539,15 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
             const Text('Conversion Funnel',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),
-            _buildFunnelStep('Total Listings', _totalAds.toString(), 1.0,
-                const Color(0xFF4CAF50)),
-            _buildFunnelStep(
-                'Avg. Views/Listing', viewRate, 0.75, const Color(0xFF2196F3)),
-            _buildFunnelStep(
-                'Message Rate', '$messageRate%', 0.5, const Color(0xFFFF9800)),
-            _buildFunnelStep('Conversion Rate', '$conversionRate%', 0.25,
-                const Color(0xFFf48c25)),
+            ...steps.map((s) {
+              final width = ((s['value'] as double) / safeMax).clamp(0.12, 1.0);
+              return _buildFunnelStep(
+                s['label'] as String,
+                s['display'] as String,
+                width,
+                s['color'] as Color,
+              );
+            }),
           ],
         ),
       ),
@@ -1312,27 +1559,36 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-              Text(value,
-                  style: TextStyle(fontWeight: FontWeight.bold, color: color)),
-            ],
-          ),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
           const SizedBox(height: 4),
-          FractionallySizedBox(
-            widthFactor: width,
-            alignment: Alignment.centerLeft,
-            child: Container(
-              height: 30,
-              decoration: BoxDecoration(
-                gradient:
-                    LinearGradient(colors: [color, color.withOpacity(0.6)]),
-                borderRadius: BorderRadius.circular(4),
+          Row(
+            children: [
+              Expanded(
+                child: FractionallySizedBox(
+                  widthFactor: width,
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    height: 30,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [color, color.withOpacity(0.65)],
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Text(
+                value,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1360,9 +1616,28 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   }
 
   Widget _buildSearchAnalyticsSection() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1410,10 +1685,29 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         ? ((_totalMessages + _totalContacts + _totalSaves) / _totalViews * 100)
         : 0.0;
     final saveRate = _totalViews > 0 ? (_totalSaves / _totalViews * 100) : 0.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1474,9 +1768,28 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   }
 
   Widget _buildMarketInsightsSection() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
