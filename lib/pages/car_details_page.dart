@@ -29,6 +29,8 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
   final TextEditingController _commentController = TextEditingController();
   int _rating = 0;
   bool _submitting = false;
+  int _currentImageIndex = 0; // Track current image index for indicator
+  final PageController _pageController = PageController(); // Controller for PageView
   bool _savingAd = false;
 
   @override
@@ -52,10 +54,54 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
   @override
   void dispose() {
     _commentController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
+    try {
+      if (phoneNumber.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Phone number is empty')),
+          );
+        }
+        return;
+      }
+
+      // Clean phone number: remove spaces, dashes, parentheses, and other non-digit characters except +
+      String cleanedNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+      
+      if (cleanedNumber.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invalid phone number format')),
+          );
+        }
+        return;
+      }
+
+      // Create URI with tel scheme
+      final Uri phoneUri = Uri(scheme: 'tel', path: cleanedNumber);
+      
+      print('Attempting to call: $cleanedNumber'); // Debug log
+      
+      // Try to launch the phone dialer
+      // Use platformDefault mode which works better on mobile devices
+      final launched = await launchUrl(
+        phoneUri,
+        mode: LaunchMode.platformDefault,
+      );
+      
+      if (!launched) {
+        // If platformDefault fails, try externalApplication
+        await launchUrl(
+          phoneUri,
+          mode: LaunchMode.externalApplication,
+        );
+      }
+    } catch (e) {
+      print('Error making phone call: $e'); // Debug log
     // Record contact click
     final adId = widget.ad.id;
     if (adId != null && adId.isNotEmpty) {
@@ -73,7 +119,10 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not launch phone dialer')),
+          SnackBar(
+            content: Text('Could not launch phone dialer: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     }
@@ -245,6 +294,12 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                   // Display images from Cloudinary if available
                   if (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
                     PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentImageIndex = index;
+                        });
+                      },
                       itemCount: ad.imageUrls!.length,
                       itemBuilder: (context, index) {
                         return Container(
@@ -334,7 +389,7 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
-                          '1 / ${ad.imageUrls!.length}',
+                          '${_currentImageIndex + 1} / ${ad.imageUrls!.length}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -884,68 +939,58 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                   ],
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: ElevatedButton.icon(
-                                  onPressed: () async {
-                                    String? phoneNumber;
-                                    if (ad.userId != null &&
-                                        ad.userId!.isNotEmpty) {
-                                      try {
-                                        final userDoc = await FirebaseFirestore
-                                            .instance
-                                            .collection('users')
-                                            .doc(ad.userId)
-                                            .get();
-                                        if (userDoc.exists) {
-                                          final data = userDoc.data();
-                                          phoneNumber =
-                                              data?['phoneNumber']?.toString();
-                                        }
-                                      } catch (e) {
-                                        print('Error fetching phone: $e');
-                                      }
-                                    }
-                                    phoneNumber ??= ad.phone;
-
-                                    if (phoneNumber != null &&
-                                        phoneNumber.isNotEmpty) {
-                                      await _makePhoneCall(phoneNumber);
-                                    } else {
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                              content: Text(
-                                                  'Phone number not available')),
-                                        );
-                                      }
-                                    }
-                                  },
-                                  icon: const Icon(Icons.phone),
-                                  label: const Text('Call'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                              ],
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      colorScheme.secondary,
-                                      colorScheme.secondary
-                                          .withValues(alpha: 0.8),
-                                    ],
-                                  ),
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                // Get phone number from user doc or ad
+                                String? phoneNumber;
+                                if (ad.userId != null &&
+                                    ad.userId!.isNotEmpty) {
+                                  try {
+                                    final userDoc = await FirebaseFirestore
+                                        .instance
+                                        .collection('users')
+                                        .doc(ad.userId)
+                                        .get();
+                                    if (userDoc.exists) {
+                                      final data = userDoc.data()
+                                          as Map<String, dynamic>?;
+                                      phoneNumber =
+                                          data?['phoneNumber']?.toString() ??
+                                          data?['phone']?.toString();
+                                      print('Phone from user doc: $phoneNumber'); // Debug log
+                                    }
+                                  } catch (e) {
+                                    print('Error fetching phone: $e');
+                                  }
+                                }
+                                phoneNumber ??= ad.phone;
+                                print('Final phone number: $phoneNumber'); // Debug log
+
+                                if (phoneNumber != null &&
+                                    phoneNumber.trim().isNotEmpty) {
+                                  await _makePhoneCall(phoneNumber.trim());
+                                } else {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'Phone number not available')),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.phone),
+                              label: const Text('Call'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: ElevatedButton.icon(

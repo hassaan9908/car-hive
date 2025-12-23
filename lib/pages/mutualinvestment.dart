@@ -67,8 +67,8 @@ class _MutualinvestmentState extends State<Mutualinvestment>
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Mutual Investment'),
-          backgroundColor: Colors.transparent,
-          centerTitle: true,
+              backgroundColor: Colors.transparent,
+              centerTitle: true,
           actions: [
             if (user != null)
               IconButton(

@@ -186,54 +186,54 @@ class _ChatState extends State<Chat> {
               return FutureBuilder<Map<String, dynamic>?>(
                 future: _chatService.getUserInfo(otherUserId),
                 builder: (context, userSnapshot) {
+                  // Handle loading state
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
+                    return const ListTile(
+                      leading: CircularProgressIndicator(strokeWidth: 2),
+                      title: Text('Loading...'),
+                    );
+                  }
+
+                  // Handle error state
+                  if (userSnapshot.hasError) {
+                    return ListTile(
+                      title: Text(
+                        'Error loading user',
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.grey[700],
+                        ),
+                      ),
+                    );
+                  }
+
                   final userData = userSnapshot.data;
-                  final displayName =
-                      userData?['displayName'] ?? 'Unknown User';
-                  final userEmail = userData?['email'] ?? '';
-                  final photoUrl = userData?['photoUrl'] as String?;
+                  final displayName = userData?['displayName']?.toString() ?? 'Unknown User';
+                  final userEmail = userData?['email']?.toString() ?? '';
+                  final photoUrl = userData?['photoUrl']?.toString();
 
                   return ListTile(
-                    leading: Stack(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: const Color(0xFFf48c25),
-                          backgroundImage:
-                              photoUrl != null && photoUrl.isNotEmpty
-                                  ? CachedNetworkImageProvider(photoUrl)
-                                  : null,
-                          onBackgroundImageError:
-                              photoUrl != null && photoUrl.isNotEmpty
-                                  ? (exception, stackTrace) {}
-                                  : null,
-                          child: photoUrl == null || photoUrl.isEmpty
-                              ? Text(
-                                  displayName.isNotEmpty
-                                      ? displayName[0].toUpperCase()
-                                      : userEmail.isNotEmpty
-                                          ? userEmail[0].toUpperCase()
-                                          : '?',
-                                  style: const TextStyle(color: Colors.white),
-                                )
-                              : null,
-                        ),
-                        if (unreadCount > 0)
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFf48c25),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isDark ? Colors.black : Colors.white,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                    leading: CircleAvatar(
+                      backgroundColor: const Color(0xFFf48c25),
+                      backgroundImage: photoUrl != null && photoUrl.isNotEmpty
+                          ? CachedNetworkImageProvider(photoUrl)
+                          : null,
+                      child: photoUrl == null || photoUrl.isEmpty
+                          ? Text(
+                              displayName.isNotEmpty && displayName != 'Unknown User'
+                                  ? displayName[0].toUpperCase()
+                                  : userEmail.isNotEmpty
+                                      ? userEmail[0].toUpperCase()
+                                      : '?',
+                              style: const TextStyle(color: Colors.white),
+                            )
+                          : null,
+                      onBackgroundImageError: photoUrl != null && photoUrl.isNotEmpty
+                          ? (exception, stackTrace) {
+                              // If image fails to load, show initials
+                              // This is handled by the child widget
+                              print('Error loading avatar image: $exception');
+                            }
+                          : null,
                     ),
                     title: Text(
                       displayName.isNotEmpty ? displayName : userEmail,
@@ -245,7 +245,9 @@ class _ChatState extends State<Chat> {
                       ),
                     ),
                     subtitle: Text(
-                      conversation.lastMessage,
+                      conversation.lastMessage.isNotEmpty 
+                          ? conversation.lastMessage 
+                          : 'No messages yet',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

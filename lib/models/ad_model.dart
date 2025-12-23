@@ -13,6 +13,7 @@ class AdModel {
   final DateTime? createdAt;
   final String? description;
   final String? carBrand;
+  final String? carName;
   final String? bodyColor;
   final String? kmsDriven;
   final String? registeredIn;
@@ -37,6 +38,7 @@ class AdModel {
     this.createdAt,
     this.description,
     this.carBrand,
+    this.carName,
     this.bodyColor,
     this.kmsDriven,
     this.registeredIn,
@@ -88,6 +90,54 @@ class AdModel {
       if (v is String) return v;
     }
     return value.toString();
+  }
+
+  // -----------------------------
+  // Helper: Extract car brand (with migration for old ads)
+  // -----------------------------
+  static String? _extractCarBrand(Map<String, dynamic> data) {
+    final carBrand = _asString(data['carBrand']);
+    final carName = _asString(data['carName']);
+    
+    // If carName exists, carBrand should be just the brand
+    if (carName.isNotEmpty && carBrand.isNotEmpty) {
+      return carBrand;
+    }
+    
+    // Migration: If carName is empty but carBrand contains space, try to split
+    if (carName.isEmpty && carBrand.isNotEmpty && carBrand.contains(' ')) {
+      final parts = carBrand.trim().split(' ');
+      if (parts.length >= 2) {
+        // Return first part as brand (e.g., "Honda" from "Honda Civic")
+        return parts[0];
+      }
+    }
+    
+    return carBrand.isEmpty ? null : carBrand;
+  }
+
+  // -----------------------------
+  // Helper: Extract car name (with migration for old ads)
+  // -----------------------------
+  static String? _extractCarName(Map<String, dynamic> data) {
+    final carName = _asString(data['carName']);
+    final carBrand = _asString(data['carBrand']);
+    
+    // If carName exists, return it
+    if (carName.isNotEmpty) {
+      return carName;
+    }
+    
+    // Migration: If carName is empty but carBrand contains space, try to split
+    if (carName.isEmpty && carBrand.isNotEmpty && carBrand.contains(' ')) {
+      final parts = carBrand.trim().split(' ');
+      if (parts.length >= 2) {
+        // Return remaining parts as name (e.g., "Civic" from "Honda Civic")
+        return parts.sublist(1).join(' ');
+      }
+    }
+    
+    return carName.isEmpty ? null : null;
   }
 
   // -----------------------------
@@ -144,16 +194,16 @@ class AdModel {
     Map<String, double>? locationCoords;
 
     // First, try to parse location coordinates from 'location' field
-    if (data['location'] != null && data['location'] is Map) {
-      final loc = data['location'] as Map<String, dynamic>;
-      if (loc['lat'] != null && loc['lng'] != null) {
+      if (data['location'] != null && data['location'] is Map) {
+        final loc = data['location'] as Map<String, dynamic>;
+        if (loc['lat'] != null && loc['lng'] != null) {
         try {
           final lat = (loc['lat'] as num).toDouble();
           final lng = (loc['lng'] as num).toDouble();
           
           // Validate coordinates are within valid ranges
           if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-            locationCoords = {
+          locationCoords = {
               'lat': lat,
               'lng': lng,
             };
@@ -195,8 +245,8 @@ class AdModel {
       createdAt: _parseCreatedAt(data['createdAt'] ?? data['created_at']),
       description:
           _asString(data['description']).isEmpty ? null : _asString(data['description']),
-      carBrand:
-          _asString(data['carBrand']).isEmpty ? null : _asString(data['carBrand']),
+      carBrand: _extractCarBrand(data),
+      carName: _extractCarName(data),
       bodyColor:
           _asString(data['bodyColor']).isEmpty ? null : _asString(data['bodyColor']),
       kmsDriven:
@@ -231,6 +281,7 @@ class AdModel {
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
       'description': description,
       'carBrand': carBrand,
+      'carName': carName,
       'bodyColor': bodyColor,
       'kmsDriven': kmsDriven,
       'registeredIn': registeredIn,

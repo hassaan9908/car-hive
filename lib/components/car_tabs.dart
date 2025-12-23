@@ -1,93 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/store/global_ads.dart';
+import 'package:carhive/services/car_brand_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:carhive/pages/car_details_page.dart';
 
 class CarTabs extends StatelessWidget {
   final int initialTab;
+  final String? selectedBrandId; // For brand filtering
 
-  const CarTabs({super.key, this.initialTab = 0});
+  const CarTabs({Key? key, this.initialTab = 0, this.selectedBrandId})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DefaultTabController(
-      length: 2,
-      initialIndex: initialTab,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TabBar(
-              isScrollable: false,
-              indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(color: colorScheme.primary, width: 2),
-              ),
-              labelColor: colorScheme.primary,
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-              unselectedLabelColor: colorScheme.onSurfaceVariant,
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
-              dividerColor: Colors.transparent,
-              tabs: const [
-                Tab(text: 'Used Cars'),
-                Tab(text: 'New Cars'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _UsedCarsTab(),
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.car_rental,
-                        size: 64,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'New Cars Coming Soon',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Stay tuned for new car listings',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    // Simplified - just show Used Cars tab content
+    return _UsedCarsTab(selectedBrandId: selectedBrandId);
   }
 }
 
 class _UsedCarsTab extends StatelessWidget {
+  final String? selectedBrandId;
+
+  const _UsedCarsTab({this.selectedBrandId});
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<AdModel>>(
       stream: GlobalAdStore().getAllActiveAds(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator());
         }
 
         if (snapshot.hasError) {
@@ -109,20 +51,27 @@ class _UsedCarsTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.grey),
-                const SizedBox(height: 16),
-                Text(
-                  errorMessage,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
+                Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(errorMessage,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
+                SizedBox(height: 8),
                 if (errorDetails.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    padding: EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
                       errorDetails,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        textBaseline: TextBaseline.alphabetic,
+                        inherit: false,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -131,30 +80,55 @@ class _UsedCarsTab extends StatelessWidget {
           );
         }
 
-        final ads = snapshot.data ?? [];
+        var ads = snapshot.data ?? [];
+
+        // Filter by brand if selected
+        if (selectedBrandId != null && selectedBrandId!.isNotEmpty) {
+          // Get brand display name from ID
+          final brandService = CarBrandService();
+          final brand = brandService.getBrandById(selectedBrandId!);
+          final brandName = brand?.displayName ?? selectedBrandId!;
+          
+          ads = ads.where((ad) {
+            if (ad.carBrand == null) return false;
+            // Match by brand display name (case-insensitive)
+            final adBrandLower = ad.carBrand!.toLowerCase();
+            final selectedBrandLower = brandName.toLowerCase();
+            return adBrandLower == selectedBrandLower ||
+                adBrandLower.contains(selectedBrandLower) ||
+                selectedBrandLower.contains(adBrandLower);
+          }).toList();
+        }
 
         if (ads.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.car_rental, size: 48, color: Colors.grey),
                 SizedBox(height: 16),
-                Text(
-                  'No cars available',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                Text('No cars available',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
                 SizedBox(height: 8),
-                Text(
-                  'Check back later for new listings',
-                  style: TextStyle(color: Colors.grey),
-                ),
+                Text('Check back later for new listings',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      textBaseline: TextBaseline.alphabetic,
+                      inherit: false,
+                    )),
               ],
             ),
           );
         }
 
         return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: ads.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -172,23 +146,24 @@ class _UsedCarsTab extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final Color cardColor =
-        isDark ? const Color.fromARGB(255, 15, 15, 15) : Colors.grey.shade200;
-
+    final Color card_color = isDark 
+        ? const Color.fromARGB(255, 15, 15, 15) 
+        : Colors.grey.shade200;
+    
     return GestureDetector(
       onTap: () {
-        Navigator.push(
+        // Navigate to detailed car page
+        Navigator.pushNamed(
           context,
-          MaterialPageRoute(
-            builder: (context) => CarDetailsPage(ad: ad),
-          ),
+          '/car-details',
+          arguments: ad,
         );
       },
       child: Card(
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         clipBehavior: Clip.antiAlias,
-        color: cardColor,
+        color: card_color,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -197,9 +172,9 @@ class _UsedCarsTab extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  width: 100,
-                  height: 64,
-                  color: colorScheme.surfaceContainerHighest,
+                  width: 120,
+                  height: 100,
+                  color: colorScheme.surfaceVariant,
                   child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
                       ? Image.network(
                           ad.imageUrls![0],
@@ -236,23 +211,15 @@ class _UsedCarsTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      ad.year,
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 12,
-                      ),
-                    ),
+                    Text(ad.year,
+                        style: TextStyle(
+                            color: colorScheme.onSurfaceVariant, fontSize: 12)),
                     const SizedBox(height: 6),
                     Text(
-                      ad.title.isNotEmpty
-                          ? ad.title
-                          : (ad.carBrand != null && ad.carBrand!.isNotEmpty
-                              ? ad.carBrand!
-                              : 'Car'),
+                      _getCarDisplayName(ad),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: colorScheme.onSurface,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -268,9 +235,7 @@ class _UsedCarsTab extends StatelessWidget {
               Text(
                 'PKR ${ad.price}',
                 style: TextStyle(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                ),
+                    color: colorScheme.primary, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -341,17 +306,16 @@ class _UsedCarsTab extends StatelessWidget {
                   child: Text(
                     level,
                     style: TextStyle(
-                      color: levelColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
+                        color: levelColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Icon(Icons.star, size: 14, color: Colors.amber[600]),
                 const SizedBox(width: 2),
                 Text(
-                  '${avgRating.toStringAsFixed(1)} ($ratingCount)',
+                  '${avgRating.toStringAsFixed(1)} (${ratingCount})',
                   style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                 ),
               ],
@@ -360,6 +324,27 @@ class _UsedCarsTab extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _getCarDisplayName(AdModel ad) {
+    // Prefer title if available
+    if (ad.title.isNotEmpty) {
+      return ad.title;
+    }
+    
+    // Otherwise, combine brand + name
+    final brand = ad.carBrand ?? '';
+    final name = ad.carName ?? '';
+    
+    if (brand.isNotEmpty && name.isNotEmpty) {
+      return '$brand $name';
+    } else if (brand.isNotEmpty) {
+      return brand;
+    } else if (name.isNotEmpty) {
+      return name;
+    }
+    
+    return 'Car';
   }
 
   Color _levelColor(String level, ColorScheme cs) {

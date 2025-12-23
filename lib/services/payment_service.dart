@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../config/stripe_config.dart';
 
 /// Payment Service for handling payment gateway integrations
 /// 
 /// This service provides a unified interface for processing payments
-/// through various payment methods (JazzCash, EasyPay, Bank Transfer, Cards)
-/// 
-/// TODO: Integrate with actual payment gateway APIs
+/// through various payment methods (JazzCash, EasyPay, Bank Transfer, Stripe)
 class PaymentService {
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   // Payment gateway configuration
   // TODO: Add actual API keys and configuration
   // These will be used when integrating with actual payment gateways
@@ -68,10 +72,12 @@ class PaymentService {
           );
 
         case 'card':
-          return await _processCardPayment(
+        case 'stripe':
+          return await _processStripePayment(
             amount: amount,
             transactionId: transactionId,
             description: description,
+            additionalData: additionalData,
           );
 
         default:
@@ -178,35 +184,160 @@ class PaymentService {
     };
   }
 
-  /// Process card payment (Debit/Credit)
+  /// Process Stripe payment (Debit/Credit Card)
   /// 
-  /// TODO: Integrate with card payment gateway (Stripe, PayPal, etc.)
-  Future<Map<String, dynamic>> _processCardPayment({
+  /// Creates a payment intent via Cloud Function and presents Stripe payment sheet
+  Future<Map<String, dynamic>> _processStripePayment({
     required double amount,
     required String transactionId,
     String? description,
+    Map<String, dynamic>? additionalData,
   }) async {
-    // Simulate payment processing delay
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        return {
+          'success': false,
+          'error': 'User not authenticated',
+        };
+      }
 
-    // TODO: Replace with actual card payment gateway integration
-    // Example with Stripe:
-    // final paymentIntent = await Stripe.instance.createPaymentIntent(
-    //   amount: (amount * 100).toInt(), // Convert to cents
-    //   currency: 'PKR',
-    // );
-    // 
-    // return {
-    //   'success': paymentIntent.status == 'succeeded',
-    //   'reference': paymentIntent.id,
-    // };
+      // Call Cloud Function to create payment intent
+      final callable = _functions.httpsCallable('stripeCreatePaymentIntent');
+      final result = await callable.call({
+        'amount': amount,
+        'currency': StripeConfig.currency,
+        'userId': user.uid,
+        'transactionId': transactionId,
+        'vehicleInvestmentId': additionalData?['vehicleInvestmentId'],
+        'investmentId': additionalData?['investmentId'],
+        'type': additionalData?['type'] ?? 'investment',
+        'description': description,
+      });
 
-    // For now, simulate successful payment
-    return {
-      'success': true,
-      'reference': 'CARD${DateTime.now().millisecondsSinceEpoch}',
-      'message': 'Card payment processed successfully (Simulated)',
-    };
+      final data = result.data as Map<String, dynamic>;
+      
+      if (data['success'] != true || data['clientSecret'] == null) {
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to create payment intent',
+        };
+      }
+
+      final clientSecret = data['clientSecret'] as String;
+
+      // Initialize payment sheet
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: 'CarHive',
+        ),
+      );
+
+      // Present payment sheet
+      await Stripe.instance.presentPaymentSheet();
+
+      // Confirm payment with backend
+      final confirmCallable = _functions.httpsCallable('stripeConfirmPayment');
+      final confirmResult = await confirmCallable.call({
+        'paymentIntentId': _extractPaymentIntentId(clientSecret),
+        'transactionId': transactionId,
+        'userId': user.uid,
+      });
+
+      final confirmData = confirmResult.data as Map<String, dynamic>;
+
+      if (confirmData['success'] == true) {
+        return {
+          'success': true,
+          'reference': _extractPaymentIntentId(clientSecret),
+          'message': 'Payment processed successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'error': confirmData['error'] ?? 'Payment confirmation failed',
+        };
+      }
+    } on StripeException catch (e) {
+      return {
+        'success': false,
+        'error': _getStripeErrorMessage(e),
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Payment processing error: $e',
+      };
+    }
+  }
+
+  /// Extract payment intent ID from client secret
+  String _extractPaymentIntentId(String clientSecret) {
+    // Client secret format: pi_xxx_secret_xxx
+    final parts = clientSecret.split('_secret_');
+    return parts.isNotEmpty ? parts[0] : clientSecret;
+  }
+
+  /// Get user-friendly error message from Stripe exception
+  String _getStripeErrorMessage(StripeException e) {
+    final codeString = e.error.code.toString();
+    switch (codeString) {
+      case 'FailureCode.card_declined':
+        return 'Your card was declined. Please try a different card.';
+      case 'FailureCode.expired_card':
+        return 'Your card has expired. Please use a different card.';
+      case 'FailureCode.incorrect_cvc':
+        return 'The card security code is incorrect.';
+      case 'FailureCode.insufficient_funds':
+        return 'Insufficient funds. Please try a different card.';
+      case 'FailureCode.invalid_cvc':
+        return 'The card security code is invalid.';
+      case 'FailureCode.invalid_expiry_month':
+        return 'The card expiration month is invalid.';
+      case 'FailureCode.invalid_expiry_year':
+        return 'The card expiration year is invalid.';
+      case 'FailureCode.invalid_number':
+        return 'The card number is invalid.';
+      case 'FailureCode.payment_intent_authentication_failure':
+        return 'Payment authentication failed. Please try again.';
+      case 'FailureCode.payment_intent_payment_attempt_failed':
+        return 'Payment attempt failed. Please try again.';
+      default:
+        return e.error.message ?? 'Payment failed. Please try again.';
+    }
+  }
+
+  /// Create Stripe payment intent (for direct use)
+  Future<Map<String, dynamic>> createStripePaymentIntent({
+    required double amount,
+    required String userId,
+    String? vehicleInvestmentId,
+    String? investmentId,
+    String? transactionId,
+    String? type,
+    String? description,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('stripeCreatePaymentIntent');
+      final result = await callable.call({
+        'amount': amount,
+        'currency': StripeConfig.currency,
+        'userId': userId,
+        'vehicleInvestmentId': vehicleInvestmentId,
+        'investmentId': investmentId,
+        'transactionId': transactionId,
+        'type': type ?? 'investment',
+        'description': description,
+      });
+
+      return result.data as Map<String, dynamic>;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Failed to create payment intent: $e',
+      };
+    }
   }
 
   /// Verify payment status
@@ -267,7 +398,7 @@ class PaymentService {
 
   /// Get payment methods available for the user
   List<String> getAvailablePaymentMethods() {
-    return ['jazzcash', 'easypay', 'bank_transfer', 'card'];
+    return ['jazzcash', 'easypay', 'bank_transfer', 'stripe'];
   }
 
   /// Get payment method display name
@@ -280,9 +411,40 @@ class PaymentService {
       case 'bank_transfer':
         return 'Bank Transfer';
       case 'card':
-        return 'Debit/Credit Card';
+      case 'stripe':
+        return 'Debit/Credit Card (Stripe)';
       default:
         return method;
+    }
+  }
+
+  /// Create Stripe payout for profit distribution
+  Future<Map<String, dynamic>> createStripePayout({
+    required double amount,
+    required String userId,
+    required String transactionId,
+    required String vehicleInvestmentId,
+    String? investmentId,
+    String? description,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('stripeCreatePayout');
+      final result = await callable.call({
+        'amount': amount,
+        'currency': StripeConfig.currency,
+        'userId': userId,
+        'transactionId': transactionId,
+        'vehicleInvestmentId': vehicleInvestmentId,
+        'investmentId': investmentId,
+        'description': description ?? 'Profit distribution payout',
+      });
+
+      return result.data as Map<String, dynamic>;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Failed to create payout: $e',
+      };
     }
   }
 }

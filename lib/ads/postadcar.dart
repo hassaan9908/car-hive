@@ -3,6 +3,8 @@ import 'package:carhive/store/global_ads.dart' show GlobalAdStore;
 import 'package:carhive/services/cloudinary_service.dart';
 import 'package:carhive/services/car_360_service.dart';
 import 'package:carhive/services/vehicle_service.dart';
+import 'package:carhive/services/car_brand_service.dart';
+import 'package:carhive/models/car_brand_model.dart';
 import 'package:carhive/utils/html_parser.dart';
 import 'package:carhive/utils/encryption_service.dart';
 import 'package:carhive/screens/capture_360_screen.dart';
@@ -96,17 +98,19 @@ class _PostAdCarState extends State<PostAdCar> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _carbrandController = TextEditingController();
+  final TextEditingController _carbrandController = TextEditingController(); // Keep for backward compatibility
+  final TextEditingController _carNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-
+  
+  // Car brand selection
+  CarBrand? _selectedBrand;
+  
   // Vehicle verification fields (encrypted)
-  final TextEditingController _registrationNoController =
-      TextEditingController();
-  final TextEditingController _registrationDateController =
-      TextEditingController();
+  final TextEditingController _registrationNoController = TextEditingController();
+  final TextEditingController _registrationDateController = TextEditingController();
   final TextEditingController _chassisNoController = TextEditingController();
   final TextEditingController _ownerNameController = TextEditingController();
-
+  
   // Vehicle verification state
   bool _isVerifying = false;
 
@@ -117,17 +121,18 @@ class _PostAdCarState extends State<PostAdCar> {
   String? _userCity;
   String? _userUsername;
   bool _isLoadingProfile = true;
-
+  
   // Image upload state
   bool _isUploadingImages = false;
   double _uploadProgress = 0.0;
   final CloudinaryService _cloudinaryService = CloudinaryService();
-
+  
   // 360° capture state (16 angles)
   final Car360Service _car360Service = Car360Service();
   Car360Set? _captured360Set;
   List<Uint8List?> _360PreviewImages = [];
   bool _isUploading360 = false;
+
 
   final List<String> chipOptions = [
     "Alloy Rims",
@@ -162,7 +167,7 @@ class _PostAdCarState extends State<PostAdCar> {
   // Upload images to Cloudinary and return URLs
   Future<List<String>> _uploadImages() async {
     final List<String> imageUrls = [];
-
+    
     setState(() {
       _isUploadingImages = true;
       _uploadProgress = 0.0;
@@ -240,8 +245,7 @@ class _PostAdCarState extends State<PostAdCar> {
                             setState(() {
                               selectedLocationCoords = location;
                               selectedLocationAddress = address;
-                              selectedLocation = address
-                                  .split(',')[0]; // Use first part as city
+                              selectedLocation = address.split(',')[0]; // Use first part as city
                             });
                           },
                         ),
@@ -318,7 +322,7 @@ class _PostAdCarState extends State<PostAdCar> {
                 ),
               ),
             ),
-
+            
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
@@ -332,64 +336,63 @@ class _PostAdCarState extends State<PostAdCar> {
                 ],
               ),
             ),
-
+            
             // City list
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  ...[
-                    "Abbottabad",
-                    "Bahawalpur",
-                    "Chiniot",
-                    "Dera Ghazi Khan",
-                    "Faisalabad",
-                    "Gujranwala",
-                    "Gujrat",
-                    "Hyderabad",
-                    "Islamabad",
-                    "Jacobabad",
-                    "Jhang",
-                    "Jhelum",
-                    "Karachi",
-                    "Kasur",
-                    "Kohat",
-                    "Lahore",
-                    "Larkana",
-                    "Mardan",
-                    "Mirpur",
-                    "Multan",
-                    "Muzaffarabad",
-                    "Muzaffargarh",
-                    "Nawabshah",
-                    "Okara",
-                    "Peshawar",
-                    "Quetta",
-                    "Rahim Yar Khan",
-                    "Rawalpindi",
-                    "Sahiwal",
-                    "Sargodha",
-                    "Sheikhupura",
-                    "Sialkot",
-                    "Sukkur",
-                    "Swat",
-                    "Toba Tek Singh",
-                    "Vehari",
-                    "Burewala",
-                    "Gujrawnala",
-                    "Zhob"
-                  ].map(
-                    (city) => ListTile(
-                      title: Text(city),
-                      onTap: () {
+          padding: const EdgeInsets.all(16),
+          children: [
+            ...[
+              "Abbottabad",
+              "Bahawalpur",
+              "Chiniot",
+              "Dera Ghazi Khan",
+              "Faisalabad",
+              "Gujranwala",
+              "Gujrat",
+              "Hyderabad",
+              "Islamabad",
+              "Jacobabad",
+              "Jhang",
+              "Jhelum",
+              "Karachi",
+              "Kasur",
+              "Kohat",
+              "Lahore",
+              "Larkana",
+              "Mardan",
+              "Mirpur",
+              "Multan",
+              "Muzaffarabad",
+              "Muzaffargarh",
+              "Nawabshah",
+              "Okara",
+              "Peshawar",
+              "Quetta",
+              "Rahim Yar Khan",
+              "Rawalpindi",
+              "Sahiwal",
+              "Sargodha",
+              "Sheikhupura",
+              "Sialkot",
+              "Sukkur",
+              "Swat",
+              "Toba Tek Singh",
+              "Vehari",
+              "Burewala",
+              "Gujrawnala",
+              "Zhob"
+            ].map(
+              (city) => ListTile(
+                title: Text(city),
+                onTap: () {
                         setState(() {
                           selectedLocation = city;
-                          selectedLocationCoords =
-                              null; // Clear precise coords when using city
+                          selectedLocationCoords = null; // Clear precise coords when using city
                           selectedLocationAddress = city;
                         });
-                        Navigator.pop(context);
-                      },
+                  Navigator.pop(context);
+                },
                     ),
                   ),
                 ],
@@ -436,9 +439,8 @@ class _PostAdCarState extends State<PostAdCar> {
           padding: const EdgeInsets.all(16),
           children: [
             const Text("Unregistered",
-                style: TextStyle(
-                    color: const Color(0xFFf48c25),
-                    fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ListTile(
               title: const Text("Unregistered"),
               onTap: () {
@@ -448,9 +450,8 @@ class _PostAdCarState extends State<PostAdCar> {
             ),
             const SizedBox(height: 8),
             const Text("Provinces",
-                style: TextStyle(
-                    color: const Color(0xFFf48c25),
-                    fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ...["Punjab", "Sindh", "Balochistan", "KPK"]
                 .map((province) => ListTile(
                       title: Text(province),
@@ -461,9 +462,8 @@ class _PostAdCarState extends State<PostAdCar> {
                     )),
             const SizedBox(height: 8),
             const Text("Popular Cities",
-                style: TextStyle(
-                    color: const Color(0xFFf48c25),
-                    fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ...["Lahore", "Karachi", "Islamabad", "Multan", "Quetta"]
                 .map((city) => ListTile(
                       title: Text(city),
@@ -474,9 +474,8 @@ class _PostAdCarState extends State<PostAdCar> {
                     )),
             const SizedBox(height: 8),
             const Text("Other Cities",
-                style: TextStyle(
-                    color: const Color(0xFFf48c25),
-                    fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ...[
               "Rawalpindi",
               "Faisalabad",
@@ -547,8 +546,7 @@ class _PostAdCarState extends State<PostAdCar> {
       setState(() => _isVerifying = true);
 
       // Convert date from MM/DD/YYYY to YYYY-MM-DD for API
-      final dateForApi =
-          _convertDateToApiFormat(_registrationDateController.text.trim());
+      final dateForApi = _convertDateToApiFormat(_registrationDateController.text.trim());
 
       // Call the API
       final htmlResponse = await VehicleService.fetchVehicleData(
@@ -561,8 +559,7 @@ class _PostAdCarState extends State<PostAdCar> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                  'No record found in the database. Please verify the registration number and date.'),
+              content: Text('No record found in the database. Please verify the registration number and date.'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 4),
             ),
@@ -581,8 +578,10 @@ class _PostAdCarState extends State<PostAdCar> {
 
       // Normalize values for comparison (case-insensitive, trim whitespace, handle asterisk)
       final normalize = (String value, {bool isRegistrationNo = false}) {
-        var normalized = value.trim().toUpperCase();
-
+        var normalized = value
+            .trim()
+            .toUpperCase();
+        
         // For registration numbers, handle asterisk - remove it for comparison
         // API returns format like "LEN-310*" but user enters "LEN-310"
         if (isRegistrationNo) {
@@ -590,16 +589,14 @@ class _PostAdCarState extends State<PostAdCar> {
           normalized = normalized.trim(); // Trim again after removing asterisk
         } else {
           // For other fields, normalize spaces
-          normalized = normalized.replaceAll(
-              RegExp(r'\s+'), ' '); // Normalize multiple spaces to single space
+          normalized = normalized.replaceAll(RegExp(r'\s+'), ' '); // Normalize multiple spaces to single space
         }
-
+        
         return normalized;
       };
 
       // Get user input values
-      final userRegNo = normalize(_registrationNoController.text.trim(),
-          isRegistrationNo: true);
+      final userRegNo = normalize(_registrationNoController.text.trim(), isRegistrationNo: true);
       final userChassisNo = normalize(_chassisNoController.text.trim());
       final userOwnerName = normalize(_ownerNameController.text.trim());
 
@@ -609,34 +606,27 @@ class _PostAdCarState extends State<PostAdCar> {
       String apiOwnerName = '';
 
       // Try different field name variations
-      final rawApiRegNo = extractedFields['Registration No'] ??
-          extractedFields['REGISTRATION NO'] ??
-          extractedFields['Reg No'] ??
-          extractedFields['Registration Number'] ??
-          '';
+      final rawApiRegNo = extractedFields['Registration No'] ?? 
+                         extractedFields['REGISTRATION NO'] ?? 
+                         extractedFields['Reg No'] ?? 
+                         extractedFields['Registration Number'] ?? '';
+      
+      apiRegNo = normalize(rawApiRegNo, isRegistrationNo: true); // Remove asterisk from API response
 
-      apiRegNo = normalize(rawApiRegNo,
-          isRegistrationNo: true); // Remove asterisk from API response
+      apiChassisNo = normalize(extractedFields['Chassis No'] ?? 
+                               extractedFields['CHASSIS NO'] ?? 
+                               extractedFields['Chassis Number'] ?? 
+                               extractedFields['CHASSIS NUMBER'] ?? '');
 
-      apiChassisNo = normalize(extractedFields['Chassis No'] ??
-          extractedFields['CHASSIS NO'] ??
-          extractedFields['Chassis Number'] ??
-          extractedFields['CHASSIS NUMBER'] ??
-          '');
-
-      apiOwnerName = normalize(extractedFields['Owner Name'] ??
-          extractedFields['OWNER NAME'] ??
-          extractedFields['Owner'] ??
-          extractedFields['OWNER'] ??
-          '');
+      apiOwnerName = normalize(extractedFields['Owner Name'] ?? 
+                               extractedFields['OWNER NAME'] ?? 
+                               extractedFields['Owner'] ?? 
+                               extractedFields['OWNER'] ?? '');
 
       // Debug: Print comparison values
-      print(
-          'User Reg No: "$userRegNo" | API Reg No: "$apiRegNo" | Match: ${userRegNo == apiRegNo}');
-      print(
-          'User Chassis: "$userChassisNo" | API Chassis: "$apiChassisNo" | Match: ${userChassisNo == apiChassisNo}');
-      print(
-          'User Owner: "$userOwnerName" | API Owner: "$apiOwnerName" | Match: ${userOwnerName == apiOwnerName}');
+      print('User Reg No: "$userRegNo" | API Reg No: "$apiRegNo" | Match: ${userRegNo == apiRegNo}');
+      print('User Chassis: "$userChassisNo" | API Chassis: "$apiChassisNo" | Match: ${userChassisNo == apiChassisNo}');
+      print('User Owner: "$userOwnerName" | API Owner: "$apiOwnerName" | Match: ${userOwnerName == apiOwnerName}');
 
       // Check if any field is empty
       if (apiRegNo.isEmpty || apiChassisNo.isEmpty || apiOwnerName.isEmpty) {
@@ -644,8 +634,7 @@ class _PostAdCarState extends State<PostAdCar> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                  'Could not extract all required fields from API. Missing: ${apiRegNo.isEmpty ? "Registration No " : ""}${apiChassisNo.isEmpty ? "Chassis No " : ""}${apiOwnerName.isEmpty ? "Owner Name" : ""}'),
+              content: Text('Could not extract all required fields from API. Missing: ${apiRegNo.isEmpty ? "Registration No " : ""}${apiChassisNo.isEmpty ? "Chassis No " : ""}${apiOwnerName.isEmpty ? "Owner Name" : ""}'),
               backgroundColor: Colors.orange,
               duration: const Duration(seconds: 4),
             ),
@@ -661,8 +650,7 @@ class _PostAdCarState extends State<PostAdCar> {
       final ownerNameMatches = userOwnerName == apiOwnerName;
 
       // Debug: Print final result
-      print(
-          'Reg No Match: $regNoMatches, Chassis Match: $chassisNoMatches, Owner Match: $ownerNameMatches');
+      print('Reg No Match: $regNoMatches, Chassis Match: $chassisNoMatches, Owner Match: $ownerNameMatches');
       print('=== END VERIFICATION DEBUG ===');
 
       // All fields must match exactly
@@ -672,11 +660,10 @@ class _PostAdCarState extends State<PostAdCar> {
           if (!regNoMatches) mismatches.add('Registration No');
           if (!chassisNoMatches) mismatches.add('Chassis No');
           if (!ownerNameMatches) mismatches.add('Owner Name');
-
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                  'Verification failed. Mismatched fields: ${mismatches.join(", ")}'),
+              content: Text('Verification failed. Mismatched fields: ${mismatches.join(", ")}'),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 5),
             ),
@@ -778,9 +765,11 @@ class _PostAdCarState extends State<PostAdCar> {
     _nameController.dispose();
     _phoneController.dispose();
     _carbrandController.dispose();
+    _carNameController.dispose();
 
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -820,1168 +809,1037 @@ class _PostAdCarState extends State<PostAdCar> {
         leading: const BackButton(),
         backgroundColor: Colors.transparent,
       ),
-      // Match assisted page: let app theme show light grey background
-      backgroundColor: Colors.transparent,
-      body: Container(
-        // Transparent so white section cards sit on light grey
-        color: Colors.transparent,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                // ========== SECTION 1: PHOTOS & 360 VIEW ==========
-                _buildSectionContainer(
-                  title: 'Photos & 360° View',
-                  subtitle: 'Add images of your vehicle',
-                  icon: Icons.camera_alt,
-                  iconColor: const Color(0xFFf48c25),
-                  children: [
-                    // Photo Upload Section
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: GestureDetector(
-                        onTap: _pickImage,
-                        child: Container(
-                          width: double.infinity,
-                          height: 150,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFf48c25)),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: _images.isEmpty && _webImages.isEmpty
-                              ? const Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.camera_alt_outlined,
-                                          size: 30,
-                                          color: const Color(0xFFf48c25)),
-                                      SizedBox(height: 8),
-                                      Text("Add Photo",
-                                          style: TextStyle(
-                                              color: const Color(0xFFf48c25))),
-                                    ],
-                                  ),
-                                )
-                              : ListView.separated(
-                                  scrollDirection: Axis.horizontal,
-                                  padding: const EdgeInsets.all(8),
-                                  itemCount:
-                                      (_images.length + _webImages.length) + 1,
-                                  itemBuilder: (context, index) {
-                                    final total =
-                                        _images.length + _webImages.length;
-                                    if (index == total && total < 20) {
-                                      return GestureDetector(
-                                        onTap: _pickImage,
-                                        child: Container(
-                                          width: 100,
-                                          color: Colors.grey.shade200,
-                                          child: const Icon(Icons.add),
-                                        ),
-                                      );
-                                    }
-                                    if (index < _webImages.length) {
-                                      return Image.memory(_webImages[index],
-                                          width: 100, fit: BoxFit.cover);
-                                    } else {
-                                      return Image.memory(
-                                        _images[index - _webImages.length]
-                                            .readAsBytesSync(),
-                                        width: 100,
-                                        fit: BoxFit.cover,
-                                      );
-                                    }
-                                  },
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(width: 8),
-                                ),
-                        ),
-                      ),
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // ========== Image Picker (commented code preserved) ==========
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    width: double.infinity,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFFf48c25)),
+                      borderRadius: BorderRadius.circular(8),
                     ),
 
-                    // 360° Photo Capture Section
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.rotate_right,
-                                      color: const Color(0xFFf48c25)),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    '360° View Photos',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                    // --==== this is for mobile code of image picker
+                    // child: _images.isEmpty
+                    //     ? const Center(
+                    //         child: Column(
+                    //           mainAxisAlignment: MainAxisAlignment.center,
+                    //           children: [
+                    //             Icon(Icons.camera_alt_outlined,
+                    //                 size: 30, color: Colors.blue),
+                    //             SizedBox(height: 8),
+                    //             Text("Add Photo",
+                    //                 style: TextStyle(color: Colors.blue)),
+                    //           ],
+                    //         ),
+                    //       )
+                    //     : ListView.separated(
+                    //         scrollDirection: Axis.horizontal,
+                    //         padding: const EdgeInsets.all(8),
+                    //         itemCount: _images.length + 1,
+                    //         itemBuilder: (context, index) {
+                    //           if (index == _images.length &&
+                    //               _images.length < 20) {
+                    //             return GestureDetector(
+                    //               onTap: _pickImage,
+                    //               child: Container(
+                    //                 width: 100,
+                    //                 color: Colors.grey.shade200,
+                    //                 child: const Icon(Icons.add),
+                    //               ),
+                    //             );
+                    //           }
+                    //           if (index >= _images.length) return Container();
+                    //           return Image.file(_images[index],
+                    //               width: 100, fit: BoxFit.cover);
+                    //         },
+                    //         separatorBuilder: (_, __) =>
+                    //             const SizedBox(width: 8),
+                    //       ),
+
+                    child: _images.isEmpty && _webImages.isEmpty
+                        ? const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.camera_alt_outlined,
+                                    size: 30, color: const Color(0xFFf48c25)),
+                                SizedBox(height: 8),
+                                Text("Add Photo",
+                                    style: TextStyle(color: const Color(0xFFf48c25))),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.all(8),
+                            itemCount: (_images.length + _webImages.length) + 1,
+                            itemBuilder: (context, index) {
+                              final total = _images.length + _webImages.length;
+                              if (index == total && total < 20) {
+                                return GestureDetector(
+                                  onTap: _pickImage,
+                                  child: Container(
+                                    width: 100,
+                                    color: Colors.grey.shade200,
+                                    child: const Icon(Icons.add),
                                   ),
-                                ],
+                                );
+                              }
+                              if (index < _webImages.length) {
+                                return Image.memory(_webImages[index],
+                                    width: 100, fit: BoxFit.cover);
+                              } else {
+                                return Image.memory(
+                                  _images[index - _webImages.length]
+                                      .readAsBytesSync(),
+                                  width: 100,
+                                  fit: BoxFit.cover,
+                                );
+                              }
+                            },
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 8),
+                          ),
+                  ),
+                ),
+              ),
+
+              // 360° Photo Capture Section
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.rotate_right, color: const Color(0xFFf48c25)),
+                            const SizedBox(width: 8),
+                            const Text(
+                              '360° View Photos',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
-                              if (_360PreviewImages.isNotEmpty)
-                                TextButton.icon(
-                                  onPressed: _clear360Images,
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  label: const Text('Clear'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                  ),
+                            ),
+                          ],
+                        ),
+                        if (_360PreviewImages.isNotEmpty)
+                          TextButton.icon(
+                            onPressed: _clear360Images,
+                            icon: const Icon(Icons.clear, size: 18),
+                            label: const Text('Clear'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Capture 16 angles of your car for a smooth 360° drag-to-rotate experience',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_360PreviewImages.isEmpty || _360PreviewImages.every((img) => img == null))
+                      // Capture options: Photo or Video
+                      Column(
+                        children: [
+                          // Photo-based capture (existing)
+                      GestureDetector(
+                        onTap: _open360CaptureScreen,
+                        child: Container(
+                          width: double.infinity,
+                              height: 100,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFFf48c25).withOpacity(0.1),
+                                const Color(0xFFf48c25).withOpacity(0.2),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFFf48c25).withOpacity(0.5),
+                              width: 2,
+                              style: BorderStyle.solid,
+                            ),
+                          ),
+                              child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFf48c25),
+                                  shape: BoxShape.circle,
                                 ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                      size: 24,
+                                ),
+                              ),
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                              Text(
+                                        'Photo Capture (16 angles)',
+                                style: TextStyle(
+                                  color: const Color(0xFFf48c25),
+                                  fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                        'Take 16 photos around car',
+                                style: TextStyle(
+                                  color: const Color(0xFFf48c25).withOpacity(0.8),
+                                          fontSize: 11,
+                                ),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Capture 16 angles of your car for a smooth 360° drag-to-rotate experience',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
+                                ],
+                        ),
                             ),
                           ),
                           const SizedBox(height: 12),
-                          if (_360PreviewImages.isEmpty ||
-                              _360PreviewImages.every((img) => img == null))
-                            // Capture options: Photo or Video
-                            Column(
-                              children: [
-                                // Photo-based capture (existing)
-                                GestureDetector(
-                                  onTap: _open360CaptureScreen,
-                                  child: Container(
-                                    width: double.infinity,
-                                    height: 100,
+                          // Video-based capture (new)
+                          GestureDetector(
+                            onTap: _openVideo360CaptureScreen,
+                            child: Container(
+                              width: double.infinity,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.blue.withOpacity(0.1),
+                                    Colors.blue.withOpacity(0.2),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.blue.withOpacity(0.5),
+                                  width: 2,
+                                  style: BorderStyle.solid,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          const Color(0xFFf48c25)
-                                              .withOpacity(0.1),
-                                          const Color(0xFFf48c25)
-                                              .withOpacity(0.2),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: const Color(0xFFf48c25)
-                                            .withOpacity(0.5),
-                                        width: 2,
-                                        style: BorderStyle.solid,
-                                      ),
+                                      color: Colors.blue,
+                                      shape: BoxShape.circle,
                                     ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFf48c25),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.camera_alt,
-                                            color: Colors.white,
-                                            size: 24,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Photo Capture (16 angles)',
-                                              style: TextStyle(
-                                                color: const Color(0xFFf48c25),
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            Text(
-                                              'Take 16 photos around car',
-                                              style: TextStyle(
-                                                color: const Color(0xFFf48c25)
-                                                    .withOpacity(0.8),
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                    child: const Icon(
+                                      Icons.videocam,
+                                      color: Colors.white,
+                                      size: 24,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 12),
-                                // Video-based capture (new)
-                                GestureDetector(
-                                  onTap: _openVideo360CaptureScreen,
-                                  child: Container(
-                                    width: double.infinity,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.blue.withOpacity(0.1),
-                                          Colors.blue.withOpacity(0.2),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.blue.withOpacity(0.5),
-                                        width: 2,
-                                        style: BorderStyle.solid,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.videocam,
-                                            color: Colors.white,
-                                            size: 24,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Text(
-                                                  'Video Capture (90 frames)',
-                                                  style: TextStyle(
-                                                    color: Colors.blue,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.green,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                  ),
-                                                  child: const Text(
-                                                    'NEW',
-                                                    style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 9,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            Text(
-                                              'Record 15-20 sec video',
-                                              style: TextStyle(
-                                                color: Colors.blue
-                                                    .withOpacity(0.8),
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          else
-                            // Preview captured images (16 angles)
-                            Builder(
-                              builder: (context) {
-                                final capturedImages = _360PreviewImages
-                                    .where((img) => img != null)
-                                    .toList();
-                                final capturedCount = capturedImages.length;
-
-                                return Column(
-                                  children: [
-                                    Container(
-                                      height: 100,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        color: Colors.grey.shade100,
-                                      ),
-                                      child: ListView.separated(
-                                        scrollDirection: Axis.horizontal,
-                                        padding: const EdgeInsets.all(8),
-                                        itemCount: capturedCount + 1,
-                                        separatorBuilder: (_, __) =>
-                                            const SizedBox(width: 8),
-                                        itemBuilder: (context, index) {
-                                          if (index == capturedCount) {
-                                            // Add more button
-                                            return GestureDetector(
-                                              onTap: _open360CaptureScreen,
-                                              child: Container(
-                                                width: 80,
-                                                decoration: BoxDecoration(
-                                                  color: const Color(0xFFf48c25)
-                                                      .withOpacity(0.1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                  border: Border.all(
-                                                      color: const Color(
-                                                              0xFFf48c25)
-                                                          .withOpacity(0.5)),
-                                                ),
-                                                child: Column(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    Icon(Icons.edit,
-                                                        color: const Color(
-                                                            0xFFf48c25)),
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      'Edit',
-                                                      style: TextStyle(
-                                                        color: const Color(
-                                                            0xFFf48c25),
-                                                        fontSize: 12,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                          return ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            child: Stack(
-                                              children: [
-                                                Image.memory(
-                                                  capturedImages[index]!,
-                                                  width: 80,
-                                                  height: 84,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                                Positioned(
-                                                  top: 4,
-                                                  left: 4,
-                                                  child: Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                      horizontal: 6,
-                                                      vertical: 2,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.black54,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              10),
-                                                    ),
-                                                    child: Text(
-                                                      '${index + 1}',
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 10,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green.shade50,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                            color: Colors.green.shade300),
-                                      ),
-                                      child: Row(
+                                  const SizedBox(width: 12),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
                                         children: [
-                                          Icon(
-                                            Icons.check_circle,
-                                            color: Colors.green.shade700,
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 8),
                                           Text(
-                                            '$capturedCount/16 angles captured',
+                                            'Video Capture (90 frames)',
                                             style: TextStyle(
-                                              color: Colors.green.shade700,
-                                              fontWeight: FontWeight.w500,
+                                              color: Colors.blue,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
                                             ),
                                           ),
-                                          const Spacer(),
-                                          if (capturedCount == 16)
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 4,
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green,
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Text(
+                                              'NEW',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        'Record 15-20 sec video',
+                                        style: TextStyle(
+                                          color: Colors.blue.withOpacity(0.8),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      // Preview captured images (16 angles)
+                      Builder(
+                        builder: (context) {
+                          final capturedImages = _360PreviewImages.where((img) => img != null).toList();
+                          final capturedCount = capturedImages.length;
+                          
+                          return Column(
+                            children: [
+                              Container(
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.grey.shade100,
+                                ),
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.all(8),
+                                  itemCount: capturedCount + 1,
+                                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                  itemBuilder: (context, index) {
+                                    if (index == capturedCount) {
+                                      // Add more button
+                                      return GestureDetector(
+                                        onTap: _open360CaptureScreen,
+                                        child: Container(
+                                          width: 80,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFf48c25).withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: const Color(0xFFf48c25).withOpacity(0.5)),
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.edit, color: const Color(0xFFf48c25)),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Edit',
+                                                style: TextStyle(
+                                                  color: const Color(0xFFf48c25),
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Stack(
+                                        children: [
+                                          Image.memory(
+                                            capturedImages[index]!,
+                                            width: 80,
+                                            height: 84,
+                                            fit: BoxFit.cover,
+                                          ),
+                                          Positioned(
+                                            top: 4,
+                                            left: 4,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 6,
+                                                vertical: 2,
                                               ),
                                               decoration: BoxDecoration(
-                                                color: Colors.green.shade700,
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
+                                                color: Colors.black54,
+                                                borderRadius: BorderRadius.circular(10),
                                               ),
-                                              child: const Text(
-                                                '360° Ready',
-                                                style: TextStyle(
+                                              child: Text(
+                                                '${index + 1}',
+                                                style: const TextStyle(
                                                   color: Colors.white,
-                                                  fontSize: 11,
+                                                  fontSize: 10,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                             ),
+                                          ),
                                         ],
                                       ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.green.shade300),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: Colors.green.shade700,
+                                      size: 20,
                                     ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '$capturedCount/16 angles captured',
+                                      style: TextStyle(
+                                        color: Colors.green.shade700,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    if (capturedCount == 16)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.shade700,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Text(
+                                          '360° Ready',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
                                   ],
-                                );
-                              },
-                            ),
-                        ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              ),
+
+              const Divider(height: 32),
+
+              // Location selector
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Location *',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 8),
-                  ],
-                ),
-
-                const SizedBox(height: 8),
-
-                // ========== SECTION 2: CAR INFORMATION ===========
-                _buildSectionContainer(
-                  title: 'Car Information',
-                  subtitle: 'Details about your vehicle',
-                  icon: Icons.directions_car,
-                  iconColor: const Color(0xFFf48c25),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Location *',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                    InkWell(
+                      onTap: _openLocationSelector,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade400),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              selectedLocationCoords != null 
+                                  ? Icons.location_on 
+                                  : Icons.location_city,
+                              color: selectedLocation != null 
+                                  ? const Color(0xFFf48c25) 
+                                  : Colors.grey,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          InkWell(
-                            onTap: _openLocationSelector,
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade600),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(
-                                    selectedLocationCoords != null
-                                        ? Icons.location_on
-                                        : Icons.location_city,
-                                    color: selectedLocation != null
-                                        ? const Color(0xFFf48c25)
-                                        : Colors.grey,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          selectedLocation ?? 'Select Location',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: selectedLocation != null
-                                                ? Colors.white
-                                                : Colors.grey,
-                                          ),
-                                        ),
-                                        if (selectedLocationAddress
-                                                .isNotEmpty &&
-                                            selectedLocationAddress !=
-                                                selectedLocation) ...[
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            selectedLocationAddress,
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.grey[500],
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ],
+                                  Text(
+                                    selectedLocation ?? 'Select Location',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: selectedLocation != null 
+                                          ? Colors.black87 
+                                          : Colors.grey,
                                     ),
                                   ),
-                                  Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Colors.grey[600],
-                                  ),
+                                  if (selectedLocationAddress.isNotEmpty && 
+                                      selectedLocationAddress != selectedLocation) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      selectedLocationAddress,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                  if (selectedLocationCoords != null) ...[
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade100,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'Precise Location',
+                                        style: TextStyle(
+                                          color: Colors.green.shade800,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildFormTile(
-                        "Car Model${selectedCarModel != null ? " - $selectedCarModel" : ""}",
-                        Icons.directions_car,
-                        _openModelYearSelector),
-                    _buildTextFieldTile(
-                        label: "Car Brand",
-                        icon: Icons.directions_car,
-                        controller: _carbrandController,
-                        hint: "e.g., Honda Civic 1.8-VTEC CVT"),
-                    _buildTextFieldTile(
-                        label: "Car Name",
-                        icon: Icons.directions_car,
-                        controller: _carbrandController,
-                        hint: "e.g., Civic, Accord, CR-V"),
-                    _buildFormTile(
-                        "Registered${selectedRegisteredIn != null ? " - $selectedRegisteredIn" : ""}",
-                        Icons.how_to_reg,
-                        _openRegisteredCitySelector),
-                    _buildTextFieldTile(
-                      label: "Body Color",
-                      icon: Icons.color_lens,
-                      controller: _bodyColorController,
-                      validator: (value) {
-                        try {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Body color is required';
-                          }
-                          final trimmedValue = value.trim();
-                          if (!RegExp(r'^[a-zA-Z\s]+$')
-                              .hasMatch(trimmedValue)) {
-                            return 'Body color should contain only alphabets';
-                          }
-                          return null;
-                        } catch (e) {
-                          return 'Body color validation error';
-                        }
-                      },
-                    ),
-                    _buildTextFieldTile(
-                      label: "Mileage (KMs)",
-                      icon: Icons.speed,
-                      controller: _mileageController,
-                      hint: "50000",
-                      validator: (value) {
-                        try {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Mileage is required';
-                          }
-                          final trimmedValue = value.trim();
-                          if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
-                            return 'Mileage should contain only numbers';
-                          }
-                          return null;
-                        } catch (e) {
-                          return 'Mileage validation error';
-                        }
-                      },
-                    ),
-                    _buildTextFieldTile(
-                      label: "Fuel Type",
-                      icon: Icons.local_gas_station,
-                      controller: _fuelController,
-                      hint: "Petrol",
-                      validator: (value) {
-                        try {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Fuel type is required';
-                          }
-                          final trimmedValue = value.trim();
-                          if (!RegExp(r'^[a-zA-Z\s]+$')
-                              .hasMatch(trimmedValue)) {
-                            return 'Fuel type should contain only alphabets';
-                          }
-                          return null;
-                        } catch (e) {
-                          return 'Fuel type validation error';
-                        }
-                      },
-                    ),
-                    _buildTextFieldTile(
-                      label: "Price (PKR)",
-                      icon: Icons.local_offer,
-                      controller: _priceController,
-                      validator: (value) {
-                        try {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Price is required';
-                          }
-                          final trimmedValue = value.trim();
-                          if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
-                            return 'Price should contain only numbers';
-                          }
-                          return null;
-                        } catch (e) {
-                          return 'Price validation error';
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                  ],
+                            Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.grey[600],
                 ),
-
-                const SizedBox(height: 8),
-
-                // ========== SECTION 3: DESCRIPTION ===========
-                _buildSectionContainer(
-                  title: 'Description',
-                  subtitle: 'Tell us about your car',
-                  icon: Icons.description,
-                  iconColor: const Color(0xFFf48c25),
-                  children: [
-                    _buildTextFieldTile(
-                      label: "Description",
-                      icon: Icons.notes,
-                      controller: _descriptionController,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Wrap(
-                          spacing: 8.0,
-                          runSpacing: 8.0,
-                          children: chipOptions
-                              .map((option) => ActionChip(
-                                    label: Text(option),
-                                    onPressed: () =>
-                                        _appendToDescription(option),
-                                  ))
-                              .toList(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 8),
-
-                // ========== SECTION 4: CONTACT INFORMATION ==========
-                if (_isLoadingProfile)
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else
-                  _buildSectionContainer(
-                    title: 'Seller Information',
-                    subtitle: 'Tell us about yourself',
-                    icon: Icons.person,
-                    iconColor: const Color(0xFFf48c25),
-                    children: [
-                      _buildProfileInfoTile(
-                          "Full Name", Icons.badge, _userName ?? 'Not set'),
-                      _buildProfileInfoTile(
-                          "Phone Number", Icons.phone, _userPhone ?? 'Not set'),
-                      _buildProfileInfoTile(
-                          "City", Icons.location_city, _userCity ?? 'Not set'),
-                    ],
-                  ),
-
-                const SizedBox(height: 8),
-
-                // ========== SECTION 5: VEHICLE VERIFICATION ==========
-                _buildSectionContainer(
-                  title: 'Vehicle Verification',
-                  subtitle: 'Secure verification of your vehicle',
-                  icon: Icons.verified_user,
-                  iconColor: const Color(0xFFf48c25),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Please provide vehicle details for automatic verification. This information will be encrypted and kept secure.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildTextFieldTile(
-                            label: "Registration No",
-                            icon: Icons.confirmation_number,
-                            controller: _registrationNoController,
-                            hint: "ABC-123",
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Registration number is required';
-                              }
-                              return null;
-                            },
-                          ),
-                          _buildTextFieldTile(
-                            label: "Registration Date",
-                            icon: Icons.calendar_today,
-                            controller: _registrationDateController,
-                            hint: "MM/DD/YYYY",
-                            readOnly: true,
-                            onTap: () => _selectRegistrationDate(),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Registration date is required';
-                              }
-                              final datePattern =
-                                  RegExp(r'^\d{2}/\d{2}/\d{4}$');
-                              if (!datePattern.hasMatch(value.trim())) {
-                                return 'Please enter date in MM/DD/YYYY format';
-                              }
-                              return null;
-                            },
-                          ),
-                          _buildTextFieldTile(
-                            label: "Chassis No",
-                            icon: Icons.vpn_key,
-                            controller: _chassisNoController,
-                            hint: "Enter chassis number",
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Chassis number is required';
-                              }
-                              return null;
-                            },
-                          ),
-                          _buildTextFieldTile(
-                            label: "Owner Name",
-                            icon: Icons.person,
-                            controller: _ownerNameController,
-                            hint: "Enter owner name",
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Owner name is required';
-                              }
-                              return null;
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
-                      width: double.infinity,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFFFF6B35),
-                              Color(0xFFFF8C42),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFFF6B35).withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
                           ],
                         ),
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          onPressed: (_isUploadingImages ||
-                                  _isUploading360 ||
-                                  _isVerifying)
-                              ? null
-                              : () async {
-                                  if (_formKey.currentState!.validate()) {
-                                    // Verify vehicle details first
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Verifying vehicle details...'),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-
-                                    final isVerified =
-                                        await _verifyVehicleDetails();
-
-                                    if (!isVerified) {
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                              'Vehicle verification failed. Please ensure all details match the official records.'),
-                                          backgroundColor: Colors.red,
-                                          duration: Duration(seconds: 4),
-                                        ),
-                                      );
-                                      return;
-                                    }
-
-                                    // Verification successful, proceed with upload
-                                    List<String> imageUrls = [];
-
-                                    // Upload images to Cloudinary
-                                    if (_images.isNotEmpty ||
-                                        _webImages.isNotEmpty) {
-                                      try {
-                                        imageUrls = await _uploadImages();
-                                        if (imageUrls.isEmpty) {
-                                          if (!mounted) return;
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                  'No images were uploaded. Please try again.'),
-                                            ),
-                                          );
-                                          return;
-                                        }
-                                      } catch (e) {
-                                        if (!mounted) return;
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                                'Failed to upload images: $e'),
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                    }
-
-                                    // Upload 360° images if captured (16 angles)
-                                    List<String>? images360Urls;
-                                    if (_captured360Set != null &&
-                                        _captured360Set!.capturedCount > 0) {
-                                      try {
-                                        setState(() => _isUploading360 = true);
-                                        images360Urls = await _car360Service
-                                            .uploadCar360Set(
-                                          _captured360Set!,
-                                          onProgress: (current, total) {
-                                            // Optional: show progress
-                                          },
-                                        );
-                                      } catch (e) {
-                                        if (!mounted) return;
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                              content: Text(
-                                                  'Failed to upload 360° images: $e')),
-                                        );
-                                        // Continue without 360 images
-                                      } finally {
-                                        if (mounted)
-                                          setState(
-                                              () => _isUploading360 = false);
-                                      }
-                                    }
-
-                                    // Use selected location coordinates or get current location
-                                    Map<String, double>? locationCoords;
-                                    if (selectedLocationCoords != null) {
-                                      // Use the precise location selected by user
-                                      locationCoords = {
-                                        'lat': selectedLocationCoords!.latitude,
-                                        'lng':
-                                            selectedLocationCoords!.longitude,
-                                      };
-                                    } else {
-                                      // Fallback to current location if no precise location selected
-                                      try {
-                                        LocationPermission permission =
-                                            await Geolocator.checkPermission();
-                                        if (permission ==
-                                            LocationPermission.denied) {
-                                          permission = await Geolocator
-                                              .requestPermission();
-                                        }
-
-                                        if (permission ==
-                                                LocationPermission.whileInUse ||
-                                            permission ==
-                                                LocationPermission.always) {
-                                          Position position = await Geolocator
-                                              .getCurrentPosition(
-                                            desiredAccuracy:
-                                                LocationAccuracy.medium,
-                                          );
-                                          locationCoords = {
-                                            'lat': position.latitude,
-                                            'lng': position.longitude,
-                                          };
-                                        }
-                                      } catch (e) {
-                                        print('Error getting location: $e');
-                                        // Continue without location coordinates
-                                      }
-                                    }
-
-                                    // Prepare vehicle verification data
-                                    // Normalize registration number for consistent duplicate checking
-                                    final plainRegistrationNo =
-                                        _registrationNoController.text
-                                            .trim()
-                                            .toUpperCase()
-                                            .replaceAll('*', '')
-                                            .replaceAll(' ', '')
-                                            .replaceAll(RegExp(r'[^\w\-]'), '');
-                                    final vehicleData = {
-                                      'registrationNo': plainRegistrationNo,
-                                      'registrationDate':
-                                          _registrationDateController.text
-                                              .trim(),
-                                      'chassisNo':
-                                          _chassisNoController.text.trim(),
-                                      'ownerName':
-                                          _ownerNameController.text.trim(),
-                                    };
-
-                                    // Encrypt sensitive vehicle data
-                                    final encryptedVehicleData =
-                                        EncryptionService.encryptFields(
-                                            vehicleData);
-
-                                    // Add plain registration number temporarily for duplicate checking
-                                    // This will be removed before storing in Firestore
-                                    encryptedVehicleData[
-                                            '_plainRegistrationNo'] =
-                                        plainRegistrationNo;
-
-                                    // Create ad with image URLs and encrypted vehicle data
-                                    final newAd = AdModel(
-                                      title: _titleController.text,
-                                      price: _priceController.text,
-                                      location:
-                                          selectedLocationAddress.isNotEmpty
-                                              ? selectedLocationAddress
-                                              : selectedLocation ??
-                                                  _locationController.text,
-                                      year: selectedCarModel ?? '',
-                                      mileage: _mileageController.text,
-                                      fuel: _fuelController.text,
-                                      description: _descriptionController.text,
-                                      carBrand: _carbrandController.text,
-                                      bodyColor: _bodyColorController.text,
-                                      kmsDriven: _mileageController
-                                          .text, // Use mileage for kmsDriven
-                                      registeredIn: selectedRegisteredIn,
-                                      name: _nameController.text,
-                                      phone: _phoneController.text,
-                                      imageUrls: imageUrls.isNotEmpty
-                                          ? imageUrls
-                                          : null,
-                                      locationCoordinates: locationCoords,
-                                      images360Urls: images360Urls != null &&
-                                              images360Urls.isNotEmpty
-                                          ? images360Urls
-                                          : null,
-                                    );
-
-                                    try {
-                                      // Add ad with encrypted vehicle data and auto-approve (status = 'active')
-                                      await GlobalAdStore()
-                                          .addAdWithVerification(
-                                              newAd, encryptedVehicleData);
-
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: const Text(
-                                              'Vehicle verified successfully! Your ad has been posted.'),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-
-                                      await Future.delayed(
-                                          const Duration(seconds: 1));
-                                      if (!mounted) return;
-                                      Navigator.pushReplacementNamed(
-                                          context, '/myads');
-                                    } catch (e) {
-                                      if (!mounted) return;
-                                      final errorMessage = e
-                                          .toString()
-                                          .replaceAll('Exception: ', '')
-                                          .replaceAll(
-                                              'Failed to add verified ad: ',
-                                              '');
-                                      final isDuplicateError = errorMessage
-                                          .contains('already exists');
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(errorMessage),
-                                          backgroundColor: isDuplicateError
-                                              ? Colors.orange
-                                              : Colors.red,
-                                          duration: const Duration(seconds: 5),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
-                          child: (_isUploadingImages || _isUploading360)
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                                Colors.white),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      _isUploading360
-                                          ? "Uploading 360° images..."
-                                          : "Uploading...",
-                                      style: const TextStyle(
-                                          fontSize: 16, color: Colors.white),
-                                    ),
-                                  ],
-                                )
-                              : const Text(
-                                  "Post Ad",
-                                  style: TextStyle(
-                                      fontSize: 16, color: Colors.white),
-                                ),
-                        ),
-                      )),
-                ),
-                const SizedBox(height: 40),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionContainer({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color iconColor,
-    required List<Widget> children,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-            width: 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Section Header
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: iconColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    child: Icon(icon, color: iconColor, size: 22),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildFormTile(
+                  "Car model${selectedCarModel != null ? " ($selectedCarModel)" : ""}",
+                  Icons.directions_car,
+                  _openModelYearSelector),
+              // Car Brand Dropdown
+              _buildCarBrandDropdown(),
+              // Car Name Field
+              _buildTextFieldTile(
+                label: "Car Name / Model",
+                icon: Icons.label,
+                controller: _carNameController,
+                hint: "Civic, Corolla, Camry, etc.",
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Car name/model is required';
+                  }
+                  return null;
+                },
+              ),
+              _buildFormTile(
+                  "Registered${selectedRegisteredIn != null ? " ($selectedRegisteredIn)" : ""}",
+                  Icons.how_to_reg,
+                  _openRegisteredCitySelector),
+              _buildTextFieldTile(
+                label: "Body Color",
+                icon: Icons.color_lens,
+                controller: _bodyColorController,
+                validator: (value) {
+                  try {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Body color is required';
+                    }
+                    final trimmedValue = value.trim();
+                    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(trimmedValue)) {
+                      return 'Body color should contain only alphabets';
+                    }
+                    return null;
+                  } catch (e) {
+                    return 'Body color validation error';
+                  }
+                },
+              ),
+              _buildTextFieldTile(
+                label: "Mileage (KMs)",
+                icon: Icons.speed,
+                controller: _mileageController,
+                hint: "50000",
+                validator: (value) {
+                  try {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Mileage is required';
+                    }
+                    final trimmedValue = value.trim();
+                    if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
+                      return 'Mileage should contain only numbers';
+                    }
+                    return null;
+                  } catch (e) {
+                    return 'Mileage validation error';
+                  }
+                },
+              ),
+              _buildTextFieldTile(
+                label: "Fuel Type",
+                icon: Icons.local_gas_station,
+                controller: _fuelController,
+                hint: "Petrol",
+                validator: (value) {
+                  try {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Fuel type is required';
+                    }
+                    final trimmedValue = value.trim();
+                    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(trimmedValue)) {
+                      return 'Fuel type should contain only alphabets';
+                    }
+                    return null;
+                  } catch (e) {
+                    return 'Fuel type validation error';
+                  }
+                },
+              ),
+              _buildTextFieldTile(
+                label: "Price (PKR)",
+                icon: Icons.local_offer,
+                controller: _priceController,
+                validator: (value) {
+                  try {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Price is required';
+                    }
+                    final trimmedValue = value.trim();
+                    if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
+                      return 'Price should contain only numbers';
+                    }
+                    return null;
+                  } catch (e) {
+                    return 'Price validation error';
+                  }
+                },
+              ),
+              _buildTextFieldTile(
+                label: "Description",
+                icon: Icons.notes,
+                controller: _descriptionController,
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Wrap(
+                    spacing: 8.0,
+                    runSpacing: 8.0,
+                    children: chipOptions
+                        .map((option) => ActionChip(
+                              label: Text(option),
+                              onPressed: () => _appendToDescription(option),
+                            ))
+                        .toList(),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
+                ),
+              ),
+              
+              // Vehicle Verification Section
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Card(
+                  color: Colors.blue.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          children: [
+                            Icon(Icons.verified_user, color: Colors.blue.shade700),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Vehicle Verification',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 8),
                         Text(
-                          subtitle,
+                          'Please provide vehicle details for automatic verification. This information will be encrypted and kept secure.',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: Colors.grey.shade700,
                           ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextFieldTile(
+                          label: "Registration No",
+                          icon: Icons.confirmation_number,
+                          controller: _registrationNoController,
+                          hint: "ABC-123",
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Registration number is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildTextFieldTile(
+                          label: "Registration Date",
+                          icon: Icons.calendar_today,
+                          controller: _registrationDateController,
+                          hint: "MM/DD/YYYY",
+                          readOnly: true,
+                          onTap: () => _selectRegistrationDate(),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Registration date is required';
+                            }
+                            final datePattern = RegExp(r'^\d{2}/\d{2}/\d{4}$');
+                            if (!datePattern.hasMatch(value.trim())) {
+                              return 'Please enter date in MM/DD/YYYY format';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildTextFieldTile(
+                          label: "Chassis No",
+                          icon: Icons.vpn_key,
+                          controller: _chassisNoController,
+                          hint: "Enter chassis number",
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Chassis number is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        _buildTextFieldTile(
+                          label: "Owner Name",
+                          icon: Icons.person,
+                          controller: _ownerNameController,
+                          hint: "Enter owner name",
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Owner name is required';
+                            }
+                            return null;
+                          },
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-            // Section Content
-            ...children,
-          ],
+              // Image upload progress
+              if (_isUploadingImages)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      CircularProgressIndicator(value: _uploadProgress),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Uploading images... ${(_uploadProgress * 100).toStringAsFixed(0)}%',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              // User profile information display
+              if (_isLoadingProfile)
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else ...[
+                _buildProfileInfoTile(
+                    "Name", Icons.person, _userName ?? 'Not set'),
+                _buildProfileInfoTile(
+                    "Phone Number", Icons.phone, _userPhone ?? 'Not set'),
+                _buildProfileInfoTile(
+                    "Email", Icons.email, _userEmail ?? 'Not set'),
+                _buildProfileInfoTile(
+                    "City", Icons.location_city, _userCity ?? 'Not set'),
+                _buildProfileInfoTile("Username", Icons.alternate_email,
+                    _userUsername ?? 'Not set'),
+              ],
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFFF6B35),
+                          Color(0xFFFF8C42),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6B35).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: (_isUploadingImages || _isUploading360 || _isVerifying) ? null : () async {
+                      if (_formKey.currentState!.validate()) {
+                        // Verify vehicle details first
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Verifying vehicle details...'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+
+                        final isVerified = await _verifyVehicleDetails();
+
+                        if (!isVerified) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Vehicle verification failed. Please ensure all details match the official records.'),
+                              backgroundColor: Colors.red,
+                              duration: Duration(seconds: 4),
+                            ),
+                          );
+                          return;
+                        }
+
+                        // Verification successful, proceed with upload
+                        List<String> imageUrls = [];
+                        
+                        // Upload images to Cloudinary
+                        if (_images.isNotEmpty || _webImages.isNotEmpty) {
+                          try {
+                            imageUrls = await _uploadImages();
+                            if (imageUrls.isEmpty) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('No images were uploaded. Please try again.'),
+                                ),
+                              );
+                              return;
+                            }
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to upload images: $e'),
+                              ),
+                            );
+                            return;
+                          }
+                        }
+
+                        // Upload 360° images if captured (16 angles)
+                        List<String>? images360Urls;
+                        if (_captured360Set != null && _captured360Set!.capturedCount > 0) {
+                          try {
+                            setState(() => _isUploading360 = true);
+                            images360Urls = await _car360Service.uploadCar360Set(
+                              _captured360Set!,
+                              onProgress: (current, total) {
+                                // Optional: show progress
+                              },
+                            );
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to upload 360° images: $e')),
+                            );
+                            // Continue without 360 images
+                          } finally {
+                            if (mounted) setState(() => _isUploading360 = false);
+                          }
+                        }
+
+                        // Use selected location coordinates or get current location
+                        Map<String, double>? locationCoords;
+                        if (selectedLocationCoords != null) {
+                          // Use the precise location selected by user
+                          locationCoords = {
+                            'lat': selectedLocationCoords!.latitude,
+                            'lng': selectedLocationCoords!.longitude,
+                          };
+                        } else {
+                          // Fallback to current location if no precise location selected
+                          try {
+                          LocationPermission permission = await Geolocator.checkPermission();
+                          if (permission == LocationPermission.denied) {
+                            permission = await Geolocator.requestPermission();
+                          }
+                          
+                          if (permission == LocationPermission.whileInUse ||
+                              permission == LocationPermission.always) {
+                            Position position = await Geolocator.getCurrentPosition(
+                              desiredAccuracy: LocationAccuracy.medium,
+                            );
+                            locationCoords = {
+                              'lat': position.latitude,
+                              'lng': position.longitude,
+                            };
+                          }
+                        } catch (e) {
+                          print('Error getting location: $e');
+                          // Continue without location coordinates
+                          }
+                        }
+
+                        // Prepare vehicle verification data
+                        // Normalize registration number for consistent duplicate checking
+                        final plainRegistrationNo = _registrationNoController.text
+                            .trim()
+                            .toUpperCase()
+                            .replaceAll('*', '')
+                            .replaceAll(' ', '')
+                            .replaceAll(RegExp(r'[^\w\-]'), '');
+                        final vehicleData = {
+                          'registrationNo': plainRegistrationNo,
+                          'registrationDate': _registrationDateController.text.trim(),
+                          'chassisNo': _chassisNoController.text.trim(),
+                          'ownerName': _ownerNameController.text.trim(),
+                        };
+
+                        // Encrypt sensitive vehicle data
+                        final encryptedVehicleData = EncryptionService.encryptFields(vehicleData);
+                        
+                        // Add plain registration number temporarily for duplicate checking
+                        // This will be removed before storing in Firestore
+                        encryptedVehicleData['_plainRegistrationNo'] = plainRegistrationNo;
+
+                        // Create ad with image URLs and encrypted vehicle data
+                        final newAd = AdModel(
+                          title: _titleController.text,
+                          price: _priceController.text,
+                          location: selectedLocationAddress.isNotEmpty 
+                              ? selectedLocationAddress 
+                              : selectedLocation ?? _locationController.text,
+                          year: selectedCarModel ?? '',
+                          mileage: _mileageController.text,
+                          fuel: _fuelController.text,
+                          description: _descriptionController.text,
+                          carBrand: _selectedBrand?.displayName ?? '',
+                          carName: _carNameController.text.trim(),
+                          bodyColor: _bodyColorController.text,
+                          kmsDriven: _mileageController
+                              .text, // Use mileage for kmsDriven
+                          registeredIn: selectedRegisteredIn,
+                          name: _nameController.text,
+                          phone: _phoneController.text,
+                          imageUrls: imageUrls.isNotEmpty ? imageUrls : null,
+                          locationCoordinates: locationCoords,
+                          images360Urls: images360Urls != null && images360Urls.isNotEmpty
+                              ? images360Urls
+                              : null,
+                        );
+
+                        try {
+                          // Add ad with encrypted vehicle data and auto-approve (status = 'active')
+                          await GlobalAdStore().addAdWithVerification(newAd, encryptedVehicleData);
+
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text(
+                                  'Vehicle verified successfully! Your ad has been posted.'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+
+                          await Future.delayed(const Duration(seconds: 1));
+                          if (!mounted) return;
+                          Navigator.pushReplacementNamed(context, '/myads');
+                        } catch (e) {
+                          if (!mounted) return;
+                          final errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('Failed to add verified ad: ', '');
+                          final isDuplicateError = errorMessage.contains('already exists');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(errorMessage),
+                              backgroundColor: isDuplicateError ? Colors.orange : Colors.red,
+                              duration: const Duration(seconds: 5),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: (_isUploadingImages || _isUploading360)
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                _isUploading360 ? "Uploading 360° images..." : "Uploading...",
+                                style: const TextStyle(fontSize: 16, color: Colors.white),
+                              ),
+                            ],
+                          )
+                        : const Text(
+                            "Post Ad",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                  ),
+                  )
+                ),
+              ),
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
@@ -1998,8 +1856,9 @@ class _PostAdCarState extends State<PostAdCar> {
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final Color fill_color =
-        isDark ? const Color.fromARGB(255, 15, 15, 15) : Colors.grey.shade200;
+    final Color fill_color = isDark 
+        ? const Color.fromARGB(255, 15, 15, 15) 
+        : Colors.grey.shade200;
 
     return ListTile(
       leading: Icon(icon, color: Colors.grey.shade700),
@@ -2022,6 +1881,101 @@ class _PostAdCarState extends State<PostAdCar> {
           border: InputBorder.none,
           fillColor: fill_color,
         ),
+      ),
+    );
+  }
+
+  Widget _buildCarBrandDropdown() {
+    final carBrandService = CarBrandService();
+    final brands = carBrandService.getAllBrands();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.directions_car,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Car Brand',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const Text(
+                ' *',
+                style: TextStyle(color: Colors.red),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<CarBrand>(
+            value: _selectedBrand,
+            decoration: InputDecoration(
+              hintText: 'Select car brand',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: isDark ? Colors.grey[900] : Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+            items: brands.map((brand) {
+              return DropdownMenuItem<CarBrand>(
+                value: brand,
+                child: Row(
+                  children: [
+                    Image.asset(
+                      brand.logoPath,
+                      width: 32,
+                      height: 32,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(Icons.directions_car, size: 24);
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      brand.displayName,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: (CarBrand? brand) {
+              setState(() {
+                _selectedBrand = brand;
+              });
+            },
+            validator: (value) {
+              if (value == null) {
+                return 'Please select a car brand';
+              }
+              return null;
+            },
+            icon: Icon(
+              Icons.arrow_drop_down,
+              color: theme.colorScheme.primary,
+            ),
+            dropdownColor: isDark ? Colors.grey[900] : Colors.white,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }

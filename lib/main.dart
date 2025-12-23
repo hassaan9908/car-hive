@@ -31,6 +31,9 @@ import 'pages/help_page.dart';
 import 'pages/chat_detail_page.dart';
 import 'screens/video_capture_360_screen.dart';
 import 'screens/debug_360_screen.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'config/stripe_config.dart';
 
 /// Custom route generator that maintains gradient during transitions
 class GradientPageRoute<T> extends PageRouteBuilder<T> {
@@ -67,9 +70,35 @@ void main() async {
     GlobalAdStore().cleanupExpiredAds().catchError((e) {
       print('Error cleaning up expired ads on startup: $e');
     });
-  } catch (e) {
+  } catch (e, stackTrace) {
     print('Firebase initialization failed: $e');
-    // Continue without Firebase for now
+    print('Stack trace: $stackTrace');
+    // Continue without Firebase for now - app will still work for basic features
+    // Note: Some Firebase features may not work until SHA-1 fingerprint is added to Firebase Console
+  }
+
+  // Initialize Stripe
+  try {
+    Stripe.publishableKey = StripeConfig.publishableKey;
+    
+    // Only set merchant identifier and apply settings on mobile platforms
+    // Web platform doesn't support these operations
+    if (!kIsWeb) {
+      try {
+        Stripe.merchantIdentifier = StripeConfig.merchantIdentifier;
+        await Stripe.instance.applySettings();
+        print('Stripe initialized successfully (mobile)');
+      } catch (settingsError) {
+        print('Stripe settings apply failed: $settingsError');
+        print('Stripe initialized with publishable key only');
+      }
+    } else {
+      // For web, just set the publishable key
+      print('Stripe initialized successfully (web)');
+    }
+  } catch (e) {
+    print('Stripe initialization failed: $e');
+    // Continue without Stripe for now
   }
 
   runApp(const MyApp());

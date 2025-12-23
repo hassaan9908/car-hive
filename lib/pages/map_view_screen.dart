@@ -465,22 +465,59 @@ class _MapViewScreenState extends State<MapViewScreen> {
               ),
             )
           else
-            GoogleMap(
-              key: const ValueKey('google_map'), // Stable key for proper lifecycle management
-              initialCameraPosition: CameraPosition(
-                target: _userPosition != null
-                    ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
-                    : const LatLng(24.8607, 67.0011), // Default to Karachi
-                zoom: 13.0,
-              ),
+            Builder(
+              builder: (context) {
+                // Add error boundary for map initialization
+                try {
+                  return GoogleMap(
+                    key: const ValueKey('google_map'), // Stable key for proper lifecycle management
+                    initialCameraPosition: CameraPosition(
+                      target: _userPosition != null
+                          ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
+                          : const LatLng(24.8607, 67.0011), // Default to Karachi
+                      zoom: 13.0,
+                    ),
               onMapCreated: (GoogleMapController controller) {
                 if (!mounted) return; // Check if widget is still mounted
-                _mapController = controller;
-                _isMapInitialized = true; // Mark map as initialized
-                if (_userPosition != null) {
-                  _moveCameraToUserPosition();
+                try {
+                  _mapController = controller;
+                  _isMapInitialized = true; // Mark map as initialized
+                  print('✅ Google Map created successfully');
+                  if (_userPosition != null) {
+                    _moveCameraToUserPosition();
+                  }
+                  // Map created successfully, clear any errors
+                  if (_mapError && mounted) {
+                    setState(() {
+                      _mapError = false;
+                      _mapErrorMessage = null;
+                    });
+                  }
+                } catch (e) {
+                  print('❌ Error in onMapCreated: $e');
+                  if (mounted) {
+                    setState(() {
+                      _mapError = true;
+                      _mapErrorMessage = 'Failed to initialize map.\n\n'
+                          'This is usually caused by:\n'
+                          '1. Maps SDK for Android not enabled in Google Cloud Console\n'
+                          '2. API key restrictions (key might be restricted to web only)\n'
+                          '3. Invalid API key configuration\n\n'
+                          'Error: $e';
+                    });
+                  }
                 }
-                // Map created successfully, clear any errors
+              },
+              onCameraIdle: () {
+                // Map is fully loaded and interactive
+                print('✅ Map camera idle - map is fully loaded');
+              },
+              onTap: (LatLng position) {
+                // Map is responding to user input
+                print('✅ Map tapped at: ${position.latitude}, ${position.longitude}');
+              },
+              onCameraMoveStarted: () {
+                // Map is responding, clear any errors
                 if (_mapError && mounted) {
                   setState(() {
                     _mapError = false;
@@ -492,8 +529,56 @@ class _MapViewScreenState extends State<MapViewScreen> {
               myLocationEnabled: true,
               myLocationButtonEnabled: false,
               zoomControlsEnabled: true,
-              // MapType may not be fully supported on web
-              mapType: kIsWeb ? MapType.normal : MapType.normal,
+                    // MapType may not be fully supported on web
+                    mapType: kIsWeb ? MapType.normal : MapType.normal,
+                  );
+                } catch (e) {
+                  print('Error creating GoogleMap widget: $e');
+                  // Return error widget if map creation fails
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Map Initialization Error',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Failed to initialize Google Maps.\n\n'
+                            'This is usually caused by:\n'
+                            '1. Missing SHA-1/SHA-256 in Firebase Console\n'
+                            '2. Invalid Google Maps API key\n'
+                            '3. Google Play Services not available\n\n'
+                            'Error: $e',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _mapError = false;
+                                _mapErrorMessage = null;
+                              });
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+              },
             ),
 
           // Radius Slider

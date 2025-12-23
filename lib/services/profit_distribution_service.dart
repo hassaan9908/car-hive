@@ -4,6 +4,7 @@ import '../models/investment_transaction_model.dart';
 import 'investment_vehicle_service.dart';
 import 'investment_service.dart';
 import 'investment_transaction_service.dart';
+import 'payment_service.dart';
 
 class ProfitDistributionService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -11,6 +12,7 @@ class ProfitDistributionService {
   final InvestmentService _investmentService = InvestmentService();
   final InvestmentTransactionService _transactionService =
       InvestmentTransactionService();
+  final PaymentService _paymentService = PaymentService();
 
   // Calculate profit distribution for all investors (Proportional Method)
   Future<Map<String, double>> calculateProfitDistribution(
@@ -116,7 +118,7 @@ class ProfitDistributionService {
     }
   }
 
-  // Process profit distribution payments (mark transactions as completed)
+  // Process profit distribution payments using Stripe payouts
   Future<void> processProfitDistributionPayments(
       String vehicleInvestmentId) async {
     try {
@@ -129,10 +131,35 @@ class ProfitDistributionService {
           .get();
 
       for (final doc in transactionsSnapshot.docs) {
-        // In a real implementation, this would integrate with payment gateway
-        // For now, we'll mark them as completed
-        // TODO: Integrate with payment gateway (JazzCash, EasyPay, etc.)
-        await _transactionService.markTransactionCompleted(doc.id);
+        final transaction = InvestmentTransactionModel.fromFirestore(
+            doc.data(), doc.id);
+
+        // Get investment to get userId
+        final investment = await _investmentService.getInvestmentById(
+            transaction.investmentId ?? '');
+        if (investment == null) continue;
+
+        // Create Stripe payout
+        final payoutResult = await _paymentService.createStripePayout(
+          amount: transaction.amount,
+          userId: transaction.userId,
+          transactionId: transaction.id,
+          vehicleInvestmentId: vehicleInvestmentId,
+          investmentId: transaction.investmentId,
+          description: 'Profit distribution from vehicle sale',
+        );
+
+        if (payoutResult['success'] == true) {
+          // Transaction will be updated via webhook when payout is processed
+          print('Payout created for transaction ${transaction.id}');
+        } else {
+          print('Failed to create payout for transaction ${transaction.id}: ${payoutResult['error']}');
+          // Mark as failed if payout creation fails
+          await _transactionService.markTransactionFailed(
+            transaction.id,
+            notes: payoutResult['error'] ?? 'Payout creation failed',
+          );
+        }
       }
 
       print('Profit distribution payments processed');

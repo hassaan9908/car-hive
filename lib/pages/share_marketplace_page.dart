@@ -390,6 +390,11 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
         paymentMethod: paymentMethod,
         transactionId: transactionId,
         description: 'Purchase of ${listing.sharePercentage.toStringAsFixed(2)}% shares',
+        additionalData: {
+          'vehicleInvestmentId': listing.vehicleInvestmentId,
+          'investmentId': listing.investmentId,
+          'type': 'share_purchase',
+        },
       );
 
       if (paymentResult['success'] == true) {
@@ -476,8 +481,8 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
             ),
             ListTile(
               leading: const Icon(Icons.credit_card),
-              title: const Text('Debit/Credit Card'),
-              onTap: () => Navigator.pop(context, 'card'),
+              title: const Text('Debit/Credit Card (Stripe)'),
+              onTap: () => Navigator.pop(context, 'stripe'),
             ),
           ],
         ),

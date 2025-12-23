@@ -46,11 +46,20 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       final userInfo = await _chatService.getUserInfo(widget.otherUserId);
       if (mounted) {
         setState(() {
-          _otherUserPhotoUrl = userInfo?['photoUrl'] as String?;
+          final photoUrl = userInfo?['photoUrl'];
+          _otherUserPhotoUrl = photoUrl is String && photoUrl.isNotEmpty 
+              ? photoUrl 
+              : null;
         });
       }
     } catch (e) {
       print('Error loading other user photo: $e');
+      // Set to null on error to show default avatar
+      if (mounted) {
+        setState(() {
+          _otherUserPhotoUrl = null;
+        });
+      }
     }
   }
 
@@ -61,18 +70,32 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         final userInfo = await _chatService.getUserInfo(currentUser.uid);
         if (mounted) {
           setState(() {
-            _currentUserPhotoUrl = userInfo?['photoUrl'] as String?;
+            final photoUrl = userInfo?['photoUrl'];
+            _currentUserPhotoUrl = photoUrl is String && photoUrl.isNotEmpty 
+                ? photoUrl 
+                : null;
           });
         }
       }
     } catch (e) {
       print('Error loading current user photo: $e');
+      // Set to null on error to show default avatar
+      if (mounted) {
+        setState(() {
+          _currentUserPhotoUrl = null;
+        });
+      }
     }
   }
 
   Future<void> _markMessagesAsDeliveredAndRead() async {
-    // First mark as delivered, then as read
-    await _chatService.markMessagesAsRead(widget.conversationId);
+    try {
+      // First mark as delivered, then as read
+      await _chatService.markMessagesAsRead(widget.conversationId);
+    } catch (e) {
+      print('Error marking messages as read: $e');
+      // Don't show error to user, just log it
+    }
   }
 
   @override
@@ -208,10 +231,14 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
                 // Scroll to bottom when new messages arrive
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_scrollController.hasClients) {
-                    _scrollController.jumpTo(
-                      _scrollController.position.maxScrollExtent,
-                    );
+                  if (mounted && _scrollController.hasClients) {
+                    try {
+                      _scrollController.jumpTo(
+                        _scrollController.position.maxScrollExtent,
+                      );
+                    } catch (e) {
+                      print('Error scrolling to bottom: $e');
+                    }
                   }
                 });
 
