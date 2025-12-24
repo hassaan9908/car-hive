@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Wrapper widget that applies gradient background matching homepage
-/// Uses colorScheme.background to colorScheme.surfaceVariant
+/// Uses colorScheme.background to colorScheme.surfaceContainerHighest
 /// Optimized to prevent glitches during navigation
 class GradientScaffoldWrapper extends StatelessWidget {
   final Widget child;
@@ -17,22 +17,25 @@ class GradientScaffoldWrapper extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     
     // Cache gradient colors to prevent recalculation
-    final topColor = colorScheme.surface;
+    // Use background to surfaceContainerHighest for the gradient
+    final topColor = colorScheme.background;
     final bottomColor = colorScheme.surfaceContainerHighest;
 
-    return Container(
-      key: const ValueKey('gradient_background'),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            topColor,
-            bottomColor,
-          ],
+    return SizedBox.expand(
+      child: Container(
+        key: const ValueKey('gradient_background'),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              topColor,
+              bottomColor,
+            ],
+          ),
         ),
+        child: child,
       ),
-      child: child,
     );
   }
 }

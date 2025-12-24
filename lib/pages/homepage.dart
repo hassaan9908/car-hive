@@ -177,7 +177,6 @@ class _HomepageState extends State<Homepage> {
                     },
                   ),
                 ),
-              ),
 
                 // Brand Filter Chip (if brand is selected)
                 if (_selectedBrandId != null && !_isSearchActive)

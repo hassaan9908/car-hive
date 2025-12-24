@@ -102,21 +102,6 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
       }
     } catch (e) {
       print('Error making phone call: $e'); // Debug log
-    // Record contact click
-    final adId = widget.ad.id;
-    if (adId != null && adId.isNotEmpty) {
-      await _insightService.recordContactClick(adId);
-    }
-
-    // Sanitize number (remove spaces, dashes)
-    final sanitized = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
-    final Uri phoneUri = Uri(scheme: 'tel', path: sanitized);
-    if (await canLaunchUrl(phoneUri)) {
-      await launchUrl(
-        phoneUri,
-        mode: LaunchMode.externalApplication,
-      );
-    } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -939,58 +924,70 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                   ],
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                              ],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                // Get phone number from user doc or ad
-                                String? phoneNumber;
-                                if (ad.userId != null &&
-                                    ad.userId!.isNotEmpty) {
-                                  try {
-                                    final userDoc = await FirebaseFirestore
-                                        .instance
-                                        .collection('users')
-                                        .doc(ad.userId)
-                                        .get();
-                                    if (userDoc.exists) {
-                                      final data = userDoc.data()
-                                          as Map<String, dynamic>?;
-                                      phoneNumber =
-                                          data?['phoneNumber']?.toString() ??
-                                          data?['phone']?.toString();
-                                      print('Phone from user doc: $phoneNumber'); // Debug log
+                                child: ElevatedButton.icon(
+                                  onPressed: () async {
+                                    // Get phone number from user doc or ad
+                                    String? phoneNumber;
+                                    if (ad.userId != null &&
+                                        ad.userId!.isNotEmpty) {
+                                      try {
+                                        final userDoc = await FirebaseFirestore
+                                            .instance
+                                            .collection('users')
+                                            .doc(ad.userId)
+                                            .get();
+                                        if (userDoc.exists) {
+                                          final data = userDoc.data();
+                                          phoneNumber =
+                                              data?['phoneNumber']?.toString() ??
+                                              data?['phone']?.toString();
+                                          print('Phone from user doc: $phoneNumber'); // Debug log
+                                        }
+                                      } catch (e) {
+                                        print('Error fetching phone: $e');
+                                      }
                                     }
-                                  } catch (e) {
-                                    print('Error fetching phone: $e');
-                                  }
-                                }
-                                phoneNumber ??= ad.phone;
-                                print('Final phone number: $phoneNumber'); // Debug log
+                                    phoneNumber ??= ad.phone;
+                                    print('Final phone number: $phoneNumber'); // Debug log
 
-                                if (phoneNumber != null &&
-                                    phoneNumber.trim().isNotEmpty) {
-                                  await _makePhoneCall(phoneNumber.trim());
-                                } else {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              'Phone number not available')),
-                                    );
-                                  }
-                                }
-                              },
-                              icon: const Icon(Icons.phone),
-                              label: const Text('Call'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
+                                    if (phoneNumber != null &&
+                                        phoneNumber.trim().isNotEmpty) {
+                                      await _makePhoneCall(phoneNumber.trim());
+                                    } else {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                              content: Text(
+                                                  'Phone number not available')),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  icon: const Icon(Icons.phone),
+                                  label: const Text('Call'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    foregroundColor: Colors.white,
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 16),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      colorScheme.secondary,
+                                      colorScheme.secondary.withValues(alpha: 0.8),
+                                    ],
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: ElevatedButton.icon(
@@ -1023,65 +1020,6 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                               ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Second row: Save button
-                        StreamBuilder<bool>(
-                          stream: _saveService.isAdSaved(ad.id ?? ''),
-                          builder: (context, snapshot) {
-                            final isSaved = snapshot.data ?? false;
-                            return SizedBox(
-                              width: double.infinity,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: isSaved
-                                        ? [Colors.green, Colors.green.shade700]
-                                        : [
-                                            Colors.grey.shade600,
-                                            Colors.grey.shade700
-                                          ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          (isSaved ? Colors.green : Colors.grey)
-                                              .withOpacity(0.3),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: _savingAd ? null : _toggleSaveAd,
-                                  icon: _savingAd
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : Icon(isSaved
-                                          ? Icons.bookmark
-                                          : Icons.bookmark_border),
-                                  label: Text(isSaved ? 'Saved' : 'Save Ad'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
                         ),
                       ],
                     ),

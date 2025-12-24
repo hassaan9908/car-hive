@@ -19,6 +19,8 @@ final ThemeData lightTheme = ThemeData(
     onTertiary: Colors.white,
     tertiaryContainer: Color(0xFFFFF3E0),
     onTertiaryContainer: AppColors.secondaryOrange,
+    background: AppColors.lightBackground,
+    onBackground: AppColors.lightOnSurface,
     surface: AppColors.lightSurface,
     onSurface: AppColors.lightOnSurface,
     surfaceContainerHighest: AppColors.lightSurfaceVariant,
