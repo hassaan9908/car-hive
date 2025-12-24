@@ -251,12 +251,12 @@ class GlobalAdStore {
         print('Checking for duplicate registration number: $normalizedRegNo (hash: ${registrationHash.substring(0, 16)}...)');
         
         // Check if an ad with this registration number already exists
-        // Try query with status filter first
+        // Only check active and pending ads - sold ads can be reposted
         try {
           final existingAdsQuery = await _firestore
               .collection('ads')
               .where('registrationNoHash', isEqualTo: registrationHash)
-              .where('status', whereIn: ['active', 'pending', 'sold']) // Check active, pending, or sold ads
+              .where('status', whereIn: ['active', 'pending']) // Only check active and pending ads
               .limit(1)
               .get();
 
@@ -270,22 +270,26 @@ class GlobalAdStore {
           // If the query fails (e.g., missing index), fall back to checking all ads
           if (e.toString().contains('index') || e.toString().contains('indexes')) {
             print('Index error, falling back to broader query: $e');
-            // Fallback: Check all ads regardless of status
+            // Fallback: Check all ads and filter by status
             final fallbackQuery = await _firestore
                 .collection('ads')
                 .where('registrationNoHash', isEqualTo: registrationHash)
-                .limit(1)
+                .limit(10) // Get more to filter by status
                 .get();
             
-            if (fallbackQuery.docs.isNotEmpty) {
-              final existingAd = fallbackQuery.docs.first;
+            // Filter to only check active and pending ads (sold ads can be reposted)
+            final blockingAds = fallbackQuery.docs.where((doc) {
+              final adData = doc.data();
+              final status = adData['status'] as String? ?? 'unknown';
+              return ['active', 'pending'].contains(status);
+            }).toList();
+            
+            if (blockingAds.isNotEmpty) {
+              final existingAd = blockingAds.first;
               final existingAdData = existingAd.data();
               final existingStatus = existingAdData['status'] as String? ?? 'unknown';
-              // Only block if the existing ad is active, pending, or sold
-              if (['active', 'pending', 'sold'].contains(existingStatus)) {
-                print('Found existing ad with same registration number: ${existingAd.id}, status: $existingStatus');
-                throw Exception('An ad with registration number "$normalizedRegNo" already exists. Each vehicle can only be listed once. Please check your existing ads or contact support if you believe this is an error.');
-              }
+              print('Found existing ad with same registration number: ${existingAd.id}, status: $existingStatus');
+              throw Exception('An ad with registration number "$normalizedRegNo" already exists. Each vehicle can only be listed once. Please check your existing ads or contact support if you believe this is an error.');
             }
           } else {
             // Re-throw if it's not an index error

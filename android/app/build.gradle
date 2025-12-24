@@ -10,6 +10,8 @@ dependencies {
   // Import the Firebase BoM
   implementation platform('com.google.firebase:firebase-bom:34.0.0')
 
+  // AppCompat is required for Stripe Payment Sheet
+  implementation 'androidx.appcompat:appcompat:1.6.1'
 
   // TODO: Add the dependencies for Firebase products you want to use
   // When using the BoM, don't specify versions in Firebase dependencies
