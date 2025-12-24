@@ -415,7 +415,7 @@ class _MyadsState extends State<Myads> {
                   child: Container(
                     width: 96,
                     height: 64,
-                    color: cs.surfaceVariant,
+                    color: cs.surfaceContainerHighest,
                     child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
                         ? Image.network(
                             ad.imageUrls![0],
@@ -425,7 +425,8 @@ class _MyadsState extends State<Myads> {
                               return Center(
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  value: loadingProgress.expectedTotalBytes != null
+                                  value: loadingProgress.expectedTotalBytes !=
+                                          null
                                       ? loadingProgress.cumulativeBytesLoaded /
                                           loadingProgress.expectedTotalBytes!
                                       : null,
@@ -443,9 +444,6 @@ class _MyadsState extends State<Myads> {
                             'assets/images/Retro.gif',
                             fit: BoxFit.cover,
                           ),
-                    color: cs.surfaceContainerHighest,
-                    child: Icon(Icons.directions_car_filled,
-                        size: 32, color: cs.onSurfaceVariant),
                   ),
                 ),
                 const SizedBox(width: 12),
