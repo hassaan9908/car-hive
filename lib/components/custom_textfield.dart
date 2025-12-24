@@ -49,7 +49,7 @@ class CustomTextField extends StatelessWidget {
 
     final isDark = theme.brightness == Brightness.dark;
 
-    final Color fill_color = isDark 
+    final Color fillColor = isDark 
         ? const Color.fromARGB(255, 15, 15, 15) 
         : Colors.grey.shade200;
 
@@ -80,7 +80,7 @@ class CustomTextField extends StatelessWidget {
         suffixIcon: suffixIcon,
         errorText: errorText,
         filled: true,
-        fillColor: fill_color,
+        fillColor: fillColor,
         hintStyle: TextStyle(
           color: colorScheme.onSurfaceVariant,
           fontSize: 16,

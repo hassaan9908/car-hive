@@ -41,12 +41,14 @@ class GlobalAdStore {
           .toList();
 
       final now = DateTime.now();
-      
+
       // Filter for active ads that are not expired
       final activeAds = ads.where((ad) {
         if (ad.status != 'active') return false;
         // Check if ad is expired
-        if (ad.expiresAt != null && ad.expiresAt!.isBefore(now) && ad.id != null) {
+        if (ad.expiresAt != null &&
+            ad.expiresAt!.isBefore(now) &&
+            ad.id != null) {
           // Mark as expired in background (async, don't block)
           unawaited(_markAdAsExpired(ad.id).catchError((e) {
             // Silently handle errors in background operation
@@ -78,7 +80,10 @@ class GlobalAdStore {
       final validAds = ads.where((ad) {
         if (ad.status.isEmpty) return false;
         // Check if active ad is expired
-        if (ad.status == 'active' && ad.expiresAt != null && ad.expiresAt!.isBefore(now) && ad.id != null) {
+        if (ad.status == 'active' &&
+            ad.expiresAt != null &&
+            ad.expiresAt!.isBefore(now) &&
+            ad.id != null) {
           // Mark as expired in background (async, don't block)
           unawaited(_markAdAsExpired(ad.id).catchError((e) {
             // Silently handle errors in background operation
@@ -108,7 +113,10 @@ class GlobalAdStore {
       final userAds = ads.where((ad) {
         if (ad.userId != userId) return false;
         // Check if ad is expired
-        if (ad.expiresAt != null && ad.expiresAt!.isBefore(now) && ad.status == 'active' && ad.id != null) {
+        if (ad.expiresAt != null &&
+            ad.expiresAt!.isBefore(now) &&
+            ad.status == 'active' &&
+            ad.id != null) {
           // Mark as expired in background (async, don't block)
           unawaited(_markAdAsExpired(ad.id).catchError((e) {
             // Silently handle errors in background operation
@@ -139,7 +147,10 @@ class GlobalAdStore {
       final userAdsByStatus = ads.where((ad) {
         if (ad.userId != userId || ad.status != status) return false;
         // Check if ad is expired (only for active ads)
-        if (status == 'active' && ad.expiresAt != null && ad.expiresAt!.isBefore(now) && ad.id != null) {
+        if (status == 'active' &&
+            ad.expiresAt != null &&
+            ad.expiresAt!.isBefore(now) &&
+            ad.id != null) {
           // Mark as expired in background (async, don't block)
           unawaited(_markAdAsExpired(ad.id).catchError((e) {
             // Silently handle errors in background operation
@@ -170,7 +181,10 @@ class GlobalAdStore {
       final userAds = ads.where((ad) {
         if (ad.userId != userId || !statuses.contains(ad.status)) return false;
         // Check if active ad is expired
-        if (ad.status == 'active' && ad.expiresAt != null && ad.expiresAt!.isBefore(now) && ad.id != null) {
+        if (ad.status == 'active' &&
+            ad.expiresAt != null &&
+            ad.expiresAt!.isBefore(now) &&
+            ad.id != null) {
           // Mark as expired in background (async, don't block)
           unawaited(_markAdAsExpired(ad.id).catchError((e) {
             // Silently handle errors in background operation
@@ -226,7 +240,8 @@ class GlobalAdStore {
   }
 
   // Add a new ad with vehicle verification (auto-approved)
-  Future<void> addAdWithVerification(AdModel ad, Map<String, dynamic> encryptedVehicleData) async {
+  Future<void> addAdWithVerification(
+      AdModel ad, Map<String, dynamic> encryptedVehicleData) async {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
@@ -235,7 +250,8 @@ class GlobalAdStore {
 
       // Check for duplicate registration number
       // Get the plain registration number (stored temporarily for hashing)
-      final plainRegistrationNo = encryptedVehicleData['_plainRegistrationNo'] as String?;
+      final plainRegistrationNo =
+          encryptedVehicleData['_plainRegistrationNo'] as String?;
       if (plainRegistrationNo != null && plainRegistrationNo.isNotEmpty) {
         // Normalize the registration number for consistent hashing
         final normalizedRegNo = plainRegistrationNo
@@ -244,12 +260,13 @@ class GlobalAdStore {
             .replaceAll('*', '')
             .replaceAll(' ', '')
             .replaceAll(RegExp(r'[^\w\-]'), '');
-        
+
         // Generate hash of registration number for duplicate checking
         final registrationHash = _hashRegistrationNo(normalizedRegNo);
-        
-        print('Checking for duplicate registration number: $normalizedRegNo (hash: ${registrationHash.substring(0, 16)}...)');
-        
+
+        print(
+            'Checking for duplicate registration number: $normalizedRegNo (hash: ${registrationHash.substring(0, 16)}...)');
+
         // Check if an ad with this registration number already exists
         // Only check active and pending ads - sold ads can be reposted
         try {
@@ -263,12 +280,15 @@ class GlobalAdStore {
           if (existingAdsQuery.docs.isNotEmpty) {
             final existingAd = existingAdsQuery.docs.first;
             final existingAdData = existingAd.data();
-            print('Found existing ad with same registration number: ${existingAd.id}, status: ${existingAdData['status']}');
-            throw Exception('An ad with registration number "$normalizedRegNo" already exists. Each vehicle can only be listed once. Please check your existing ads or contact support if you believe this is an error.');
+            print(
+                'Found existing ad with same registration number: ${existingAd.id}, status: ${existingAdData['status']}');
+            throw Exception(
+                'An ad with registration number "$normalizedRegNo" already exists. Each vehicle can only be listed once. Please check your existing ads or contact support if you believe this is an error.');
           }
         } catch (e) {
           // If the query fails (e.g., missing index), fall back to checking all ads
-          if (e.toString().contains('index') || e.toString().contains('indexes')) {
+          if (e.toString().contains('index') ||
+              e.toString().contains('indexes')) {
             print('Index error, falling back to broader query: $e');
             // Fallback: Check all ads and filter by status
             final fallbackQuery = await _firestore
@@ -296,7 +316,7 @@ class GlobalAdStore {
             rethrow;
           }
         }
-        
+
         print('No duplicate found, proceeding with ad creation');
       }
 
@@ -310,14 +330,15 @@ class GlobalAdStore {
       adData['expiresAt'] = Timestamp.fromDate(
         DateTime.now().add(const Duration(days: 30)),
       );
-      
+
       // Remove temporary plain registration number before storing
-      final vehicleDataToStore = Map<String, dynamic>.from(encryptedVehicleData);
+      final vehicleDataToStore =
+          Map<String, dynamic>.from(encryptedVehicleData);
       vehicleDataToStore.remove('_plainRegistrationNo');
-      
+
       // Add encrypted vehicle verification data
       adData['vehicleVerification'] = vehicleDataToStore;
-      
+
       // Add hash of registration number for duplicate checking (one-way hash for security)
       if (plainRegistrationNo != null && plainRegistrationNo.isNotEmpty) {
         // Normalize before hashing to ensure consistency
@@ -337,7 +358,8 @@ class GlobalAdStore {
       await _createActivityLog(
         type: 'adPosted',
         title: 'New ad posted (auto-verified)',
-        description: '${ad.title} - ${ad.price} - Vehicle verified automatically',
+        description:
+            '${ad.title} - ${ad.price} - Vehicle verified automatically',
         userId: currentUser.uid,
         adId: docRef.id,
         metadata: {
@@ -384,6 +406,15 @@ class GlobalAdStore {
       });
     } catch (e) {
       throw Exception('Failed to update ad status: $e');
+    }
+  }
+
+  /// Update an existing ad
+  Future<void> updateAd(String adId, Map<String, dynamic> data) async {
+    try {
+      await FirebaseFirestore.instance.collection('ads').doc(adId).update(data);
+    } catch (e) {
+      throw Exception('Failed to update ad: $e');
     }
   }
 
@@ -472,7 +503,7 @@ class GlobalAdStore {
     try {
       // Set new expiration date to 30 days from reactivation
       final newExpirationDate = DateTime.now().add(const Duration(days: 30));
-      
+
       await _firestore.collection('ads').doc(adId).update({
         'status': previousStatus.isNotEmpty ? previousStatus : 'active',
         'previousStatus': null,
@@ -512,17 +543,17 @@ class GlobalAdStore {
       ads.where((ad) => ad.status == status).toList();
 
   /// Generates a one-way hash of the registration number for duplicate checking
-  /// 
+  ///
   /// This hash is used to check for duplicate ads without exposing the actual
   /// registration number. The hash is one-way, so the original value cannot
   /// be recovered from it.
-  /// 
+  ///
   /// [registrationNo] - The registration number to hash (can be encrypted or plain)
-  /// 
+  ///
   /// Returns a SHA-256 hash as a hex string
   String _hashRegistrationNo(String registrationNo) {
     if (registrationNo.isEmpty) return '';
-    
+
     // Normalize the registration number consistently:
     // - Trim whitespace
     // - Convert to uppercase
@@ -535,8 +566,9 @@ class GlobalAdStore {
         .toUpperCase()
         .replaceAll('*', '')
         .replaceAll(' ', '') // Remove all spaces
-        .replaceAll(RegExp(r'[^\w\-]'), ''); // Keep only alphanumeric and hyphens
-    
+        .replaceAll(
+            RegExp(r'[^\w\-]'), ''); // Keep only alphanumeric and hyphens
+
     // If it's encrypted (base64), we still hash the encrypted value
     // This ensures consistent hashing regardless of encryption state
     final bytes = utf8.encode(normalized);
@@ -545,20 +577,20 @@ class GlobalAdStore {
   }
 
   /// Marks an ad as expired (removed) if it has passed its expiration date
-  /// 
+  ///
   /// This is called automatically when expired ads are detected during queries.
-  /// 
+  ///
   /// [adId] - The ID of the ad to mark as expired
   Future<void> _markAdAsExpired(String? adId) async {
     if (adId == null || adId.isEmpty) return;
-    
+
     try {
       final adDoc = await _firestore.collection('ads').doc(adId).get();
       if (!adDoc.exists) return;
-      
+
       final adData = adDoc.data();
       final currentStatus = adData?['status'] as String?;
-      
+
       // Only mark as expired if currently active
       if (currentStatus == 'active') {
         await _firestore.collection('ads').doc(adId).update({
@@ -575,7 +607,7 @@ class GlobalAdStore {
   }
 
   /// Cleanup expired ads - can be called periodically or on app start
-  /// 
+  ///
   /// This method finds all active ads that have expired and marks them as removed.
   Future<void> cleanupExpiredAds() async {
     try {

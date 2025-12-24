@@ -14,54 +14,150 @@ class VideoDetailPage extends StatefulWidget {
 class _VideoDetailPageState extends State<VideoDetailPage> {
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
       appBar: AppBar(
         title: Text(widget.video.title),
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
+        backgroundColor:
+            isDark ? Colors.black.withValues(alpha: 0.5) : Colors.white,
+        elevation: 0,
+        foregroundColor: colorScheme.onSurface,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Unified player at top with consistent look & feel
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: UnifiedVideoPlayer(
-              videoUrl: widget.video.videoUrl,
-              title: widget.video.title,
-              thumbnailUrl: widget.video.thumbnailUrl,
-              autoPlay: true,
-              looping: false,
-              aspectRatio: 16 / 9,
+      body: CustomScrollView(
+        slivers: [
+          // Player section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: UnifiedVideoPlayer(
+                videoUrl: widget.video.videoUrl,
+                title: widget.video.title,
+                thumbnailUrl: widget.video.thumbnailUrl,
+                autoPlay: true,
+                looping: false,
+                aspectRatio: 16 / 9,
+              ),
             ),
           ),
 
-          // Video information
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.video.title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  if (widget.video.description.isNotEmpty)
+          // Info section
+          SliverToBoxAdapter(
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title
                     Text(
-                      widget.video.description,
-                      style: const TextStyle(fontSize: 16),
+                      widget.video.title,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                        height: 1.3,
+                      ),
                     ),
-                ],
+                    const SizedBox(height: 16),
+
+                    // Author & Date Info
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor:
+                              colorScheme.primary.withValues(alpha: 0.15),
+                          child: Icon(
+                            Icons.person,
+                            size: 20,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.video.author,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                              if (widget.video.createdAt != null)
+                                Text(
+                                  _formatDate(widget.video.createdAt!),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: colorScheme.onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Divider
+                    Divider(
+                      color: colorScheme.onSurface.withValues(alpha: 0.1),
+                      thickness: 1,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Description
+                    if (widget.video.description.isNotEmpty)
+                      Text(
+                        widget.video.description,
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.6,
+                          color: colorScheme.onSurface.withValues(alpha: 0.9),
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 }

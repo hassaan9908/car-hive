@@ -9,6 +9,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/chat_service.dart';
 import 'chat_detail_page.dart';
+import '../features/inspection/screens/inspection_start_page.dart';
+import '../services/save_service.dart';
+import '../services/insight_service.dart';
 
 class CarDetailsPage extends StatefulWidget {
   final AdModel ad;
@@ -21,11 +24,32 @@ class CarDetailsPage extends StatefulWidget {
 
 class _CarDetailsPageState extends State<CarDetailsPage> {
   final ReviewService _reviewService = ReviewService();
+  final SaveService _saveService = SaveService();
+  final InsightService _insightService = InsightService();
   final TextEditingController _commentController = TextEditingController();
   int _rating = 0;
   bool _submitting = false;
   int _currentImageIndex = 0; // Track current image index for indicator
   final PageController _pageController = PageController(); // Controller for PageView
+  bool _savingAd = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Record view when page opens
+    _recordView();
+  }
+
+  Future<void> _recordView() async {
+    final adId = widget.ad.id;
+    if (adId != null && adId.isNotEmpty) {
+      // Don't record view if user is the owner
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null && currentUser.uid != widget.ad.userId) {
+        await _insightService.recordView(adId);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -78,6 +102,21 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
       }
     } catch (e) {
       print('Error making phone call: $e'); // Debug log
+    // Record contact click
+    final adId = widget.ad.id;
+    if (adId != null && adId.isNotEmpty) {
+      await _insightService.recordContactClick(adId);
+    }
+
+    // Sanitize number (remove spaces, dashes)
+    final sanitized = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
+    final Uri phoneUri = Uri(scheme: 'tel', path: sanitized);
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(
+        phoneUri,
+        mode: LaunchMode.externalApplication,
+      );
+    } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -109,6 +148,12 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
       return;
     }
 
+    // Record message event
+    final adId = widget.ad.id;
+    if (adId != null && adId.isNotEmpty) {
+      await _insightService.recordMessageSent(adId);
+    }
+
     // Get seller info for display name
     String sellerName = 'User';
     try {
@@ -118,9 +163,8 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
           .get();
       if (sellerDoc.exists) {
         final data = sellerDoc.data();
-        sellerName = data?['displayName'] ?? 
-                     data?['email']?.split('@')[0] ?? 
-                     'User';
+        sellerName =
+            data?['displayName'] ?? data?['email']?.split('@')[0] ?? 'User';
       }
     } catch (e) {
       print('Error getting seller info: $e');
@@ -130,8 +174,9 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     if (mounted) {
       try {
         final chatService = ChatService();
-        final conversationId = await chatService.getOrCreateConversation(sellerId);
-        
+        final conversationId =
+            await chatService.getOrCreateConversation(sellerId);
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -152,6 +197,43 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     }
   }
 
+  Future<void> _toggleSaveAd() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to save ads')),
+      );
+      return;
+    }
+
+    final adId = widget.ad.id;
+    if (adId == null || adId.isEmpty) return;
+
+    setState(() => _savingAd = true);
+
+    try {
+      final isSaved = await _saveService.toggleSave(adId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isSaved ? 'Ad saved!' : 'Ad removed from saved'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _savingAd = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -162,6 +244,28 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
         title: const Text('Car Details'),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          // Save button in app bar
+          StreamBuilder<bool>(
+            stream: _saveService.isAdSaved(ad.id ?? ''),
+            builder: (context, snapshot) {
+              final isSaved = snapshot.data ?? false;
+              return IconButton(
+                onPressed: _savingAd ? null : _toggleSaveAd,
+                icon: _savingAd
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        isSaved ? Icons.bookmark : Icons.bookmark_border,
+                        color: isSaved ? colorScheme.primary : null,
+                      ),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -200,8 +304,8 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                       itemBuilder: (context, index) {
                         return Container(
                           width: double.infinity,
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.only(
+                          decoration: const BoxDecoration(
+                            borderRadius: BorderRadius.only(
                               bottomLeft: Radius.circular(30),
                               bottomRight: Radius.circular(30),
                             ),
@@ -321,10 +425,11 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                         const SizedBox(width: 12),
                         Text(
                           '360° View',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
+                                  ),
                         ),
                         const Spacer(),
                         Container(
@@ -810,22 +915,29 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                         ),
                       ],
                     ),
-                    child: Row(
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Color(0xFFFF6B35),
-                                  Color(0xFFFF8C42),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFFF6B35).withOpacity(0.3),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
+                        // First row: Call and Message buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFFFF6B35),
+                                      Color(0xFFFF8C42),
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFFF6B35)
+                                          .withOpacity(0.3),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ],
                               borderRadius: BorderRadius.circular(12),
@@ -881,46 +993,250 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    if (ad.userId != null &&
+                                        ad.userId!.isNotEmpty) {
+                                      _openChat(ad.userId!);
+                                    } else {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                'Seller information not available')),
+                                      );
+                                    }
+                                  },
+                                  icon: const Icon(Icons.message),
+                                  label: const Text('Message'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  colorScheme.secondary,
-                                  colorScheme.secondary.withValues(alpha: 0.8),
+                        const SizedBox(height: 12),
+                        // Second row: Save button
+                        StreamBuilder<bool>(
+                          stream: _saveService.isAdSaved(ad.id ?? ''),
+                          builder: (context, snapshot) {
+                            final isSaved = snapshot.data ?? false;
+                            return SizedBox(
+                              width: double.infinity,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: isSaved
+                                        ? [Colors.green, Colors.green.shade700]
+                                        : [
+                                            Colors.grey.shade600,
+                                            Colors.grey.shade700
+                                          ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          (isSaved ? Colors.green : Colors.grey)
+                                              .withOpacity(0.3),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton.icon(
+                                  onPressed: _savingAd ? null : _toggleSaveAd,
+                                  icon: _savingAd
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Icon(isSaved
+                                          ? Icons.bookmark
+                                          : Icons.bookmark_border),
+                                  label: Text(isSaved ? 'Saved' : 'Save Ad'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Buyer Inspection Tool
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          colorScheme.primary.withValues(alpha: 0.1),
+                          colorScheme.secondary.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.primary.withValues(alpha: 0.2),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.fact_check,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Guided Inspection',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: colorScheme.onSurface,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Evaluate this car before buying',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: colorScheme.onSurface
+                                              .withValues(alpha: 0.7),
+                                        ),
+                                  ),
                                 ],
                               ),
-                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                if (ad.userId != null &&
-                                    ad.userId!.isNotEmpty) {
-                                  _openChat(ad.userId!);
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'Seller information not available')),
-                                  );
-                                }
-                              },
-                              icon: const Icon(Icons.message),
-                              label: const Text('Message'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.black.withValues(alpha: 0.2)
+                                    : Colors.white.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.checklist, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('27 inspection points'),
+                                  Spacer(),
+                                  Icon(Icons.timer_outlined, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('15-20 mins'),
+                                ],
+                              ),
+                              SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Icon(Icons.analytics_outlined, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Get condition score (0-100)'),
+                                  Spacer(),
+                                  Icon(Icons.save_outlined, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Save report'),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              final currentUser =
+                                  FirebaseAuth.instance.currentUser;
+                              if (currentUser == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Please sign in to start an inspection'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) {
+                                    return InspectionStartPage(
+                                      carId: ad.id ?? '',
+                                      carTitle: ad.title,
+                                      carBrand: ad.carBrand ?? ad.title,
+                                      buyerId: currentUser.uid,
+                                      sellerId: ad.userId ?? '',
+                                    );
+                                  },
                                 ),
+                              );
+                            },
+                            icon: const Icon(Icons.start),
+                            label: const Text(
+                              'Start Inspection',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                           ),
@@ -1344,11 +1660,9 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-
-              child: 
-              Container(
+              child: Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
                   ),
                   boxShadow: [
@@ -1366,57 +1680,56 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
-                    
                   ),
-                onPressed: _submitting
-                    ? null
-                    : () async {
-                        final adId = ad.id;
-                        if (adId == null || adId.isEmpty) return;
-                        if (_rating == 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Please select a star rating')),
-                          );
-                          return;
-                        }
-                        setState(() {
-                          _submitting = true;
-                        });
-                        try {
-                          await _reviewService.addReview(
-                            adId: adId,
-                            rating: _rating,
-                            comment: _commentController.text,
-                          );
-                          _commentController.clear();
-                          setState(() {
-                            _rating = 0;
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Review submitted')),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed: $e')),
-                          );
-                        } finally {
-                          if (mounted) {
-                            setState(() {
-                              _submitting = false;
-                            });
+                  onPressed: _submitting
+                      ? null
+                      : () async {
+                          final adId = ad.id;
+                          if (adId == null || adId.isEmpty) return;
+                          if (_rating == 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Please select a star rating')),
+                            );
+                            return;
                           }
-                        }
-                      },
-                child: _submitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Submit Review'),
+                          setState(() {
+                            _submitting = true;
+                          });
+                          try {
+                            await _reviewService.addReview(
+                              adId: adId,
+                              rating: _rating,
+                              comment: _commentController.text,
+                            );
+                            _commentController.clear();
+                            setState(() {
+                              _rating = 0;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Review submitted')),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed: $e')),
+                            );
+                          } finally {
+                            if (mounted) {
+                              setState(() {
+                                _submitting = false;
+                              });
+                            }
+                          }
+                        },
+                  child: _submitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Submit Review'),
+                ),
               ),
-            ),
             ),
           ]
         ],

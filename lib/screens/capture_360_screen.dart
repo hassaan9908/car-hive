@@ -538,12 +538,12 @@ class _Capture360ScreenState extends State<Capture360Screen>
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFFf48c25), width: 1),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.screen_rotation, color: Color(0xFFf48c25), size: 20),
-                      const SizedBox(width: 8),
-                      const Flexible(
+                      Icon(Icons.screen_rotation, color: Color(0xFFf48c25), size: 20),
+                      SizedBox(width: 8),
+                      Flexible(
                         child: Text(
                           'Please keep device in landscape mode',
                           style: TextStyle(
@@ -675,11 +675,11 @@ class _Capture360ScreenState extends State<Capture360Screen>
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.orange, width: 2),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    const Icon(Icons.screen_rotation, color: Colors.orange, size: 32),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    Icon(Icons.screen_rotation, color: Colors.orange, size: 32),
+                    SizedBox(width: 12),
+                    Expanded(
                       child: Text(
                         'Please rotate your device to landscape mode for best 360° capture experience',
                         style: TextStyle(

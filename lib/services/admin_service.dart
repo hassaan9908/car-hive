@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_null_comparison
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
@@ -30,7 +32,7 @@ class AdminService {
   Future<AdminStatsModel> getDashboardStats() async {
     try {
       print('AdminService: Getting dashboard stats...');
-      
+
       // Get total users
       final usersSnapshot = await _firestore.collection('users').get();
       final totalUsers = usersSnapshot.docs.length;
@@ -49,9 +51,10 @@ class AdminService {
         final status = data['status'];
         final title = data['title'] ?? 'No title';
         print('AdminService: Ad status check - $title: $status');
-        
+
         if (status == null || status == '') {
-          print('AdminService: Ad without status found - $title, counting as pending');
+          print(
+              'AdminService: Ad without status found - $title, counting as pending');
           pendingAds++;
         } else {
           switch (status) {
@@ -73,7 +76,8 @@ class AdminService {
         }
       }
 
-      print('AdminService: Dashboard stats - Total: $totalAds, Pending: $pendingAds, Active: $activeAds, Rejected: $rejectedAds');
+      print(
+          'AdminService: Dashboard stats - Total: $totalAds, Pending: $pendingAds, Active: $activeAds, Rejected: $rejectedAds');
 
       return AdminStatsModel(
         totalUsers: totalUsers,
@@ -94,7 +98,7 @@ class AdminService {
   Future<List<ActivityModel>> getRecentActivities({int limit = 10}) async {
     try {
       print('AdminService: Getting recent activities...');
-      
+
       // Try to get activities with orderBy first
       try {
         final snapshot = await _firestore
@@ -103,40 +107,45 @@ class AdminService {
             .limit(limit)
             .get();
 
-        print('AdminService: Found ${snapshot.docs.length} activities with orderBy');
+        print(
+            'AdminService: Found ${snapshot.docs.length} activities with orderBy');
         final activities = snapshot.docs
             .map((doc) => ActivityModel.fromFirestore(doc.data(), doc.id))
             .toList();
-        
+
         for (var activity in activities) {
-          print('AdminService: Activity - ${activity.title} (${activity.type})');
+          print(
+              'AdminService: Activity - ${activity.title} (${activity.type})');
         }
-        
+
         return activities;
       } catch (orderByError) {
-        print('AdminService: OrderBy failed, trying without orderBy: $orderByError');
-        
+        print(
+            'AdminService: OrderBy failed, trying without orderBy: $orderByError');
+
         // Fallback: get all activities and sort in memory
         final snapshot = await _firestore.collection('activities').get();
         final allActivities = snapshot.docs
             .map((doc) => ActivityModel.fromFirestore(doc.data(), doc.id))
             .toList();
-        
+
         // Sort by createdAt descending (most recent first)
         allActivities.sort((a, b) {
           if (a.createdAt == null && b.createdAt == null) return 0;
           if (a.createdAt == null) return 1;
           if (b.createdAt == null) return -1;
-          return b.createdAt!.compareTo(a.createdAt!);
+          return b.createdAt.compareTo(a.createdAt);
         });
-        
+
         final limitedActivities = allActivities.take(limit).toList();
-        print('AdminService: Found ${allActivities.length} activities total, returning ${limitedActivities.length}');
-        
+        print(
+            'AdminService: Found ${allActivities.length} activities total, returning ${limitedActivities.length}');
+
         for (var activity in limitedActivities) {
-          print('AdminService: Activity - ${activity.title} (${activity.type})');
+          print(
+              'AdminService: Activity - ${activity.title} (${activity.type})');
         }
-        
+
         return limitedActivities;
       }
     } catch (e) {
@@ -146,28 +155,35 @@ class AdminService {
   }
 
   // Get all users with pagination
-  Future<List<UserModel>> getUsers({int limit = 20, DocumentSnapshot? lastDocument}) async {
+  Future<List<UserModel>> getUsers(
+      {int limit = 20, DocumentSnapshot? lastDocument}) async {
     try {
       print('AdminService: Getting users...');
-      
+
       // Get all users and sort in memory to avoid index requirements
       final snapshot = await _firestore.collection('users').get();
-      final allUsers = snapshot.docs.map((doc) => UserModel.fromFirestore(doc.data() as Map<String, dynamic>, doc.id)).toList();
-      
+      final allUsers = snapshot.docs
+          .map((doc) => UserModel.fromFirestore(doc.data(), doc.id))
+          .toList();
+
       // Sort by createdAt descending (most recent first)
       allUsers.sort((a, b) {
         if (a.createdAt == null && b.createdAt == null) return 0;
         if (a.createdAt == null) return 1;
         if (b.createdAt == null) return -1;
-        return b.createdAt!.compareTo(a.createdAt!);
+        return b.createdAt.compareTo(a.createdAt);
       });
-      
+
       // Apply pagination
-      final startIndex = lastDocument != null ? allUsers.indexWhere((user) => user.id == lastDocument.id) + 1 : 0;
+      final startIndex = lastDocument != null
+          ? allUsers.indexWhere((user) => user.id == lastDocument.id) + 1
+          : 0;
       final endIndex = startIndex + limit;
-      final paginatedUsers = allUsers.sublist(startIndex, endIndex > allUsers.length ? allUsers.length : endIndex);
-      
-      print('AdminService: Found ${allUsers.length} users, returning ${paginatedUsers.length}');
+      final paginatedUsers = allUsers.sublist(
+          startIndex, endIndex > allUsers.length ? allUsers.length : endIndex);
+
+      print(
+          'AdminService: Found ${allUsers.length} users, returning ${paginatedUsers.length}');
       return paginatedUsers;
     } catch (e) {
       print('AdminService: Error getting users: $e');
@@ -176,29 +192,32 @@ class AdminService {
   }
 
   // Get pending ads for moderation
-  Future<List<AdModel>> getPendingAds({int limit = 20, DocumentSnapshot? lastDocument}) async {
+  Future<List<AdModel>> getPendingAds(
+      {int limit = 20, DocumentSnapshot? lastDocument}) async {
     try {
       print('AdminService: Getting pending ads from Firestore...');
-      
+
       // First, let's check all ads to see what's in the database
       final allAdsSnapshot = await _firestore.collection('ads').get();
-      print('AdminService: Total ads in database: ${allAdsSnapshot.docs.length}');
-      
+      print(
+          'AdminService: Total ads in database: ${allAdsSnapshot.docs.length}');
+
       // Filter ads manually to avoid index requirements
       final pendingAds = <AdModel>[];
-      
+
       for (var doc in allAdsSnapshot.docs) {
         final data = doc.data();
         final status = data['status'];
         final title = data['title'] ?? 'No title';
-        print('AdminService: Checking ad - $title (${doc.id}) - status: $status');
-        
+        print(
+            'AdminService: Checking ad - $title (${doc.id}) - status: $status');
+
         if (status == 'pending' || status == null || status == '') {
           print('AdminService: Found pending ad - $title (${doc.id})');
-          pendingAds.add(AdModel.fromFirestore(data as Map<String, dynamic>, doc.id));
+          pendingAds.add(AdModel.fromFirestore(data, doc.id));
         }
       }
-      
+
       // Sort by createdAt descending (most recent first)
       pendingAds.sort((a, b) {
         if (a.createdAt == null && b.createdAt == null) return 0;
@@ -206,11 +225,12 @@ class AdminService {
         if (b.createdAt == null) return -1;
         return b.createdAt!.compareTo(a.createdAt!);
       });
-      
+
       // Apply limit
       final limitedAds = pendingAds.take(limit).toList();
-      
-      print('AdminService: Found ${pendingAds.length} pending ads, returning ${limitedAds.length}');
+
+      print(
+          'AdminService: Found ${pendingAds.length} pending ads, returning ${limitedAds.length}');
       return limitedAds;
     } catch (e) {
       print('AdminService: Error getting pending ads: $e');
@@ -224,7 +244,7 @@ class AdminService {
       // Get ad details first
       final adDoc = await _firestore.collection('ads').doc(adId).get();
       final adData = adDoc.data();
-      
+
       if (adData == null) {
         throw Exception('Ad not found');
       }
@@ -281,7 +301,7 @@ class AdminService {
       // Get ad details first
       final adDoc = await _firestore.collection('ads').doc(adId).get();
       final adData = adDoc.data();
-      
+
       if (adData == null) {
         throw Exception('Ad not found');
       }
@@ -355,40 +375,49 @@ class AdminService {
     try {
       print('AdminService: Debugging ad statuses...');
       final allAdsSnapshot = await _firestore.collection('ads').get();
-      
+
       print('AdminService: Total ads found: ${allAdsSnapshot.docs.length}');
-      
+
       for (var doc in allAdsSnapshot.docs) {
         final data = doc.data();
         final status = data['status'];
         final title = data['title'] ?? 'No title';
         final userId = data['userId'] ?? 'No user ID';
-        
-        print('AdminService: Ad "${title}" (${doc.id}) - User: $userId - Status: $status');
-        
+
+        print(
+            'AdminService: Ad "$title" (${doc.id}) - User: $userId - Status: $status');
+
         if (status == null || status == '') {
-          print('AdminService: Found ad without status - "${title}" (${doc.id}), fixing...');
+          print(
+              'AdminService: Found ad without status - "$title" (${doc.id}), fixing...');
           try {
             await _firestore.collection('ads').doc(doc.id).update({
               'status': 'pending',
             });
-            print('AdminService: Successfully updated status to pending for "${title}"');
+            print(
+                'AdminService: Successfully updated status to pending for "$title"');
           } catch (updateError) {
-            print('AdminService: Error updating status for "${title}": $updateError');
+            print(
+                'AdminService: Error updating status for "$title": $updateError');
           }
-        } else if (status != 'pending' && status != 'active' && status != 'rejected') {
-          print('AdminService: Found ad with invalid status - "${title}" (${doc.id}) - Status: $status, fixing...');
+        } else if (status != 'pending' &&
+            status != 'active' &&
+            status != 'rejected') {
+          print(
+              'AdminService: Found ad with invalid status - "$title" (${doc.id}) - Status: $status, fixing...');
           try {
             await _firestore.collection('ads').doc(doc.id).update({
               'status': 'pending',
             });
-            print('AdminService: Successfully updated invalid status to pending for "${title}"');
+            print(
+                'AdminService: Successfully updated invalid status to pending for "$title"');
           } catch (updateError) {
-            print('AdminService: Error updating invalid status for "${title}": $updateError');
+            print(
+                'AdminService: Error updating invalid status for "$title": $updateError');
           }
         }
       }
-      
+
       print('AdminService: Ad status debugging complete');
     } catch (e) {
       print('AdminService: Error debugging ad statuses: $e');
@@ -401,7 +430,7 @@ class AdminService {
       // Get user details first
       final userDoc = await _firestore.collection('users').doc(userId).get();
       final userData = userDoc.data();
-      
+
       if (userData == null) {
         throw Exception('User not found');
       }
@@ -416,7 +445,7 @@ class AdminService {
       await _createActivityLog(
         type: 'userRoleChanged',
         title: 'User role updated',
-        description: '${userData['email']} - ${newRole}',
+        description: '${userData['email']} - $newRole',
         userId: userId,
         adminId: _auth.currentUser?.uid,
         metadata: {
@@ -437,7 +466,7 @@ class AdminService {
       // Get user details first
       final userDoc = await _firestore.collection('users').doc(userId).get();
       final userData = userDoc.data();
-      
+
       if (userData == null) {
         throw Exception('User not found');
       }
@@ -474,18 +503,18 @@ class AdminService {
 
       final userData = userDoc.data()!;
       final allAds = await _firestore.collection('ads').get();
-      
+
       // Filter for user's ads and sort in memory
       final userAds = allAds.docs
           .where((doc) => doc.data()['userId'] == userId)
-          .map((doc) => AdModel.fromFirestore(doc.data() as Map<String, dynamic>, doc.id))
+          .map((doc) => AdModel.fromFirestore(doc.data(), doc.id))
           .toList();
-      
+
       userAds.sort((a, b) => (b.createdAt ?? DateTime.now())
           .compareTo(a.createdAt ?? DateTime.now()));
 
       return {
-        'user': UserModel.fromFirestore(userData as Map<String, dynamic>, userId),
+        'user': UserModel.fromFirestore(userData, userId),
         'ads': userAds,
       };
     } catch (e) {
@@ -500,10 +529,12 @@ class AdminService {
       final snapshot = await _firestore
           .collection('users')
           .where('email', isGreaterThanOrEqualTo: query)
-          .where('email', isLessThan: query + '\uf8ff')
+          .where('email', isLessThan: '$query\uf8ff')
           .get();
 
-      return snapshot.docs.map((doc) => UserModel.fromFirestore(doc.data(), doc.id)).toList();
+      return snapshot.docs
+          .map((doc) => UserModel.fromFirestore(doc.data(), doc.id))
+          .toList();
     } catch (e) {
       print('Error searching users: $e');
       rethrow;
@@ -516,10 +547,12 @@ class AdminService {
       final snapshot = await _firestore
           .collection('ads')
           .where('title', isGreaterThanOrEqualTo: query)
-          .where('title', isLessThan: query + '\uf8ff')
+          .where('title', isLessThan: '$query\uf8ff')
           .get();
 
-      return snapshot.docs.map((doc) => AdModel.fromFirestore(doc.data(), doc.id)).toList();
+      return snapshot.docs
+          .map((doc) => AdModel.fromFirestore(doc.data(), doc.id))
+          .toList();
     } catch (e) {
       print('Error searching ads: $e');
       rethrow;

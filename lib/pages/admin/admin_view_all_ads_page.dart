@@ -126,8 +126,9 @@ class _AdminViewAllAdsPageState extends State<AdminViewAllAdsPage> {
                   final price = (data['price']?.toString() ?? '').toLowerCase();
                   final status =
                       (data['status'] ?? 'active').toString().toLowerCase();
-                  if (_statusFilter != 'all' && status != _statusFilter)
+                  if (_statusFilter != 'all' && status != _statusFilter) {
                     return false;
+                  }
                   if (_searchQuery.isEmpty) return true;
                   return title.contains(_searchQuery) ||
                       city.contains(_searchQuery) ||

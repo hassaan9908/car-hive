@@ -17,8 +17,8 @@ class GradientScaffoldWrapper extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     
     // Cache gradient colors to prevent recalculation
-    final topColor = colorScheme.background;
-    final bottomColor = colorScheme.surfaceVariant;
+    final topColor = colorScheme.surface;
+    final bottomColor = colorScheme.surfaceContainerHighest;
 
     return Container(
       key: const ValueKey('gradient_background'),

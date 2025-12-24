@@ -1,12 +1,13 @@
+import 'package:carhive/models/ad_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_provider.dart';
 
-import '../../models/ad_model.dart';
 import 'admin_manage_users_page.dart';
 import 'admin_system_analytics_page.dart';
 import 'admin_view_all_ads_page.dart';
+import 'admin_insight_metrics_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -26,7 +27,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Future<void> _loadAllData() async {
     final adminProvider = context.read<AdminProvider>();
-    print('AdminDashboard: Loading all data...');
+    print('AdminDashboard: Loading all data.. .');
 
     // Load all data in parallel
     await Future.wait([
@@ -42,7 +43,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -160,39 +161,59 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   const SizedBox(height: 24),
 
                   // Statistics Cards
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 1.5,
-                    children: [
-                      _buildStatCard(
-                        'Total Users',
-                        stats.totalUsers.toString(),
-                        Icons.people,
-                        const Color(0xFFf48c25),
-                      ),
-                      _buildStatCard(
-                        'Total Ads',
-                        stats.totalAds.toString(),
-                        Icons.car_rental,
-                        const Color(0xFFf48c25),
-                      ),
-                      _buildStatCard(
-                        'Pending Ads',
-                        stats.pendingAds.toString(),
-                        Icons.pending_actions,
-                        const Color(0xFFFF6B35),
-                      ),
-                      _buildStatCard(
-                        'Active Ads',
-                        stats.activeAds.toString(),
-                        Icons.check_circle,
-                        const Color(0xFFf48c25),
-                      ),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      final crossAxisCount = width >= 1400
+                          ? 4
+                          : width >= 1100
+                              ? 3
+                              : width >= 700
+                                  ? 2
+                                  : 1;
+                      final aspectRatio = width >= 1400
+                          ? 1.35
+                          : width >= 1100
+                              ? 1.25
+                              : width >= 700
+                                  ? 1.2
+                                  : 1.6;
+
+                      return GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: aspectRatio,
+                        children: [
+                          _buildStatCard(
+                            'Total Users',
+                            stats.totalUsers.toString(),
+                            Icons.people,
+                            const Color(0xFFf48c25),
+                          ),
+                          _buildStatCard(
+                            'Total Ads',
+                            stats.totalAds.toString(),
+                            Icons.car_rental,
+                            const Color(0xFFf48c25),
+                          ),
+                          _buildStatCard(
+                            'Pending Ads',
+                            stats.pendingAds.toString(),
+                            Icons.pending_actions,
+                            const Color(0xFFFF6B35),
+                          ),
+                          _buildStatCard(
+                            'Active Ads',
+                            stats.activeAds.toString(),
+                            Icons.check_circle,
+                            const Color(0xFFf48c25),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 
@@ -257,6 +278,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildActionCard(
+                          'Insight Metrics',
+                          Icons.insights,
+                          const Color(0xFF9C27B0),
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AdminInsightMetricsPage(),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -282,30 +317,50 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Widget _buildStatCard(
       String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+              : [Colors.grey.shade100, Colors.grey.shade200],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
+            Icon(icon, size: 42, color: color),
+            const SizedBox(height: 12),
             Text(
               value,
               style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
                 color: color,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+              style: TextStyle(
+                fontSize: 15,
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                letterSpacing: 0.1,
               ),
               textAlign: TextAlign.center,
             ),
@@ -372,21 +427,46 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
         final pendingAds = adminProvider.pendingAds;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
-        return Card(
-          elevation: 4,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [const Color(0xFF111827), const Color(0xFF0B1220)]
+                  : [Colors.grey.shade100, Colors.grey.shade200],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.06)
+                  : Colors.grey.shade400,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Colors.orange.shade50,
-                  Colors.orange.shade100,
-                ],
+                colors: isDark
+                    ? [
+                        Colors.orange.shade900.withOpacity(0.2),
+                        Colors.orange.shade800.withOpacity(0.1),
+                      ]
+                    : [
+                        Colors.orange.shade50,
+                        Colors.orange.shade100,
+                      ],
               ),
             ),
             child: Padding(
@@ -447,7 +527,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       // Debug Button
                       IconButton(
                         onPressed: () {
-                          print('AdminDashboard: Debugging ad statuses...');
+                          print('AdminDashboard:  Debugging ad statuses...');
                           adminProvider.debugAndFixAdStatuses();
                         },
                         icon: Icon(
@@ -492,7 +572,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Debug Info:',
+                            'Debug Info: ',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.blue.shade700,
@@ -501,7 +581,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           Text('Loading: ${adminProvider.isLoading}'),
                           Text('Pending Ads Count: ${pendingAds.length}'),
                           Text(
-                              'Error: ${adminProvider.errorMessage ?? 'None'}'),
+                              'Error:  ${adminProvider.errorMessage ?? 'None'}'),
                         ],
                       ),
                     ),
@@ -539,7 +619,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'All ads have been reviewed!',
+                            'All ads have been reviewed! ',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey.shade600,
@@ -817,12 +897,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             elevation: 2,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+            child: const Padding(
+              padding: EdgeInsets.all(16),
               child: Center(
                 child: Text(
                   'No recent activities',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey,
                   ),

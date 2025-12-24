@@ -10,6 +10,7 @@ import '../widgets/car_brand_grid.dart';
 import '../models/car_brand_model.dart';
 import '../services/car_brand_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'chat.dart';
 
 class Homepage extends StatefulWidget {
   final int initialTab;
@@ -28,7 +29,6 @@ class _HomepageState extends State<Homepage> {
   @override
   void initState() {
     super.initState();
-    // Initialize search provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SearchProvider>().initializeAds();
     });
@@ -88,12 +88,15 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Consumer<SearchProvider>(
       builder: (context, searchProvider, _) {
         return Scaffold(
           appBar: AppBar(
             title: const Text(
-              'CarHive',          
+              'CarHive',
             ),
             backgroundColor: Colors.transparent,
             centerTitle: true,
@@ -118,11 +121,30 @@ class _HomepageState extends State<Homepage> {
                   icon: const Icon(Icons.map),
                   tooltip: 'Map View',
                 ),
-              IconButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/notifications');
-                  },
-                  icon: const Icon(Icons.chat)),
+              // Chat icon - use StreamBuilder with auth state
+              StreamBuilder<User?>(
+                stream: FirebaseAuth.instance.authStateChanges(),
+                builder: (context, authSnapshot) {
+                  final isLoggedIn = authSnapshot.data != null;
+
+                  return IconButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/notifications');
+                    },
+                    icon: isLoggedIn
+                        ? ChatBadgeIcon(
+                            icon: Icons.chat_bubble_outline,
+                            size: 24,
+                            color: isDark ? const Color(0xFFf48c25) : null,
+                          )
+                        : Icon(
+                            Icons.chat_bubble_outline,
+                            color: isDark ? const Color(0xFFf48c25) : null,
+                          ),
+                    tooltip: 'Messages',
+                  );
+                },
+              ),
             ],
           ),
           body: SingleChildScrollView(
@@ -155,6 +177,7 @@ class _HomepageState extends State<Homepage> {
                     },
                   ),
                 ),
+              ),
 
                 // Brand Filter Chip (if brand is selected)
                 if (_selectedBrandId != null && !_isSearchActive)
@@ -308,7 +331,7 @@ class _HomepageState extends State<Homepage> {
                 child: Container(
                   width: 100,
                   height: 64,
-                  color: colorScheme.surfaceVariant,
+                  color: colorScheme.surfaceContainerHighest,
                   child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
                       ? Image.network(
                           ad.imageUrls![0],
@@ -447,7 +470,7 @@ class _HomepageState extends State<Homepage> {
                 Icon(Icons.star, size: 14, color: Colors.amber[600]),
                 const SizedBox(width: 2),
                 Text(
-                  '${avgRating.toStringAsFixed(1)} (${ratingCount})',
+                  '${avgRating.toStringAsFixed(1)} ($ratingCount)',
                   style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                 ),
               ],

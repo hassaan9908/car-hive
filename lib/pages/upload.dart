@@ -65,7 +65,7 @@ class Upload extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.login, size: 64, color: colorScheme.onSurfaceVariant),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'Please login to upload ads',
             style: TextStyle(
@@ -73,29 +73,35 @@ class Upload extends StatelessWidget {
               color: colorScheme.onSurface,
             ),
           ),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Container(
             width: 130,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFF6B35).withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF6B35).withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: 
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(context, 'loginscreen');
-            },
-            child: Text('Login'),
-          ),
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, 'loginscreen');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text('Login'),
+            ),
           ),
         ],
       ),
@@ -107,21 +113,8 @@ class Upload extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  const Color(0xFF1A1A2E),
-                  const Color(0xFF16213E),
-                ]
-              : [
-                  const Color(0xFFF8F9FA),
-                  const Color(0xFFE9ECEF),
-                ],
-        ),
-      ),
+      // Remove page-wide navy gradient; use transparent background
+      color: Colors.transparent,
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
@@ -182,12 +175,12 @@ class Upload extends StatelessWidget {
                     ],
                     buttonText: "Post Your Ad",
                     icon: Icons.person_outline_rounded,
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFF0066FF),
-                        const Color(0xFF0052CC),
+                        Color(0xFF0066FF),
+                        Color(0xFF0052CC),
                       ],
                     ),
                     onPressed: () {
@@ -212,14 +205,14 @@ class Upload extends StatelessWidget {
                       "Professional car inspection",
                       "We handle the paperwork",
                     ],
-                    buttonText: "loginlling",
+                    buttonText: "Get Started",
                     icon: Icons.support_agent_rounded,
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFF00C853),
-                        const Color(0xFF00A344),
+                        Color(0xFF00C853),
+                        Color(0xFF00A344),
                       ],
                     ),
                     onPressed: () {
@@ -361,12 +354,12 @@ class Upload extends StatelessWidget {
                             margin: const EdgeInsets.only(top: 2),
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00C853).withOpacity(0.15),
+                              color: const Color(0xFFf48c25).withOpacity(0.15),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.check_rounded,
-                              color: Color(0xFF00C853),
+                              color: Color(0xFFf48c25),
                               size: 14,
                             ),
                           ),
@@ -387,7 +380,7 @@ class Upload extends StatelessWidget {
                         ],
                       ),
                     );
-                  }).toList(),
+                  }),
 
                   const SizedBox(height: 24),
 

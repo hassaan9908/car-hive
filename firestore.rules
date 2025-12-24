@@ -265,6 +265,20 @@ service cloud.firestore {
       }
     }
 
+    // INSPECTIONS (root-level collection for saved inspection reports)
+    match /inspections/{inspectionId} {
+      // Allow signed-in users to read their own saved reports and admins to read all
+      allow read: if isSignedIn();
+
+      // Create: any signed-in user can save an inspection report to the root collection
+      allow create: if isSignedIn() && request.resource.data.userId == currentUid();
+
+      // Update/Delete: owners or admins
+      allow update, delete: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+    }
+
     // INVESTMENT VEHICLES collection
     match /investment_vehicles/{vehicleId} {
       // Anyone signed in can read investment vehicles

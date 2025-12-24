@@ -80,6 +80,7 @@ class Advanced360Controller extends ChangeNotifier {
   }
 
   /// Dispose resources
+  @override
   void dispose() {
     _idleTimer?.cancel();
     _momentumTimer?.cancel();

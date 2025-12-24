@@ -521,13 +521,13 @@ class Profilepage extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final Color card_settings = isDark 
+    final Color cardSettings = isDark 
         ? const Color.fromARGB(255, 15, 15, 15) 
         : Colors.grey.shade200;
 
     return Card(
       elevation: 0,
-      color: card_settings,
+      color: cardSettings,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side:
@@ -677,13 +677,13 @@ class Profilepage extends StatelessWidget {
         final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final Color card_engagement = isDark 
+    final Color cardEngagement = isDark 
         ? const Color.fromARGB(255, 15, 15, 15) 
         : Colors.grey.shade200;
 
     return Card(
       elevation: 2,
-      color: card_engagement,
+      color: cardEngagement,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: colorScheme.primary.withOpacity(0.2)),
@@ -847,7 +847,7 @@ class Profilepage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.3),
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -905,7 +905,7 @@ class Profilepage extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.emoji_events, color: Colors.amber, size: 16),
+            const Icon(Icons.emoji_events, color: Colors.amber, size: 16),
             const SizedBox(width: 6),
             Text(
               'Max Rank Achieved!',
@@ -929,7 +929,7 @@ class Profilepage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.3),
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
@@ -958,7 +958,7 @@ class Profilepage extends StatelessWidget {
           const SizedBox(height: 4),
           LinearProgressIndicator(
             value: progress.clamp(0.0, 1.0),
-            backgroundColor: colorScheme.surfaceVariant,
+            backgroundColor: colorScheme.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
           ),
         ],
@@ -1008,9 +1008,9 @@ class Profilepage extends StatelessWidget {
 
       // Determine rank based on score
       String rank = 'Bronze';
-      if (score >= 500)
+      if (score >= 500) {
         rank = 'Diamond';
-      else if (score >= 300)
+      } else if (score >= 300)
         rank = 'Platinum';
       else if (score >= 150)
         rank = 'Gold';

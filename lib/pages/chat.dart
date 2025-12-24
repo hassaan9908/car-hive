@@ -8,6 +8,22 @@ import 'chat_detail_page.dart';
 class Chat extends StatefulWidget {
   const Chat({super.key});
 
+  /// Static method to get total unread count stream for use in navigation badges
+  /// Returns Stream.value(0) if user is not authenticated to avoid Firestore errors
+  static Stream<int> getTotalUnreadCountStream() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return Stream.value(0);
+    }
+
+    try {
+      return ChatService().getTotalUnreadCount();
+    } catch (e) {
+      print('Error getting unread count stream: $e');
+      return Stream.value(0);
+    }
+  }
+
   @override
   State<Chat> createState() => _ChatState();
 }
@@ -54,7 +70,36 @@ class _ChatState extends State<Chat> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chats'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Chats'),
+            const SizedBox(width: 8),
+            StreamBuilder<int>(
+              stream: _chatService.getTotalUnreadCount(),
+              builder: (context, snapshot) {
+                final count = snapshot.data ?? 0;
+                if (count == 0) return const SizedBox.shrink();
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFf48c25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    count > 99 ? '99+' : '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
         backgroundColor: Colors.transparent,
         centerTitle: true,
         titleTextStyle: TextStyle(
@@ -133,8 +178,10 @@ class _ChatState extends State<Chat> {
             itemCount: conversations.length,
             itemBuilder: (context, index) {
               final conversation = conversations[index];
-              final otherUserId = conversation.getOtherParticipantId(currentUser.uid);
-              final unreadCount = conversation.getUnreadCountForUser(currentUser.uid);
+              final otherUserId =
+                  conversation.getOtherParticipantId(currentUser.uid);
+              final unreadCount =
+                  conversation.getUnreadCountForUser(currentUser.uid);
 
               return FutureBuilder<Map<String, dynamic>?>(
                 future: _chatService.getUserInfo(otherUserId),
@@ -205,7 +252,9 @@ class _ChatState extends State<Chat> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: unreadCount > 0
-                            ? (isDark ? const Color(0xFFf48c25) : Colors.black87)
+                            ? (isDark
+                                ? const Color(0xFFf48c25)
+                                : Colors.black87)
                             : (isDark ? Colors.white60 : Colors.grey[600]),
                         fontWeight: unreadCount > 0
                             ? FontWeight.w500
@@ -220,19 +269,24 @@ class _ChatState extends State<Chat> {
                           _formatTime(conversation.lastMessageTime),
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark ? Colors.white54 : Colors.grey[600],
+                            color: unreadCount > 0
+                                ? const Color(0xFFf48c25)
+                                : (isDark ? Colors.white54 : Colors.grey[600]),
+                            fontWeight: unreadCount > 0
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
                         ),
                         if (unreadCount > 0) ...[
                           const SizedBox(height: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
+                              horizontal: 8,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFf48c25),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               unreadCount > 99 ? '99+' : '$unreadCount',
@@ -291,5 +345,109 @@ class _ChatState extends State<Chat> {
       // Older - show date
       return '${dateTime.day}/${dateTime.month}';
     }
+  }
+}
+
+/// Widget to display unread message badge on navigation icons
+/// Handles auth state changes to avoid Firestore errors during login
+class ChatBadgeIcon extends StatefulWidget {
+  final IconData icon;
+  final double size;
+  final Color? color;
+
+  const ChatBadgeIcon({
+    super.key,
+    required this.icon,
+    this.size = 24,
+    this.color,
+  });
+
+  @override
+  State<ChatBadgeIcon> createState() => _ChatBadgeIconState();
+}
+
+class _ChatBadgeIconState extends State<ChatBadgeIcon> {
+  Stream<int>? _unreadStream;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Delay initialization to avoid race conditions during auth
+    _initializeStream();
+  }
+
+  void _initializeStream() {
+    // Add a small delay to ensure auth state is settled
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          setState(() {
+            _unreadStream = Chat.getTotalUnreadCountStream();
+            _isInitialized = true;
+          });
+        } else {
+          setState(() {
+            _isInitialized = true;
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // If not initialized or no user, show plain icon
+    if (!_isInitialized || FirebaseAuth.instance.currentUser == null) {
+      return Icon(widget.icon, size: widget.size, color: widget.color);
+    }
+
+    return StreamBuilder<int>(
+      stream: _unreadStream,
+      builder: (context, snapshot) {
+        // Handle errors gracefully
+        if (snapshot.hasError) {
+          return Icon(widget.icon, size: widget.size, color: widget.color);
+        }
+
+        final count = snapshot.data ?? 0;
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(widget.icon, size: widget.size, color: widget.color),
+            if (count > 0)
+              Positioned(
+                right: -8,
+                top: -4,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  constraints:
+                      const BoxConstraints(minWidth: 16, minHeight: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      count > 99 ? '99+' : '$count',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }

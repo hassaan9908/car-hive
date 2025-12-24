@@ -263,7 +263,7 @@ class _Car360PreviewGridScreenState extends State<Car360PreviewGridScreen> {
                             right: 4,
                             child: Container(
                               padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 color: Colors.green,
                                 shape: BoxShape.circle,
                               ),

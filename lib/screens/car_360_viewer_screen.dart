@@ -401,7 +401,7 @@ class _Car360ViewerScreenState extends State<Car360ViewerScreen>
                     const Icon(Icons.swipe, color: Colors.white70, size: 16),
                     const SizedBox(width: 6),
                     Text(
-                      'Drag to rotate (${_totalFrames} frames)',
+                      'Drag to rotate ($_totalFrames frames)',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 12,

@@ -65,7 +65,7 @@ class CustomMarkerService {
             // Draw image
             const double imageTop = 8;
             const double imageLeft = (_markerSize - _imageSize) / 2;
-            final Rect imageRect = Rect.fromLTWH(
+            const Rect imageRect = Rect.fromLTWH(
               imageLeft,
               imageTop,
               _imageSize,
@@ -98,8 +98,8 @@ class CustomMarkerService {
       final TextPainter pricePainter = TextPainter(
         text: TextSpan(
           text: 'PKR $price',
-          style: TextStyle(
-            color: const Color(0xFFf48c25),
+          style: const TextStyle(
+            color: Color(0xFFf48c25),
             fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
@@ -109,7 +109,7 @@ class CustomMarkerService {
       pricePainter.layout();
       
       final double priceX = (_markerSize - pricePainter.width) / 2;
-      final double priceY = _markerSize - 35;
+      const double priceY = _markerSize - 35;
       pricePainter.paint(canvas, Offset(priceX, priceY));
 
       // Draw pointer at bottom

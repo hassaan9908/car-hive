@@ -12,6 +12,9 @@ class VideoListPage extends StatefulWidget {
 }
 
 class _VideoListPageState extends State<VideoListPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -20,19 +23,49 @@ class _VideoListPageState extends State<VideoListPage> {
     });
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadVideos() async {
     final contentProvider = context.read<ContentProvider>();
     await contentProvider.loadAllVideos();
   }
 
+  List<dynamic> _getFilteredVideos(List<dynamic> videos) {
+    if (_searchQuery.isEmpty) return videos;
+    return videos.where((video) {
+      final titleMatch =
+          video.title.toLowerCase().contains(_searchQuery.toLowerCase());
+      final descMatch =
+          video.description.toLowerCase().contains(_searchQuery.toLowerCase());
+      final authorMatch =
+          video.author.toLowerCase().contains(_searchQuery.toLowerCase());
+      final tagMatch = video.tags != null &&
+          (video.tags as List).any((tag) => tag
+              .toString()
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()));
+      return titleMatch || descMatch || authorMatch || tagMatch;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Videos'),
-        backgroundColor: const Color(0xFF1E3A8A),
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: colorScheme.onSurface,
       ),
+      backgroundColor:
+          isDark ? const Color(0xFF0D1117) : const Color(0xFFFAFAFA),
       body: Consumer<ContentProvider>(
         builder: (context, contentProvider, child) {
           if (contentProvider.isLoading) {
@@ -41,13 +74,12 @@ class _VideoListPageState extends State<VideoListPage> {
             );
           }
 
-          // Show error message if there is one
           if (contentProvider.errorMessage != null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error, color: Colors.red, size: 48),
+                  const Icon(Icons.error, color: Colors.red, size: 48),
                   const SizedBox(height: 16),
                   Text(
                     contentProvider.errorMessage!,
@@ -67,154 +99,348 @@ class _VideoListPageState extends State<VideoListPage> {
           final videos = contentProvider.videos;
 
           if (videos.isEmpty) {
-            return const Center(
-              child: Text('No videos available'),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.video_library_outlined,
+                      size: 64,
+                      color: colorScheme.primary.withValues(alpha: 0.5)),
+                  const SizedBox(height: 16),
+                  Text('No videos available',
+                      style: TextStyle(
+                          color: colorScheme.onSurface.withValues(alpha: 0.6))),
+                ],
+              ),
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: videos.length,
-            itemBuilder: (context, index) {
-              final video = videos[index];
-              final computedThumb =
-                  (video.thumbnailUrl != null && video.thumbnailUrl!.isNotEmpty)
-                      ? video.thumbnailUrl!
-                      : CloudinaryService()
-                          .buildVideoThumbnailUrl(video.videoUrl, second: 1);
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 3,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => VideoDetailPage(video: video),
+          final filteredVideos = _getFilteredVideos(videos);
+
+          return CustomScrollView(
+            slivers: [
+              // Search bar
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search videos...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                setState(() {
+                                  _searchController.clear();
+                                  _searchQuery = '';
+                                });
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor:
+                          isDark ? const Color(0xFF161B22) : Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary.withValues(alpha: 0.2),
+                        ),
                       ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Video thumbnail preview with play icon overlay
-                        Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                computedThumb,
-                                height: 200,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Container(
-                                    height: 200,
-                                    color: Colors.grey.shade200,
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress
-                                                    .expectedTotalBytes !=
-                                                null
-                                            ? loadingProgress
-                                                    .cumulativeBytesLoaded /
-                                                loadingProgress
-                                                    .expectedTotalBytes!
-                                            : null,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    height: 200,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade300,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.video_library,
-                                        size: 64,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            // Play icon overlay
-                            Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  color: Colors.black.withOpacity(0.3),
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.play_circle_outline,
-                                    size: 72,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary.withValues(alpha: 0.15),
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          video.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'By ${video.author}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        if (video.createdAt != null)
-                          Text(
-                            'Published: ${video.createdAt!.toString().split(' ').first}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        const SizedBox(height: 8),
-                        Text(
-                          video.description.length > 100
-                              ? '${video.description.substring(0, 100)}...'
-                              : video.description,
-                          style: const TextStyle(
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Align(
-                          alignment: Alignment.centerRight,
-                          child: Icon(Icons.arrow_forward_ios,
-                              size: 16, color: Colors.red),
-                        ),
-                      ],
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                     ),
                   ),
                 ),
-              );
-            },
+              ),
+
+              if (filteredVideos.isEmpty)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.search_off,
+                            size: 56,
+                            color: colorScheme.primary.withValues(alpha: 0.4)),
+                        const SizedBox(height: 16),
+                        Text('No videos match your search',
+                            style: TextStyle(
+                                fontSize: 16,
+                                color: colorScheme.onSurface
+                                    .withValues(alpha: 0.6))),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final video = filteredVideos[index];
+                        final computedThumb = (video.thumbnailUrl != null &&
+                                video.thumbnailUrl!.isNotEmpty)
+                            ? video.thumbnailUrl!
+                            : CloudinaryService().buildVideoThumbnailUrl(
+                                video.videoUrl,
+                                second: 1);
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      VideoDetailPage(video: video),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF161B22)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black
+                                        .withValues(alpha: isDark ? 0.3 : 0.08),
+                                    blurRadius: 24,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Thumbnail with play icon
+                                  Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                                top: Radius.circular(16)),
+                                        child: Image.network(
+                                          computedThumb,
+                                          height: 200,
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            return Container(
+                                              height: 200,
+                                              decoration: BoxDecoration(
+                                                color: colorScheme.primary
+                                                    .withValues(alpha: 0.1),
+                                                borderRadius: const BorderRadius
+                                                    .vertical(
+                                                    top: Radius.circular(16)),
+                                              ),
+                                              child: Center(
+                                                child: Icon(
+                                                  Icons.video_library,
+                                                  size: 56,
+                                                  color: colorScheme.primary,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      // Gradient overlay + play button
+                                      Positioned.fill(
+                                        child: Container(
+                                          decoration: const BoxDecoration(
+                                            borderRadius: BorderRadius.vertical(
+                                                top: Radius.circular(16)),
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Colors.transparent,
+                                                Colors.black26,
+                                              ],
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Container(
+                                              padding: const EdgeInsets.all(14),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black
+                                                    .withValues(alpha: 0.5),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.play_arrow_rounded,
+                                                size: 40,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  // Video details
+                                  Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // Title
+                                        Text(
+                                          video.title,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            color: colorScheme.onSurface,
+                                            letterSpacing: -0.3,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 12),
+
+                                        // Author + Date row
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: BoxDecoration(
+                                                color: colorScheme.primary
+                                                    .withValues(alpha: 0.15),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: Icon(
+                                                Icons.person_rounded,
+                                                size: 14,
+                                                color: colorScheme.primary,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                video.author,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: colorScheme.onSurface,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (video.createdAt != null) ...[
+                                              const SizedBox(width: 8),
+                                              Icon(
+                                                Icons.calendar_today_rounded,
+                                                size: 13,
+                                                color: colorScheme.onSurface
+                                                    .withValues(alpha: 0.5),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                video.createdAt!
+                                                    .toString()
+                                                    .split(' ')
+                                                    .first,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: colorScheme.onSurface
+                                                      .withValues(alpha: 0.5),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+
+                                        const SizedBox(height: 12),
+
+                                        // Tags if available
+                                        if (video.tags != null &&
+                                            video.tags!.isNotEmpty) ...[
+                                          Wrap(
+                                            spacing: 6,
+                                            runSpacing: 6,
+                                            children: List<Widget>.from(
+                                              video.tags!.take(3).map((tag) {
+                                                return Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: colorScheme.primary
+                                                        .withValues(
+                                                            alpha: 0.12),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            6),
+                                                  ),
+                                                  child: Text(
+                                                    tag,
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color:
+                                                          colorScheme.primary,
+                                                    ),
+                                                  ),
+                                                );
+                                              }),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                        ],
+
+                                        // Description
+                                        Text(
+                                          video.description.length > 100
+                                              ? '${video.description.substring(0, 100)}...'
+                                              : video.description,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: colorScheme.onSurface
+                                                .withValues(alpha: 0.75),
+                                            height: 1.5,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      childCount: filteredVideos.length,
+                    ),
+                  ),
+                ),
+            ],
           );
         },
       ),

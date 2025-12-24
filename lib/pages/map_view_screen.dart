@@ -696,7 +696,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
                   child: Container(
                     width: 100,
                     height: 75,
-                    color: colorScheme.surfaceVariant,
+                    color: colorScheme.surfaceContainerHighest,
                     child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
                         ? CachedNetworkImage(
                             imageUrl: ad.imageUrls![0],
@@ -807,4 +807,3 @@ class _MapViewScreenState extends State<MapViewScreen> {
     );
   }
 }
-

@@ -5,6 +5,7 @@ class CustomBottomNav extends StatelessWidget {
   final ValueChanged<int> onTabSelected;
   final VoidCallback? onFabPressed;
 
+  // ignore: use_super_parameters
   const CustomBottomNav({
     Key? key,
     required this.selectedIndex,
@@ -17,11 +18,11 @@ class CustomBottomNav extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     
-    final Color selectedColor = Color(0xFFf48c25);
+    const Color selectedColor = Color(0xFFf48c25);
     final Color unselectedColor = isDark
         ? Colors.white70
         : Colors.black54;
-    final Color fabColor = Color(0xFFf48c25);
+    const Color fabColor = Color(0xFFf48c25);
     final Color bottomNavBackground = isDark 
         ? const Color.fromARGB(255, 15, 15, 15) 
         : Colors.grey.shade200;
@@ -57,13 +58,13 @@ class CustomBottomNav extends StatelessWidget {
             child: 
           FloatingActionButton(
             onPressed: onFabPressed,
-            backgroundColor: Color.fromARGB(255, 243, 103, 52),
+            backgroundColor: const Color.fromARGB(255, 243, 103, 52),
+            shape: const CircleBorder(),
             child: const Icon(
               Icons.add,
               size: 32,
               color: Colors.white,
             ),
-            shape: const CircleBorder(),
           ),
         ),
         
