@@ -66,6 +66,10 @@ void main() async {
     );
     print('Firebase initialized successfully');
     
+    // Note: Firebase App Check is optional and mainly for production security
+    // The warning "No AppCheckProvider installed" is harmless and can be ignored
+    // For production, configure App Check in Firebase Console with proper attestation providers
+    
     // Cleanup expired ads on app startup (non-blocking)
     GlobalAdStore().cleanupExpiredAds().catchError((e) {
       print('Error cleaning up expired ads on startup: $e');

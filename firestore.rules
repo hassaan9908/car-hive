@@ -288,9 +288,16 @@ service cloud.firestore {
       allow create: if isSignedIn() 
         && request.resource.data.initiatorUserId == currentUid();
       
-      // Initiator or admin can update
+      // Update rules:
+      // 1. Initiator or admin can update any field
+      // 2. Any authenticated user can update currentInvestment and updatedAt (for investments)
       allow update: if isSignedIn() && (
-        resource.data.initiatorUserId == currentUid() || isAdmin()
+        // Initiator or admin can update anything
+        resource.data.initiatorUserId == currentUid() || isAdmin() ||
+        // Any user can update currentInvestment and updatedAt when making an investment
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentInvestment', 'updatedAt']) ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentInvestment']) ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['updatedAt']))
       );
       
       // Only admin can delete
