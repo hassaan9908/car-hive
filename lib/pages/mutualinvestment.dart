@@ -80,6 +80,20 @@ class _MutualinvestmentState extends State<Mutualinvestment>
                     const Text(
                       'Please login to view mutual investments',
                       style: TextStyle(fontSize: 18),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Mutual Investment'),
+              backgroundColor: Colors.transparent,
+              centerTitle: true,
+          actions: [
+            if (user != null)
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CreateInvestmentPage(),
                     ),
                     const SizedBox(height: 32),
                     Container(
