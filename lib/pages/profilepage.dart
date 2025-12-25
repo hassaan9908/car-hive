@@ -213,7 +213,7 @@ class Profilepage extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
-            ),
+          ),
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
@@ -523,9 +523,8 @@ class Profilepage extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final Color cardSettings = isDark 
-        ? const Color.fromARGB(255, 15, 15, 15) 
-        : Colors.grey.shade200;
+    final Color cardSettings =
+        isDark ? const Color.fromARGB(255, 15, 15, 15) : Colors.grey.shade200;
 
     return Card(
       elevation: 0,
@@ -674,14 +673,20 @@ class Profilepage extends StatelessWidget {
     );
   }
 
-  Widget _buildEngagementCard(BuildContext context, ColorScheme colorScheme, int score, String rank, 
-      int adsSold, int positiveRatings, int totalRatings, bool isLoading) {
-        final theme = Theme.of(context);
+  Widget _buildEngagementCard(
+      BuildContext context,
+      ColorScheme colorScheme,
+      int score,
+      String rank,
+      int adsSold,
+      int positiveRatings,
+      int totalRatings,
+      bool isLoading) {
+    final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final Color cardEngagement = isDark 
-        ? const Color.fromARGB(255, 15, 15, 15) 
-        : Colors.grey.shade200;
+    final Color cardEngagement =
+        isDark ? const Color.fromARGB(255, 15, 15, 15) : Colors.grey.shade200;
 
     return Card(
       elevation: 2,
