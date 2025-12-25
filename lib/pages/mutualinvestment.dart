@@ -59,32 +59,86 @@ class _MutualinvestmentState extends State<Mutualinvestment>
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
 
+    // Guest user UI - similar to My Ads
+    if (user == null) {
+      return WillPopScope(
+        onWillPop: () async {
+          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+          return false;
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Mutual Investment'),
+            backgroundColor: Colors.transparent,
+            centerTitle: true,
+          ),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.login, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Text(
+                  'Please login to view investments',
+                  style: TextStyle(fontSize: 18),
+                ),
+                const SizedBox(height: 32),
+                Container(
+                  width: 130,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF6B35).withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pushNamed(context, 'loginscreen');
+                    },
+                    child: const Text('Login'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          bottomNavigationBar: CustomBottomNav(
+            selectedIndex: _selectedIndex,
+            onTabSelected: (index) => _onTabSelected(context, index),
+            onFabPressed: () {
+              if (_selectedIndex != 2) {
+                Navigator.pushReplacementNamed(context, _navRoutes[2]);
+              }
+            },
+          ),
+        ),
+      );
+    }
+
+    // Logged in user UI
     return WillPopScope(
       onWillPop: () async {
         Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
         return false;
       },
-      child: user == null
-          ? Scaffold(
-              appBar: AppBar(
-                title: const Text('Mutual Investment'),
-                backgroundColor: Colors.transparent,
-                centerTitle: true,
-              ),
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.login, size: 64, color: Colors.grey),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Please login to view mutual investments',
-                      style: TextStyle(fontSize: 18),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Mutual Investment'),
-              backgroundColor: Colors.transparent,
-              centerTitle: true,
+          backgroundColor: Colors.transparent,
+          centerTitle: true,
           actions: [
             if (user != null)
               IconButton(
@@ -95,115 +149,53 @@ class _MutualinvestmentState extends State<Mutualinvestment>
                     MaterialPageRoute(
                       builder: (context) => const CreateInvestmentPage(),
                     ),
-                    const SizedBox(height: 32),
-                    Container(
-                      width: 130,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF6B35).withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
+                  );
+                  if (result != null && mounted) {
+                    // Investment created, could navigate to detail page
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Investment opportunity created!'),
+                        backgroundColor: Colors.green,
                       ),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            '/login',
-                            (route) => false,
-                          );
-                        },
-                        child: const Text('Login'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              bottomNavigationBar: CustomBottomNav(
-                selectedIndex: _selectedIndex,
-                onTabSelected: (index) => _onTabSelected(context, index),
-                onFabPressed: () {
-                  if (_selectedIndex != 2) {
-                    Navigator.pushReplacementNamed(context, _navRoutes[2]);
+                    );
                   }
                 },
+                tooltip: 'Create Investment',
               ),
-            )
-          : Scaffold(
-              appBar: AppBar(
-                title: const Text('Mutual Investment'),
-                backgroundColor: Colors.transparent,
-                centerTitle: true,
-                actions: [
-                  if (user != null)
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      onPressed: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CreateInvestmentPage(),
-                          ),
-                        );
-                        if (result != null && mounted) {
-                          // Investment created, could navigate to detail page
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Investment opportunity created!'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        }
-                      },
-                      tooltip: 'Create Investment',
-                    ),
-                ],
-                bottom: TabBar(
-                  controller: _tabController,
-                  tabs: const [
-                    Tab(text: 'Available', icon: Icon(Icons.search)),
-                    Tab(text: 'My Investments', icon: Icon(Icons.account_balance)),
-                    Tab(text: 'Marketplace', icon: Icon(Icons.store)),
-                  ],
-                ),
-              ),
-              body: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Available Investments Tab
-                  _buildAvailableInvestmentsTab(),
-                  // My Investments Tab
-                  user != null
-                      ? _buildMyInvestmentsTab(user.uid)
-                      : const Center(
-                          child: Text('Please login to view your investments')),
-                  // Marketplace Tab
-                  _buildMarketplaceTab(),
-                ],
-              ),
-              bottomNavigationBar: CustomBottomNav(
-                selectedIndex: _selectedIndex,
-                onTabSelected: (index) => _onTabSelected(context, index),
-                onFabPressed: () {
-                  if (_selectedIndex != 2) {
-                    Navigator.pushReplacementNamed(context, _navRoutes[2]);
-                  }
-                },
-              ),
-            ),
+          ],
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'Available', icon: Icon(Icons.search)),
+              Tab(text: 'My Investments', icon: Icon(Icons.account_balance)),
+              Tab(text: 'Marketplace', icon: Icon(Icons.store)),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            // Available Investments Tab
+            _buildAvailableInvestmentsTab(),
+            // My Investments Tab
+            user != null
+                ? _buildMyInvestmentsTab(user.uid)
+                : const Center(
+                    child: Text('Please login to view your investments')),
+            // Marketplace Tab
+            _buildMarketplaceTab(),
+          ],
+        ),
+        bottomNavigationBar: CustomBottomNav(
+          selectedIndex: _selectedIndex,
+          onTabSelected: (index) => _onTabSelected(context, index),
+          onFabPressed: () {
+            if (_selectedIndex != 2) {
+              Navigator.pushReplacementNamed(context, _navRoutes[2]);
+            }
+          },
+        ),
+      ),
     );
   }
 
@@ -268,7 +260,8 @@ class _MutualinvestmentState extends State<Mutualinvestment>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.account_balance_wallet, size: 64, color: Colors.grey),
+                Icon(Icons.account_balance_wallet,
+                    size: 64, color: Colors.grey),
                 SizedBox(height: 16),
                 Text(
                   'You have no active investments',
@@ -385,7 +378,8 @@ class _MutualinvestmentState extends State<Mutualinvestment>
                   LinearProgressIndicator(
                     value: vehicle.fundingProgress / 100,
                     backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Colors.green),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -404,7 +398,8 @@ class _MutualinvestmentState extends State<Mutualinvestment>
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                    const Icon(Icons.info_outline,
+                        size: 16, color: Colors.blue),
                     const SizedBox(width: 8),
                     Text(
                       'Minimum: ${vehicle.minimumContribution.toStringAsFixed(0)} PKR',

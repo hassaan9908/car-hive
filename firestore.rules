@@ -185,8 +185,10 @@ service cloud.firestore {
 
     // BLOGS collection (new addition for our implementation)
     match /blogs/{blogId} {
-      // Allow admins to create, read, update, and delete blogs
-      allow create, read, update, delete: if isAdmin();
+      // Allow everyone to read blogs (public content)
+      allow read: if true;
+      // Only admins can create, update, and delete blogs
+      allow create, update, delete: if isAdmin();
     }
 
     // CONVERSATIONS collection for chat
@@ -281,8 +283,8 @@ service cloud.firestore {
 
     // INVESTMENT VEHICLES collection
     match /investment_vehicles/{vehicleId} {
-      // Anyone signed in can read investment vehicles
-      allow read: if isSignedIn();
+      // Anyone can read investment vehicles (public content)
+      allow read: if true;
       
       // Users can create investment vehicles they initiate
       allow create: if isSignedIn() 
@@ -306,8 +308,8 @@ service cloud.firestore {
 
     // INVESTMENTS collection
     match /investments/{investmentId} {
-      // Users can read their own investments or investments for vehicles they're viewing
-      allow read: if isSignedIn();
+      // Anyone can read investments (for transparency)
+      allow read: if true;
       
       // Users can create investments for themselves
       allow create: if isSignedIn() 
