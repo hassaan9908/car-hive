@@ -31,7 +31,7 @@ class PhoneAuthService {
 
     // Format phone number for Firebase
     final formattedPhoneNumber = _formatPhoneNumber(phoneNumber);
-    
+
     // Debug: Print the formatted phone number
     print('Original phone number: $phoneNumber');
     print('Formatted phone number: $formattedPhoneNumber');
@@ -56,7 +56,8 @@ class PhoneAuthService {
       },
       verificationFailed: (FirebaseAuthException e) {
         // This callback is called when verification fails
-        print('Verification failed for $formattedPhoneNumber: ${e.code} - ${e.message}');
+        print(
+            'Verification failed for $formattedPhoneNumber: ${e.code} - ${e.message}');
         if (!completer.isCompleted) {
           completer.completeError(e);
         }

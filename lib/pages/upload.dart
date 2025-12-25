@@ -73,7 +73,7 @@ class Upload extends StatelessWidget {
               color: colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           Container(
             width: 130,
             decoration: BoxDecoration(
