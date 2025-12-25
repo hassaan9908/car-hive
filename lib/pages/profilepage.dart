@@ -141,12 +141,14 @@ class Profilepage extends StatelessWidget {
                 // Explore section
                 _sectionHeader(context, 'Explore'),
                 _settingsCard(context, [
-                  _settingsTile(context, Icons.article, 'Blog',
-                      onTap: () => _navigateToBlog(context)),
-                  _dividerInset(context),
-                  _settingsTile(context, Icons.ondemand_video, 'Videos',
-                      onTap: () => _navigateToVideos(context)),
-                  _dividerInset(context),
+                  if (authProvider.isLoggedIn) ...[
+                    _settingsTile(context, Icons.article, 'Blog',
+                        onTap: () => _navigateToBlog(context)),
+                    _dividerInset(context),
+                    _settingsTile(context, Icons.ondemand_video, 'Videos',
+                        onTap: () => _navigateToVideos(context)),
+                    _dividerInset(context),
+                  ],
                   _settingsTile(context, Icons.directions_car, 'Cool Rides',
                       onTap: () {}),
                 ]),

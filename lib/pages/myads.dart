@@ -53,7 +53,7 @@ class _MyadsState extends State<Myads> {
                 const SizedBox(height: 16),
                 const Text('Please login to view your ads',
                     style: TextStyle(fontSize: 18)),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 Container(
                   width: 130,
                   decoration: BoxDecoration(
