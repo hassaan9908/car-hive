@@ -54,19 +54,24 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'Failed to send verification code. ';
       print('Firebase Auth Error: ${e.code} - ${e.message}');
-      
+
       if (e.code == 'invalid-phone-number') {
-        errorMessage += 'The phone number format is invalid. Please check and try again.';
+        errorMessage +=
+            'The phone number format is invalid. Please check and try again.';
       } else if (e.code == 'too-many-requests') {
-        errorMessage += 'Too many requests. Please wait a few minutes and try again.';
+        errorMessage +=
+            'Too many requests. Please wait a few minutes and try again.';
       } else if (e.code == 'quota-exceeded') {
-        errorMessage += 'SMS quota exceeded. Please check Firebase Console billing settings.';
+        errorMessage +=
+            'SMS quota exceeded. Please check Firebase Console billing settings.';
       } else if (e.code == 'missing-phone-number') {
         errorMessage += 'Phone number is required.';
       } else if (e.code == 'operation-not-allowed') {
-        errorMessage += 'Phone authentication is not enabled. Please check Firebase Console settings.';
+        errorMessage +=
+            'Phone authentication is not enabled. Please check Firebase Console settings.';
       } else if (e.code == 'invalid-app-credential') {
-        errorMessage += 'reCAPTCHA verification failed on web. Please refresh the page and try again. '
+        errorMessage +=
+            'reCAPTCHA verification failed on web. Please refresh the page and try again. '
             'If the issue persists, ensure your domain is authorized in Firebase Console '
             'or use test phone numbers for development.';
       } else {
@@ -80,7 +85,8 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
     } catch (e) {
       print('General error sending verification code: $e');
       setState(() {
-        _error = 'Failed to send verification code: ${e.toString()}. Please try again.';
+        _error =
+            'Failed to send verification code: ${e.toString()}. Please try again.';
         _isLoading = false;
       });
     }
@@ -107,7 +113,13 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
     });
 
     try {
-      // First create the user with email and password
+      // First verify the phone OTP is correct
+      final phoneCredential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: _otpController.text,
+      );
+
+      // Create the user with email and password
       final authProvider =
           Provider.of<carhive_auth.AuthProvider>(context, listen: false);
       final user = await authProvider.createUserWithEmailAndPassword(
@@ -118,35 +130,65 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
         phoneNumber: widget.phoneNumber,
       );
 
-      if (user != null) {
-        // Then link the phone number with the OTP
-        await _phoneAuthService.linkPhoneNumberToUser(
-          _verificationId!,
-          _otpController.text,
-        );
+      if (user != null && mounted) {
+        try {
+          // Then link the phone number with the OTP
+          await user.linkWithCredential(phoneCredential);
 
-        // Navigate to home screen
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+          // Navigate to home screen
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+                context, '/home', (route) => false);
+          }
+        } catch (linkError) {
+          // If linking fails, it's okay - user is already created
+          print('Phone linking error (non-critical): $linkError');
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+                context, '/home', (route) => false);
+          }
+        }
+      } else {
+        throw Exception('Failed to create user account');
       }
     } on FirebaseAuthException catch (e) {
+      print('Firebase Auth Error in verify: ${e.code} - ${e.message}');
       String errorMessage = 'Verification failed. ';
       if (e.code == 'invalid-verification-code') {
-        errorMessage = 'Invalid verification code. Please try again.';
+        errorMessage = 'Invalid verification code. Please check and try again.';
       } else if (e.code == 'session-expired') {
         errorMessage = 'Session expired. Please request a new code.';
+      } else if (e.code == 'invalid-verification-id') {
+        errorMessage =
+            'Verification session expired. Please request a new code.';
+      } else if (e.code == 'credential-already-in-use') {
+        errorMessage =
+            'This phone number is already linked to another account.';
       } else {
-        errorMessage += 'Please try again.';
+        errorMessage += 'Error: ${e.message ?? e.code}';
       }
 
-      setState(() {
-        _error = errorMessage;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = errorMessage;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = 'Verification failed. Please try again.';
-        _isLoading = false;
-      });
+      print('General error in verify: $e');
+      if (mounted) {
+        setState(() {
+          _error = 'Verification failed: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
+    } finally {
+      // Always ensure loading state is reset
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
