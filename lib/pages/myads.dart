@@ -416,8 +416,17 @@ class _MyadsState extends State<Myads> {
                     width: 96,
                     height: 64,
                     color: cs.surfaceContainerHighest,
-                    child: Icon(Icons.directions_car_filled,
-                        size: 32, color: cs.onSurfaceVariant),
+                    child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
+                        ? Image.network(
+                            ad.imageUrls!.first,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(Icons.directions_car_filled,
+                                  size: 32, color: cs.onSurfaceVariant);
+                            },
+                          )
+                        : Icon(Icons.directions_car_filled,
+                            size: 32, color: cs.onSurfaceVariant),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -437,11 +446,33 @@ class _MyadsState extends State<Myads> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        '${ad.year}  •  ${ad.mileage} km',
-                        style:
-                            TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                      Row(
+                        children: [
+                          Text(
+                            '${ad.year}  •  ${ad.mileage} km',
+                            style: TextStyle(
+                                color: cs.onSurfaceVariant, fontSize: 12),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 2),
+                      if (ad.location.isNotEmpty)
+                        Row(
+                          children: [
+                            Icon(Icons.location_on,
+                                size: 12, color: cs.onSurfaceVariant),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                ad.location,
+                                style: TextStyle(
+                                    color: cs.onSurfaceVariant, fontSize: 11),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),

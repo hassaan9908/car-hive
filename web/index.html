@@ -47,15 +47,17 @@
   -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAeUhpVe19ldAQV23mUXLRJopBih8X2qEk&loading=async&libraries=marker"></script>
   
-  <!-- Hide reCAPTCHA badge to prevent it from covering UI elements -->
+  <!-- Style for reCAPTCHA - position it fixed at bottom so it doesn't interfere with UI -->
   <style>
     .grecaptcha-badge {
-      visibility: hidden !important;
-      opacity: 0 !important;
-      display: none !important;
+      visibility: visible !important;
+      z-index: 9999 !important;
     }
     #recaptcha-container {
-      display: none;
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      z-index: 9999;
     }
   </style>
 </head>

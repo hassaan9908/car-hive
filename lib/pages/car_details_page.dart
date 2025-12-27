@@ -30,7 +30,8 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
   int _rating = 0;
   bool _submitting = false;
   int _currentImageIndex = 0; // Track current image index for indicator
-  final PageController _pageController = PageController(); // Controller for PageView
+  final PageController _pageController =
+      PageController(); // Controller for PageView
   bool _savingAd = false;
 
   @override
@@ -47,6 +48,7 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null && currentUser.uid != widget.ad.userId) {
         await _insightService.recordView(adId);
+        print('InsightService: View recorded for adId: $adId');
       }
     }
   }
@@ -69,9 +71,19 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
         return;
       }
 
+      // Record contact click for insights
+      final adId = widget.ad.id;
+      if (adId != null && adId.isNotEmpty) {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null && currentUser.uid != widget.ad.userId) {
+          await _insightService.recordContactClick(adId);
+          print('InsightService: Contact recorded for adId: $adId');
+        }
+      }
+
       // Clean phone number: remove spaces, dashes, parentheses, and other non-digit characters except +
       String cleanedNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-      
+
       if (cleanedNumber.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -83,16 +95,16 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
 
       // Create URI with tel scheme
       final Uri phoneUri = Uri(scheme: 'tel', path: cleanedNumber);
-      
+
       print('Attempting to call: $cleanedNumber'); // Debug log
-      
+
       // Try to launch the phone dialer
       // Use platformDefault mode which works better on mobile devices
       final launched = await launchUrl(
         phoneUri,
         mode: LaunchMode.platformDefault,
       );
-      
+
       if (!launched) {
         // If platformDefault fails, try externalApplication
         await launchUrl(
@@ -137,6 +149,7 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     final adId = widget.ad.id;
     if (adId != null && adId.isNotEmpty) {
       await _insightService.recordMessageSent(adId);
+      print('InsightService: Message recorded for adId: $adId');
     }
 
     // Get seller info for display name
@@ -938,24 +951,27 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                             .get();
                                         if (userDoc.exists) {
                                           final data = userDoc.data();
-                                          phoneNumber =
-                                              data?['phoneNumber']?.toString() ??
+                                          phoneNumber = data?['phoneNumber']
+                                                  ?.toString() ??
                                               data?['phone']?.toString();
-                                          print('Phone from user doc: $phoneNumber'); // Debug log
+                                          print(
+                                              'Phone from user doc: $phoneNumber'); // Debug log
                                         }
                                       } catch (e) {
                                         print('Error fetching phone: $e');
                                       }
                                     }
                                     phoneNumber ??= ad.phone;
-                                    print('Final phone number: $phoneNumber'); // Debug log
+                                    print(
+                                        'Final phone number: $phoneNumber'); // Debug log
 
                                     if (phoneNumber != null &&
                                         phoneNumber.trim().isNotEmpty) {
                                       await _makePhoneCall(phoneNumber.trim());
                                     } else {
                                       if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
                                           const SnackBar(
                                               content: Text(
                                                   'Phone number not available')),
@@ -968,8 +984,8 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
                                     foregroundColor: Colors.white,
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -985,7 +1001,8 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                   gradient: LinearGradient(
                                     colors: [
                                       colorScheme.secondary,
-                                      colorScheme.secondary.withValues(alpha: 0.8),
+                                      colorScheme.secondary
+                                          .withValues(alpha: 0.8),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(12),

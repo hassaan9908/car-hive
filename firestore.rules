@@ -43,10 +43,9 @@ service cloud.firestore {
         && uid == currentUid()
         && request.resource.data.role == 'user';
 
-      // Allow reading user data for trust badges and public profile info
-      allow read: if isAdmin() || 
-        (isSignedIn() && uid == currentUid()) ||
-        (isSignedIn() && request.auth != null); // Allow any signed-in user to read for trust badges
+      // Allow reading user data for trust badges, public profile info, and password reset
+      // Anyone can read to check if phone/email exists (needed for forgot password)
+      allow read: if true;
 
       allow update: if isSignedIn() && uid == currentUid()
         && !request.resource.data.diff(resource.data)
@@ -55,6 +54,21 @@ service cloud.firestore {
         || isAdmin();
 
       allow delete: if isAdmin();
+
+      // Saved Ads subcollection (users/{uid}/savedAds/{adId})
+      match /savedAds/{adId} {
+        // Users can read their own saved ads
+        allow read: if isSignedIn() && uid == currentUid();
+        
+        // Users can save ads (create bookmark)
+        allow create: if isSignedIn() && uid == currentUid();
+        
+        // Users can delete their own saved ads (remove bookmark)
+        allow delete: if isSignedIn() && uid == currentUid();
+        
+        // No updates needed
+        allow update: if false;
+      }
     }
 
     // ADS - SIMPLIFIED RULES
@@ -113,6 +127,16 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (
         resource.data.userId == currentUid() || isAdmin()
       );
+
+      // Insights subcollection for ad analytics
+      match /insights/{document=**} {
+        // Anyone can read insights for public ads
+        allow read: if true;
+        
+        // Anyone signed in can write to insights (views, saves, contacts, messages tracking)
+        // This allows tracking analytics from any user viewing/interacting with ads
+        allow write: if isSignedIn();
+      }
     }
 
     // REVIEWS collection (separate collection)
