@@ -54,7 +54,8 @@ class _CreateInvestmentPageState extends State<CreateInvestmentPage> {
           _selectedAd = ad;
           if (ad.price.isNotEmpty) {
             try {
-              final price = double.parse(ad.price.replaceAll(RegExp(r'[^\d.]'), ''));
+              final price =
+                  double.parse(ad.price.replaceAll(RegExp(r'[^\d.]'), ''));
               _investmentGoalController.text = price.toStringAsFixed(0);
             } catch (e) {
               // Ignore parsing errors
@@ -109,8 +110,8 @@ class _CreateInvestmentPageState extends State<CreateInvestmentPage> {
 
     if (_selectedAd != null && _selectedAd!.price.isNotEmpty) {
       try {
-        final adPrice = double.parse(
-            _selectedAd!.price.replaceAll(RegExp(r'[^\d.]'), ''));
+        final adPrice =
+            double.parse(_selectedAd!.price.replaceAll(RegExp(r'[^\d.]'), ''));
         if (amount > adPrice * 1.5) {
           return 'Investment goal should not exceed 150% of vehicle price';
         }
@@ -228,6 +229,15 @@ class _CreateInvestmentPageState extends State<CreateInvestmentPage> {
         appBar: AppBar(
           title: const Text('Create Investment'),
           backgroundColor: Colors.transparent,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[400],
+              height: 1,
+            ),
+          ),
         ),
         body: const Center(
           child: Text('Please login to create an investment opportunity'),
@@ -239,6 +249,15 @@ class _CreateInvestmentPageState extends State<CreateInvestmentPage> {
       appBar: AppBar(
         title: const Text('Create Investment Opportunity'),
         backgroundColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey[800]
+                : Colors.grey[400],
+            height: 1,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -467,8 +486,8 @@ class _CreateInvestmentPageState extends State<CreateInvestmentPage> {
               _selectedAd = ad;
               if (ad != null && ad.price.isNotEmpty) {
                 try {
-                  final price = double.parse(
-                      ad.price.replaceAll(RegExp(r'[^\d.]'), ''));
+                  final price =
+                      double.parse(ad.price.replaceAll(RegExp(r'[^\d.]'), ''));
                   _investmentGoalController.text = price.toStringAsFixed(0);
                 } catch (e) {
                   // Ignore parsing errors
@@ -544,4 +563,3 @@ class _CreateInvestmentPageState extends State<CreateInvestmentPage> {
     );
   }
 }
-

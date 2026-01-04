@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../auth/auth_provider.dart';
 import '../models/ad_model.dart';
 import '../services/save_service.dart';
+import '../store/global_ads.dart';
+import 'car_details_page.dart';
 
 class SavedAdsPage extends StatefulWidget {
   const SavedAdsPage({super.key});
@@ -14,35 +15,67 @@ class SavedAdsPage extends StatefulWidget {
 
 class _SavedAdsPageState extends State<SavedAdsPage> {
   final SaveService _saveService = SaveService();
+  final GlobalAdStore _adStore = GlobalAdStore();
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    if (!authProvider.isLoggedIn) {
+    if (currentUser == null) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Saved Ads'),
           backgroundColor: Colors.transparent,
           centerTitle: true,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[400],
+              height: 1,
+            ),
+          ),
         ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.bookmark_border,
-                size: 80,
-                color: colorScheme.primary.withOpacity(0.5),
-              ),
+              const Icon(Icons.bookmark_border, size: 64, color: Colors.grey),
               const SizedBox(height: 16),
-              Text(
-                'Login to view saved ads',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.7),
+              const Text(
+                'Please login to view saved ads',
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 32),
+              Container(
+                width: 130,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF6B35).withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pushNamed(context, 'loginscreen');
+                  },
+                  child: const Text('Login'),
                 ),
               ),
             ],
@@ -56,6 +89,15 @@ class _SavedAdsPageState extends State<SavedAdsPage> {
         title: const Text('Saved Ads'),
         backgroundColor: Colors.transparent,
         centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey[800]
+                : Colors.grey[400],
+            height: 1,
+          ),
+        ),
       ),
       body: StreamBuilder<List<String>>(
         stream: _saveService.getSavedAdIds(),
@@ -69,23 +111,11 @@ class _SavedAdsPageState extends State<SavedAdsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 60,
-                    color: colorScheme.error,
-                  ),
+                  const Icon(Icons.error_outline, size: 64, color: Colors.grey),
                   const SizedBox(height: 16),
                   Text(
                     'Error loading saved ads',
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    snapshot.error.toString(),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.error,
-                    ),
-                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -99,89 +129,43 @@ class _SavedAdsPageState extends State<SavedAdsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.bookmark_border,
-                    size: 80,
-                    color: colorScheme.primary.withOpacity(0.5),
-                  ),
+                  const Icon(Icons.bookmark_border,
+                      size: 64, color: Colors.grey),
                   const SizedBox(height: 16),
-                  Text(
-                    'No saved ads yet',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.7),
-                    ),
+                  const Text(
+                    'No Saved Ads',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Bookmark cars you like to save them here',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.5),
-                    ),
-                    textAlign: TextAlign.center,
+                    'Start saving ads you like!',
+                    style: TextStyle(color: Colors.grey[600]),
                   ),
                 ],
               ),
             );
           }
 
-          // Fetch the actual ads
-          return FutureBuilder<List<AdModel>>(
-            future: _fetchAds(savedAdIds),
-            builder: (context, adsSnapshot) {
-              if (adsSnapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: savedAdIds.length,
+            itemBuilder: (context, index) {
+              final adId = savedAdIds[index];
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('ads')
+                    .doc(adId)
+                    .get(),
+                builder: (context, adSnapshot) {
+                  if (!adSnapshot.hasData || !adSnapshot.data!.exists) {
+                    return const SizedBox.shrink();
+                  }
 
-              if (adsSnapshot.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 60,
-                        color: colorScheme.error,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Error loading ads',
-                        style: theme.textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
-                );
-              }
+                  final adData =
+                      adSnapshot.data!.data() as Map<String, dynamic>;
+                  final ad = AdModel.fromFirestore(adData, adSnapshot.data!.id);
 
-              final ads = adsSnapshot.data ?? [];
-
-              if (ads.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 60,
-                        color: colorScheme.primary.withOpacity(0.5),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Some saved ads may no longer be available',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: ads.length,
-                itemBuilder: (context, index) {
-                  return _buildAdCard(ads[index], colorScheme);
+                  return _buildSavedAdCard(ad, colorScheme);
                 },
               );
             },
@@ -191,76 +175,52 @@ class _SavedAdsPageState extends State<SavedAdsPage> {
     );
   }
 
-  Future<List<AdModel>> _fetchAds(List<String> adIds) async {
-    if (adIds.isEmpty) return [];
-
-    final List<AdModel> ads = [];
-
-    for (String adId in adIds) {
-      try {
-        final doc =
-            await FirebaseFirestore.instance.collection('ads').doc(adId).get();
-
-        if (doc.exists) {
-          final data = doc.data();
-          if (data != null) {
-            ads.add(AdModel.fromFirestore(data, doc.id));
-          }
-        }
-      } catch (e) {
-        print('Error fetching ad $adId: $e');
-      }
-    }
-
-    return ads;
-  }
-
-  Widget _buildAdCard(AdModel ad, ColorScheme colorScheme) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          '/car-details',
-          arguments: ad,
-        );
-      },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        elevation: 1,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        clipBehavior: Clip.antiAlias,
-        color: colorScheme.surface,
+  Widget _buildSavedAdCard(AdModel ad, ColorScheme colorScheme) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CarDetailsPage(ad: ad),
+            ),
+          );
+        },
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Thumbnail
+              // Image
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  width: 100,
-                  height: 80,
-                  color: colorScheme.surfaceContainerHighest,
-                  child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
-                      ? Image.network(
-                          ad.imageUrls!.first,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(
-                              Icons.directions_car_filled,
-                              size: 40,
-                              color: colorScheme.onSurfaceVariant,
-                            );
-                          },
-                        )
-                      : Icon(
-                          Icons.directions_car_filled,
-                          size: 40,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                ),
+                child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
+                    ? Image.network(
+                        ad.imageUrls!.first,
+                        width: 96,
+                        height: 72,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 96,
+                            height: 72,
+                            color: colorScheme.surfaceContainerHighest,
+                            child: Icon(Icons.directions_car_filled,
+                                size: 32, color: colorScheme.onSurfaceVariant),
+                          );
+                        },
+                      )
+                    : Container(
+                        width: 96,
+                        height: 72,
+                        color: colorScheme.surfaceContainerHighest,
+                        child: Icon(Icons.directions_car_filled,
+                            size: 32, color: colorScheme.onSurfaceVariant),
+                      ),
               ),
               const SizedBox(width: 12),
               // Details
@@ -271,73 +231,49 @@ class _SavedAdsPageState extends State<SavedAdsPage> {
                     Text(
                       ad.title.isNotEmpty ? ad.title : (ad.carBrand ?? 'Car'),
                       style: TextStyle(
-                        fontSize: 16,
                         fontWeight: FontWeight.w700,
+                        fontSize: 16,
                         color: colorScheme.onSurface,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       '${ad.year}  •  ${ad.mileage} km',
                       style: TextStyle(
                         color: colorScheme.onSurfaceVariant,
-                        fontSize: 13,
+                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 14,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            ad.location,
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 12,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'PKR ${ad.price}',
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              // Price
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B35).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.bookmark,
-                      color: Color(0xFFFF6B35),
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'PKR ${ad.price}',
-                    style: TextStyle(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+              // Unsave button
+              IconButton(
+                icon: const Icon(Icons.bookmark),
+                color: colorScheme.primary,
+                onPressed: () async {
+                  try {
+                    await _saveService.toggleSave(ad.id!);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Ad removed from saved')),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                },
               ),
             ],
           ),

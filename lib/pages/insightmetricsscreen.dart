@@ -361,54 +361,6 @@ class _InsightMetricsScreenState extends State<InsightMetricsScreen>
     );
   }
 
-  Widget _buildCompactStatCard(
-      String label, int value, IconData icon, Color color, String metric) {
-    final isSelected = _selectedMetric == metric;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return GestureDetector(
-      onTap: () => setState(() => _selectedMetric = metric),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color.withOpacity(0.15)
-              : colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              "$value",
-              style: TextStyle(
-                fontSize: 20,
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   String _formatLastActivity(DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
@@ -449,28 +401,39 @@ class _InsightMetricsScreenState extends State<InsightMetricsScreen>
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  // Car Image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
                     child: (widget.ad.imageUrls != null &&
                             widget.ad.imageUrls!.isNotEmpty)
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              widget.ad.imageUrls!.first,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(Icons.directions_car,
-                                    color: Colors.white, size: 30);
-                              },
-                            ),
+                        ? Image.network(
+                            widget.ad.imageUrls!.first,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.directions_car,
+                                    color: Colors.white, size: 40),
+                              );
+                            },
                           )
-                        : const Icon(Icons.directions_car,
-                            color: Colors.white, size: 30),
+                        : Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.directions_car,
+                                color: Colors.white, size: 40),
+                          ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -486,23 +449,23 @@ class _InsightMetricsScreenState extends State<InsightMetricsScreen>
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
                           '${widget.ad.year}  •  ${widget.ad.mileage} km',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withOpacity(0.8),
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 6),
                         Text(
                           'PKR ${widget.ad.price}',
                           style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
@@ -584,27 +547,26 @@ class _InsightMetricsScreenState extends State<InsightMetricsScreen>
             ),
             const SizedBox(height: 16),
 
-            Row(
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.1,
               children: [
-                Expanded(
-                  child: _buildCompactStatCard('Views', views,
-                      Icons.remove_red_eye, Colors.blue, 'view'),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildCompactStatCard(
-                      'Saves', saves, Icons.bookmark, Colors.green, 'save'),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildCompactStatCard(
-                      'Contacts', contacts, Icons.phone, Colors.red, 'contact'),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildCompactStatCard('Messages', messages,
-                      Icons.message, Colors.purple, 'message'),
-                ),
+                _buildStatCard(
+                    'Views', views, Icons.remove_red_eye, Colors.blue, 'view',
+                    lastActivity: lastViewedAt),
+                _buildStatCard(
+                    'Saves', saves, Icons.bookmark, Colors.green, 'save',
+                    lastActivity: lastSavedAt),
+                _buildStatCard(
+                    'Contacts', contacts, Icons.phone, Colors.red, 'contact',
+                    lastActivity: lastContactAt),
+                _buildStatCard('Messages', messages, Icons.message,
+                    Colors.purple, 'message',
+                    lastActivity: lastMessageAt),
               ],
             ),
 

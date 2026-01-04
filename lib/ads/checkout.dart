@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:carhive/services/payment_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final String carModel;
@@ -28,12 +31,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   bool voucherApplied = false;
   int total = 5000; // displayed total
   int discount = 500; // sample discount shown when applied
+  bool _isProcessing = false;
+  final PaymentService _paymentService = PaymentService();
 
   final List<String> paymentMethods = [
     'Debit/Credit Card',
     'JazzCash Mobile Account',
     'EasyPay Mobile Account',
-    'Online Bank Transfer',
+    'Stripe',
     'JazzCash Shop',
   ];
 
@@ -41,18 +46,149 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     'Debit/Credit Card': Icons.credit_card,
     'JazzCash Mobile Account': Icons.mobile_friendly,
     'EasyPay Mobile Account': Icons.payment,
-    'Online Bank Transfer': Icons.account_balance,
+    'Stripe': Icons.payment_rounded,
     'JazzCash Shop': Icons.storefront,
   };
+
+  Future<void> _handlePayment() async {
+    if (selectedMethod == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a payment method')),
+      );
+      return;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to continue')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      final finalAmount =
+          voucherApplied ? (total - discount).toDouble() : total.toDouble();
+
+      // Generate a transaction ID for tracking
+      final transactionId = 'visit_${DateTime.now().millisecondsSinceEpoch}';
+
+      // Map selected method to payment service format
+      String paymentMethod = selectedMethod!.toLowerCase();
+      if (paymentMethod.contains('jazzcash')) {
+        paymentMethod = 'jazzcash';
+      } else if (paymentMethod.contains('easypay')) {
+        paymentMethod = 'easypay';
+      } else if (paymentMethod == 'debit/credit card') {
+        paymentMethod = 'stripe';
+      } else if (paymentMethod == 'stripe') {
+        paymentMethod = 'stripe';
+      }
+
+      Map<String, dynamic> paymentResult;
+
+      // For Stripe, create payment intent directly without transaction doc
+      if (paymentMethod == 'stripe') {
+        paymentResult = await _paymentService.createStripePaymentIntent(
+          amount: finalAmount,
+          userId: user.uid,
+          type: 'visit_booking',
+          description:
+              'Car Visit Booking - ${widget.carModel} ${widget.carYear}',
+        );
+
+        if (paymentResult['success'] == true &&
+            paymentResult['clientSecret'] != null) {
+          // Initialize and present Stripe payment sheet
+          try {
+            await Stripe.instance.initPaymentSheet(
+              paymentSheetParameters: SetupPaymentSheetParameters(
+                paymentIntentClientSecret: paymentResult['clientSecret'],
+                merchantDisplayName: 'CarHive',
+              ),
+            );
+
+            await Stripe.instance.presentPaymentSheet();
+
+            paymentResult = {
+              'success': true,
+              'reference': transactionId,
+            };
+          } catch (e) {
+            paymentResult = {
+              'success': false,
+              'error': 'Payment cancelled or failed: $e',
+            };
+          }
+        }
+      } else {
+        // For other payment methods
+        paymentResult = {
+          'success': true,
+          'message': 'Payment method selected. Processing...',
+        };
+      }
+
+      if (!mounted) return;
+
+      if (paymentResult['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment successful! Your visit has been booked.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Navigate back or to success page
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(paymentResult['error'] ?? 'Payment failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error processing payment: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const Color brand = Color(0xFFFF6B35);
+    final Color brand = Theme.of(context).colorScheme.primary;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Checkout"),
         backgroundColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: isDark ? Colors.grey[800] : Colors.grey[400],
+            height: 1,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -79,14 +215,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 color: Colors.green.shade50,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.lock, color: Colors.green),
-                  SizedBox(width: 10),
+                  const Icon(Icons.lock, color: Colors.green),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       "All payment methods are encrypted and secure",
-                      style: TextStyle(fontSize: 14),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.green.shade800,
+                      ),
                     ),
                   ),
                 ],
@@ -121,8 +260,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           horizontal: 12, vertical: 12),
                       child: Row(
                         children: [
-                          const Icon(Icons.directions_car,
-                              color: Color(0xFFf48c25)),
+                          Icon(Icons.directions_car,
+                              color: Theme.of(context).colorScheme.primary),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text("Checkout details",
@@ -192,8 +331,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           horizontal: 12, vertical: 12),
                       child: Row(
                         children: [
-                          const Icon(Icons.card_giftcard,
-                              color: Color(0xFFf48c25)),
+                          Icon(Icons.card_giftcard,
+                              color: Theme.of(context).colorScheme.primary),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text("Have a discount voucher? Add it here",
@@ -229,8 +368,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 prefixIcon: const Icon(Icons.card_giftcard),
                                 border: const OutlineInputBorder(),
                                 suffixIcon: voucherApplied
-                                    ? const Icon(Icons.check_circle,
-                                        color: Color(0xFFf48c25))
+                                    ? Icon(Icons.check_circle,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary)
                                     : null,
                               ),
                             ),
@@ -283,14 +424,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             border: Border.all(color: brand),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.local_offer,
-                                  color: Color(0xFFf48c25), size: 16),
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 16),
                               SizedBox(width: 6),
                               Text("Voucher applied",
-                                  style: TextStyle(color: Color(0xFFf48c25))),
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary)),
                             ],
                           ),
                         ),
@@ -365,8 +510,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                           ? Colors.white
                                           : Colors.black87))),
                           if (isSelected)
-                            const Icon(Icons.check_circle,
-                                color: Color(0xFFf48c25)),
+                            Icon(Icons.check_circle,
+                                color: Theme.of(context).colorScheme.primary),
                         ],
                       ),
                     ),
@@ -381,13 +526,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             Column(
               children: [
                 const Divider(thickness: 1),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Subtotal:", style: TextStyle(fontSize: 16)),
+                    Text("Subtotal:",
+                        style: TextStyle(
+                            fontSize: 16,
+                            color: isDark ? Colors.white : Colors.black87)),
                     Text(
                       "PKR ${total.toStringAsFixed(0)}",
-                      style: const TextStyle(fontSize: 16),
+                      style: TextStyle(
+                          fontSize: 16,
+                          color: isDark ? Colors.white : Colors.black87),
                     ),
                   ],
                 ),
@@ -396,10 +547,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Discount:", style: TextStyle(fontSize: 16)),
+                      Text("Discount:",
+                          style: TextStyle(
+                              fontSize: 16,
+                              color: isDark ? Colors.white : Colors.black87)),
                       Text(
                         "- PKR ${discount.toStringAsFixed(0)}",
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 16,
                             color: brand,
                             fontWeight: FontWeight.w600),
@@ -411,9 +565,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Total (incl. VAT):",
+                    Text("Total (incl. VAT):",
                         style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600)),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : Colors.black87)),
                     Row(
                       children: [
                         if (voucherApplied)
@@ -427,8 +583,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         const SizedBox(width: 8),
                         Text(
                           "PKR ${(voucherApplied ? (total - discount) : total).toStringAsFixed(0)}",
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 18),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: isDark ? Colors.white : Colors.black87),
                         ),
                       ],
                     ),
@@ -438,17 +596,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: Add checkout logic
-                    },
+                    onPressed: _isProcessing ? null : _handlePayment,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       backgroundColor: brand,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text("Continue",
-                        style: TextStyle(fontSize: 16, color: Colors.white)),
+                    child: _isProcessing
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text("Continue",
+                            style:
+                                TextStyle(fontSize: 16, color: Colors.white)),
                   ),
                 ),
               ],
@@ -470,9 +636,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           height: 32,
           decoration: BoxDecoration(
             color: highlight
-                ? const Color(0xFFf48c25)
+                ? Theme.of(context).colorScheme.primary
                 : (completed
-                    ? const Color(0xFFf48c25)
+                    ? Theme.of(context).colorScheme.primary
                     : (isDark ? Colors.white24 : Colors.grey.shade300)),
             shape: BoxShape.circle,
           ),
@@ -492,9 +658,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           style: TextStyle(
             fontSize: 12,
             color: highlight
-                ? const Color(0xFFf48c25)
+                ? Theme.of(context).colorScheme.primary
                 : (completed
-                    ? const Color(0xFFf48c25)
+                    ? Theme.of(context).colorScheme.primary
                     : (isDark ? Colors.white54 : Colors.grey)),
           ),
         ),

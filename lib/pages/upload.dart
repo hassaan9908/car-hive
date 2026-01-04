@@ -40,6 +40,15 @@ class Upload extends StatelessWidget {
           backgroundColor: Colors.transparent,
           title: const Text("Choose a plan"),
           elevation: 0,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[400],
+              height: 1,
+            ),
+          ),
         ),
         body: currentUser == null
             ? _buildLoginPrompt(context)

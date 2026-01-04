@@ -98,19 +98,22 @@ class _PostAdCarState extends State<PostAdCar> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _carbrandController = TextEditingController(); // Keep for backward compatibility
+  final TextEditingController _carbrandController =
+      TextEditingController(); // Keep for backward compatibility
   final TextEditingController _carNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  
+
   // Car brand selection
   CarBrand? _selectedBrand;
-  
+
   // Vehicle verification fields (encrypted)
-  final TextEditingController _registrationNoController = TextEditingController();
-  final TextEditingController _registrationDateController = TextEditingController();
+  final TextEditingController _registrationNoController =
+      TextEditingController();
+  final TextEditingController _registrationDateController =
+      TextEditingController();
   final TextEditingController _chassisNoController = TextEditingController();
   final TextEditingController _ownerNameController = TextEditingController();
-  
+
   // Vehicle verification state
   bool _isVerifying = false;
 
@@ -121,18 +124,17 @@ class _PostAdCarState extends State<PostAdCar> {
   String? _userCity;
   String? _userUsername;
   bool _isLoadingProfile = true;
-  
+
   // Image upload state
   bool _isUploadingImages = false;
   double _uploadProgress = 0.0;
   final CloudinaryService _cloudinaryService = CloudinaryService();
-  
+
   // 360° capture state (16 angles)
   final Car360Service _car360Service = Car360Service();
   Car360Set? _captured360Set;
   List<Uint8List?> _360PreviewImages = [];
   bool _isUploading360 = false;
-
 
   final List<String> chipOptions = [
     "Alloy Rims",
@@ -167,7 +169,7 @@ class _PostAdCarState extends State<PostAdCar> {
   // Upload images to Cloudinary and return URLs
   Future<List<String>> _uploadImages() async {
     final List<String> imageUrls = [];
-    
+
     setState(() {
       _isUploadingImages = true;
       _uploadProgress = 0.0;
@@ -245,7 +247,8 @@ class _PostAdCarState extends State<PostAdCar> {
                             setState(() {
                               selectedLocationCoords = location;
                               selectedLocationAddress = address;
-                              selectedLocation = address.split(',')[0]; // Use first part as city
+                              selectedLocation = address
+                                  .split(',')[0]; // Use first part as city
                             });
                           },
                         ),
@@ -322,7 +325,7 @@ class _PostAdCarState extends State<PostAdCar> {
                 ),
               ),
             ),
-            
+
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
@@ -336,63 +339,64 @@ class _PostAdCarState extends State<PostAdCar> {
                 ],
               ),
             ),
-            
+
             // City list
             Expanded(
               child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            ...[
-              "Abbottabad",
-              "Bahawalpur",
-              "Chiniot",
-              "Dera Ghazi Khan",
-              "Faisalabad",
-              "Gujranwala",
-              "Gujrat",
-              "Hyderabad",
-              "Islamabad",
-              "Jacobabad",
-              "Jhang",
-              "Jhelum",
-              "Karachi",
-              "Kasur",
-              "Kohat",
-              "Lahore",
-              "Larkana",
-              "Mardan",
-              "Mirpur",
-              "Multan",
-              "Muzaffarabad",
-              "Muzaffargarh",
-              "Nawabshah",
-              "Okara",
-              "Peshawar",
-              "Quetta",
-              "Rahim Yar Khan",
-              "Rawalpindi",
-              "Sahiwal",
-              "Sargodha",
-              "Sheikhupura",
-              "Sialkot",
-              "Sukkur",
-              "Swat",
-              "Toba Tek Singh",
-              "Vehari",
-              "Burewala",
-              "Gujrawnala",
-              "Zhob"
-            ].map(
-              (city) => ListTile(
-                title: Text(city),
-                onTap: () {
+                padding: const EdgeInsets.all(16),
+                children: [
+                  ...[
+                    "Abbottabad",
+                    "Bahawalpur",
+                    "Chiniot",
+                    "Dera Ghazi Khan",
+                    "Faisalabad",
+                    "Gujranwala",
+                    "Gujrat",
+                    "Hyderabad",
+                    "Islamabad",
+                    "Jacobabad",
+                    "Jhang",
+                    "Jhelum",
+                    "Karachi",
+                    "Kasur",
+                    "Kohat",
+                    "Lahore",
+                    "Larkana",
+                    "Mardan",
+                    "Mirpur",
+                    "Multan",
+                    "Muzaffarabad",
+                    "Muzaffargarh",
+                    "Nawabshah",
+                    "Okara",
+                    "Peshawar",
+                    "Quetta",
+                    "Rahim Yar Khan",
+                    "Rawalpindi",
+                    "Sahiwal",
+                    "Sargodha",
+                    "Sheikhupura",
+                    "Sialkot",
+                    "Sukkur",
+                    "Swat",
+                    "Toba Tek Singh",
+                    "Vehari",
+                    "Burewala",
+                    "Gujrawnala",
+                    "Zhob"
+                  ].map(
+                    (city) => ListTile(
+                      title: Text(city),
+                      onTap: () {
                         setState(() {
                           selectedLocation = city;
-                          selectedLocationCoords = null; // Clear precise coords when using city
+                          selectedLocationCoords =
+                              null; // Clear precise coords when using city
                           selectedLocationAddress = city;
                         });
-                  Navigator.pop(context);
-                },
+                        Navigator.pop(context);
+                      },
                     ),
                   ),
                 ],
@@ -439,8 +443,9 @@ class _PostAdCarState extends State<PostAdCar> {
           padding: const EdgeInsets.all(16),
           children: [
             const Text("Unregistered",
-                style:
-                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: const Color(0xFFf48c25),
+                    fontWeight: FontWeight.bold)),
             ListTile(
               title: const Text("Unregistered"),
               onTap: () {
@@ -450,8 +455,9 @@ class _PostAdCarState extends State<PostAdCar> {
             ),
             const SizedBox(height: 8),
             const Text("Provinces",
-                style:
-                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: const Color(0xFFf48c25),
+                    fontWeight: FontWeight.bold)),
             ...["Punjab", "Sindh", "Balochistan", "KPK"]
                 .map((province) => ListTile(
                       title: Text(province),
@@ -462,8 +468,9 @@ class _PostAdCarState extends State<PostAdCar> {
                     )),
             const SizedBox(height: 8),
             const Text("Popular Cities",
-                style:
-                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: const Color(0xFFf48c25),
+                    fontWeight: FontWeight.bold)),
             ...["Lahore", "Karachi", "Islamabad", "Multan", "Quetta"]
                 .map((city) => ListTile(
                       title: Text(city),
@@ -474,8 +481,9 @@ class _PostAdCarState extends State<PostAdCar> {
                     )),
             const SizedBox(height: 8),
             const Text("Other Cities",
-                style:
-                    TextStyle(color: const Color(0xFFf48c25), fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: const Color(0xFFf48c25),
+                    fontWeight: FontWeight.bold)),
             ...[
               "Rawalpindi",
               "Faisalabad",
@@ -546,7 +554,8 @@ class _PostAdCarState extends State<PostAdCar> {
       setState(() => _isVerifying = true);
 
       // Convert date from MM/DD/YYYY to YYYY-MM-DD for API
-      final dateForApi = _convertDateToApiFormat(_registrationDateController.text.trim());
+      final dateForApi =
+          _convertDateToApiFormat(_registrationDateController.text.trim());
 
       // Call the API
       final htmlResponse = await VehicleService.fetchVehicleData(
@@ -559,7 +568,8 @@ class _PostAdCarState extends State<PostAdCar> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('No record found in the database. Please verify the registration number and date.'),
+              content: Text(
+                  'No record found in the database. Please verify the registration number and date.'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 4),
             ),
@@ -578,10 +588,8 @@ class _PostAdCarState extends State<PostAdCar> {
 
       // Normalize values for comparison (case-insensitive, trim whitespace, handle asterisk)
       final normalize = (String value, {bool isRegistrationNo = false}) {
-        var normalized = value
-            .trim()
-            .toUpperCase();
-        
+        var normalized = value.trim().toUpperCase();
+
         // For registration numbers, handle asterisk - remove it for comparison
         // API returns format like "LEN-310*" but user enters "LEN-310"
         if (isRegistrationNo) {
@@ -589,14 +597,16 @@ class _PostAdCarState extends State<PostAdCar> {
           normalized = normalized.trim(); // Trim again after removing asterisk
         } else {
           // For other fields, normalize spaces
-          normalized = normalized.replaceAll(RegExp(r'\s+'), ' '); // Normalize multiple spaces to single space
+          normalized = normalized.replaceAll(
+              RegExp(r'\s+'), ' '); // Normalize multiple spaces to single space
         }
-        
+
         return normalized;
       };
 
       // Get user input values
-      final userRegNo = normalize(_registrationNoController.text.trim(), isRegistrationNo: true);
+      final userRegNo = normalize(_registrationNoController.text.trim(),
+          isRegistrationNo: true);
       final userChassisNo = normalize(_chassisNoController.text.trim());
       final userOwnerName = normalize(_ownerNameController.text.trim());
 
@@ -606,27 +616,34 @@ class _PostAdCarState extends State<PostAdCar> {
       String apiOwnerName = '';
 
       // Try different field name variations
-      final rawApiRegNo = extractedFields['Registration No'] ?? 
-                         extractedFields['REGISTRATION NO'] ?? 
-                         extractedFields['Reg No'] ?? 
-                         extractedFields['Registration Number'] ?? '';
-      
-      apiRegNo = normalize(rawApiRegNo, isRegistrationNo: true); // Remove asterisk from API response
+      final rawApiRegNo = extractedFields['Registration No'] ??
+          extractedFields['REGISTRATION NO'] ??
+          extractedFields['Reg No'] ??
+          extractedFields['Registration Number'] ??
+          '';
 
-      apiChassisNo = normalize(extractedFields['Chassis No'] ?? 
-                               extractedFields['CHASSIS NO'] ?? 
-                               extractedFields['Chassis Number'] ?? 
-                               extractedFields['CHASSIS NUMBER'] ?? '');
+      apiRegNo = normalize(rawApiRegNo,
+          isRegistrationNo: true); // Remove asterisk from API response
 
-      apiOwnerName = normalize(extractedFields['Owner Name'] ?? 
-                               extractedFields['OWNER NAME'] ?? 
-                               extractedFields['Owner'] ?? 
-                               extractedFields['OWNER'] ?? '');
+      apiChassisNo = normalize(extractedFields['Chassis No'] ??
+          extractedFields['CHASSIS NO'] ??
+          extractedFields['Chassis Number'] ??
+          extractedFields['CHASSIS NUMBER'] ??
+          '');
+
+      apiOwnerName = normalize(extractedFields['Owner Name'] ??
+          extractedFields['OWNER NAME'] ??
+          extractedFields['Owner'] ??
+          extractedFields['OWNER'] ??
+          '');
 
       // Debug: Print comparison values
-      print('User Reg No: "$userRegNo" | API Reg No: "$apiRegNo" | Match: ${userRegNo == apiRegNo}');
-      print('User Chassis: "$userChassisNo" | API Chassis: "$apiChassisNo" | Match: ${userChassisNo == apiChassisNo}');
-      print('User Owner: "$userOwnerName" | API Owner: "$apiOwnerName" | Match: ${userOwnerName == apiOwnerName}');
+      print(
+          'User Reg No: "$userRegNo" | API Reg No: "$apiRegNo" | Match: ${userRegNo == apiRegNo}');
+      print(
+          'User Chassis: "$userChassisNo" | API Chassis: "$apiChassisNo" | Match: ${userChassisNo == apiChassisNo}');
+      print(
+          'User Owner: "$userOwnerName" | API Owner: "$apiOwnerName" | Match: ${userOwnerName == apiOwnerName}');
 
       // Check if any field is empty
       if (apiRegNo.isEmpty || apiChassisNo.isEmpty || apiOwnerName.isEmpty) {
@@ -634,7 +651,8 @@ class _PostAdCarState extends State<PostAdCar> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Could not extract all required fields from API. Missing: ${apiRegNo.isEmpty ? "Registration No " : ""}${apiChassisNo.isEmpty ? "Chassis No " : ""}${apiOwnerName.isEmpty ? "Owner Name" : ""}'),
+              content: Text(
+                  'Could not extract all required fields from API. Missing: ${apiRegNo.isEmpty ? "Registration No " : ""}${apiChassisNo.isEmpty ? "Chassis No " : ""}${apiOwnerName.isEmpty ? "Owner Name" : ""}'),
               backgroundColor: Colors.orange,
               duration: const Duration(seconds: 4),
             ),
@@ -650,7 +668,8 @@ class _PostAdCarState extends State<PostAdCar> {
       final ownerNameMatches = userOwnerName == apiOwnerName;
 
       // Debug: Print final result
-      print('Reg No Match: $regNoMatches, Chassis Match: $chassisNoMatches, Owner Match: $ownerNameMatches');
+      print(
+          'Reg No Match: $regNoMatches, Chassis Match: $chassisNoMatches, Owner Match: $ownerNameMatches');
       print('=== END VERIFICATION DEBUG ===');
 
       // All fields must match exactly
@@ -660,10 +679,11 @@ class _PostAdCarState extends State<PostAdCar> {
           if (!regNoMatches) mismatches.add('Registration No');
           if (!chassisNoMatches) mismatches.add('Chassis No');
           if (!ownerNameMatches) mismatches.add('Owner Name');
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Verification failed. Mismatched fields: ${mismatches.join(", ")}'),
+              content: Text(
+                  'Verification failed. Mismatched fields: ${mismatches.join(", ")}'),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 5),
             ),
@@ -770,7 +790,6 @@ class _PostAdCarState extends State<PostAdCar> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -781,6 +800,15 @@ class _PostAdCarState extends State<PostAdCar> {
           title: const Text("Sell Your Car"),
           leading: const BackButton(),
           backgroundColor: Colors.transparent,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[400],
+              height: 1,
+            ),
+          ),
         ),
         body: Center(
           child: Column(
@@ -805,350 +833,222 @@ class _PostAdCarState extends State<PostAdCar> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Sell Your Car"),
-        leading: const BackButton(),
+        title: Text(
+          "Sell Your Car",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back,
+              color: Theme.of(context).colorScheme.primary),
+          onPressed: () => Navigator.pop(context),
+        ),
         backgroundColor: Colors.transparent,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey[800]
+                : Colors.grey[400],
+            height: 1,
+          ),
+        ),
       ),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ========== Image Picker (commented code preserved) ==========
+              // ========== Photos & 360° View Section ==========
+              // Container wrapping section header and all photo/360° content
               Padding(
-                padding: const EdgeInsets.all(12),
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    width: double.infinity,
-                    height: 150,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFf48c25)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-
-                    // --==== this is for mobile code of image picker
-                    // child: _images.isEmpty
-                    //     ? const Center(
-                    //         child: Column(
-                    //           mainAxisAlignment: MainAxisAlignment.center,
-                    //           children: [
-                    //             Icon(Icons.camera_alt_outlined,
-                    //                 size: 30, color: Colors.blue),
-                    //             SizedBox(height: 8),
-                    //             Text("Add Photo",
-                    //                 style: TextStyle(color: Colors.blue)),
-                    //           ],
-                    //         ),
-                    //       )
-                    //     : ListView.separated(
-                    //         scrollDirection: Axis.horizontal,
-                    //         padding: const EdgeInsets.all(8),
-                    //         itemCount: _images.length + 1,
-                    //         itemBuilder: (context, index) {
-                    //           if (index == _images.length &&
-                    //               _images.length < 20) {
-                    //             return GestureDetector(
-                    //               onTap: _pickImage,
-                    //               child: Container(
-                    //                 width: 100,
-                    //                 color: Colors.grey.shade200,
-                    //                 child: const Icon(Icons.add),
-                    //               ),
-                    //             );
-                    //           }
-                    //           if (index >= _images.length) return Container();
-                    //           return Image.file(_images[index],
-                    //               width: 100, fit: BoxFit.cover);
-                    //         },
-                    //         separatorBuilder: (_, __) =>
-                    //             const SizedBox(width: 8),
-                    //       ),
-
-                    child: _images.isEmpty && _webImages.isEmpty
-                        ? const Center(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Section header inside container
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFf48c25).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Color(0xFFf48c25),
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(Icons.camera_alt_outlined,
-                                    size: 30, color: const Color(0xFFf48c25)),
-                                SizedBox(height: 8),
-                                Text("Add Photo",
-                                    style: TextStyle(color: const Color(0xFFf48c25))),
+                                Text(
+                                  'Photos & 360° View',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Add images of your vehicle',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                                ),
                               ],
                             ),
-                          )
-                        : ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.all(8),
-                            itemCount: (_images.length + _webImages.length) + 1,
-                            itemBuilder: (context, index) {
-                              final total = _images.length + _webImages.length;
-                              if (index == total && total < 20) {
-                                return GestureDetector(
-                                  onTap: _pickImage,
-                                  child: Container(
-                                    width: 100,
-                                    color: Colors.grey.shade200,
-                                    child: const Icon(Icons.add),
-                                  ),
-                                );
-                              }
-                              if (index < _webImages.length) {
-                                return Image.memory(_webImages[index],
-                                    width: 100, fit: BoxFit.cover);
-                              } else {
-                                return Image.memory(
-                                  _images[index - _webImages.length]
-                                      .readAsBytesSync(),
-                                  width: 100,
-                                  fit: BoxFit.cover,
-                                );
-                              }
-                            },
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 8),
                           ),
-                  ),
-                ),
-              ),
-
-              // 360° Photo Capture Section
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.rotate_right, color: const Color(0xFFf48c25)),
-                            const SizedBox(width: 8),
-                            const Text(
-                              '360° View Photos',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (_360PreviewImages.isNotEmpty)
-                          TextButton.icon(
-                            onPressed: _clear360Images,
-                            icon: const Icon(Icons.clear, size: 18),
-                            label: const Text('Clear'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.red,
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Capture 16 angles of your car for a smooth 360° drag-to-rotate experience',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (_360PreviewImages.isEmpty || _360PreviewImages.every((img) => img == null))
-                      // Capture options: Photo or Video
-                      Column(
-                        children: [
-                          // Photo-based capture (existing)
+                      const SizedBox(height: 24),
+
+                      // ========== Image Picker ==========
                       GestureDetector(
-                        onTap: _open360CaptureScreen,
+                        onTap: _pickImage,
                         child: Container(
                           width: double.infinity,
-                              height: 100,
+                          height: 140,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFFf48c25).withOpacity(0.1),
-                                const Color(0xFFf48c25).withOpacity(0.2),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: const Color(0xFFf48c25).withOpacity(0.5),
-                              width: 2,
-                              style: BorderStyle.solid,
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 1.5,
                             ),
+                            borderRadius: BorderRadius.circular(8),
+                            color:
+                                Theme.of(context).colorScheme.surfaceContainer,
                           ),
-                              child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFf48c25),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                      size: 24,
-                                ),
-                              ),
-                                  const SizedBox(width: 12),
-                                  Column(
+
+                          // --==== this is for mobile code of image picker
+                          // child: _images.isEmpty
+                          //     ? const Center(
+                          //         child: Column(
+                          //           mainAxisAlignment: MainAxisAlignment.center,
+                          //           children: [
+                          //             Icon(Icons.camera_alt_outlined,
+                          //                 size: 30, color: Colors.blue),
+                          //             SizedBox(height: 8),
+                          //             Text("Add Photo",
+                          //                 style: TextStyle(color: Colors.blue)),
+                          //           ],
+                          //         ),
+                          //       )
+                          //     : ListView.separated(
+                          //         scrollDirection: Axis.horizontal,
+                          //         padding: const EdgeInsets.all(8),
+                          //         itemCount: _images.length + 1,
+                          //         itemBuilder: (context, index) {
+                          //           if (index == _images.length &&
+                          //               _images.length < 20) {
+                          //             return GestureDetector(
+                          //               onTap: _pickImage,
+                          //               child: Container(
+                          //                 width: 100,
+                          //                 color: Colors.grey.shade200,
+                          //                 child: const Icon(Icons.add),
+                          //               ),
+                          //             );
+                          //           }
+                          //           if (index >= _images.length) return Container();
+                          //           return Image.file(_images[index],
+                          //               width: 100, fit: BoxFit.cover);
+                          //         },
+                          //         separatorBuilder: (_, __) =>
+                          //             const SizedBox(width: 8),
+                          //       ),
+
+                          child: _images.isEmpty && _webImages.isEmpty
+                              ? Center(
+                                  child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                              Text(
-                                        'Photo Capture (16 angles)',
-                                style: TextStyle(
-                                  color: const Color(0xFFf48c25),
-                                  fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                ),
-                              ),
-                              Text(
-                                        'Take 16 photos around car',
-                                style: TextStyle(
-                                  color: const Color(0xFFf48c25).withOpacity(0.8),
-                                          fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                                ],
-                        ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Video-based capture (new)
-                          GestureDetector(
-                            onTap: _openVideo360CaptureScreen,
-                            child: Container(
-                              width: double.infinity,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.blue.withOpacity(0.1),
-                                    Colors.blue.withOpacity(0.2),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.blue.withOpacity(0.5),
-                                  width: 2,
-                                  style: BorderStyle.solid,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.videocam,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            'Video Capture (90 frames)',
-                                            style: TextStyle(
-                                              color: Colors.blue,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.green,
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: const Text(
-                                              'NEW',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                      Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFf48c25)
+                                              .withOpacity(0.2),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt,
+                                          size: 32,
+                                          color: Color(0xFFf48c25),
+                                        ),
                                       ),
-                                      Text(
-                                        'Record 15-20 sec video',
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        "Add Photo",
                                         style: TextStyle(
-                                          color: Colors.blue.withOpacity(0.8),
-                                          fontSize: 11,
+                                          color: Color(0xFFf48c25),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    else
-                      // Preview captured images (16 angles)
-                      Builder(
-                        builder: (context) {
-                          final capturedImages = _360PreviewImages.where((img) => img != null).toList();
-                          final capturedCount = capturedImages.length;
-                          
-                          return Column(
-                            children: [
-                              Container(
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.grey.shade100,
-                                ),
-                                child: ListView.separated(
+                                )
+                              : ListView.separated(
                                   scrollDirection: Axis.horizontal,
-                                  padding: const EdgeInsets.all(8),
-                                  itemCount: capturedCount + 1,
-                                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  itemCount:
+                                      (_images.length + _webImages.length) + 1,
                                   itemBuilder: (context, index) {
-                                    if (index == capturedCount) {
-                                      // Add more button
+                                    final total =
+                                        _images.length + _webImages.length;
+                                    if (index == total && total < 20) {
                                       return GestureDetector(
-                                        onTap: _open360CaptureScreen,
+                                        onTap: _pickImage,
                                         child: Container(
-                                          width: 80,
+                                          width: 110,
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFf48c25).withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: const Color(0xFFf48c25).withOpacity(0.5)),
+                                            color: const Color(0xFFf48c25)
+                                                .withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: const Color(0xFFf48c25)
+                                                  .withOpacity(0.3),
+                                              width: 2,
+                                            ),
                                           ),
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
+                                          child: const Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.edit, color: const Color(0xFFf48c25)),
-                                              const SizedBox(height: 4),
+                                              Icon(
+                                                Icons.add_circle_outline,
+                                                size: 32,
+                                                color: Color(0xFFf48c25),
+                                              ),
+                                              SizedBox(height: 4),
                                               Text(
-                                                'Edit',
+                                                'Add More',
                                                 style: TextStyle(
-                                                  color: const Color(0xFFf48c25),
+                                                  color: Color(0xFFf48c25),
                                                   fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
                                                 ),
                                               ),
                                             ],
@@ -1156,414 +1056,1102 @@ class _PostAdCarState extends State<PostAdCar> {
                                         ),
                                       );
                                     }
-                                    return ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Stack(
-                                        children: [
-                                          Image.memory(
-                                            capturedImages[index]!,
-                                            width: 80,
-                                            height: 84,
-                                            fit: BoxFit.cover,
+                                    if (index < _webImages.length) {
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Stack(
+                                          children: [
+                                            Image.memory(
+                                              _webImages[index],
+                                              width: 110,
+                                              height: double.infinity,
+                                              fit: BoxFit.cover,
+                                            ),
+                                            Positioned(
+                                              top: 4,
+                                              right: 4,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black54,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: IconButton(
+                                                  icon: const Icon(
+                                                    Icons.close,
+                                                    color: Colors.white,
+                                                    size: 18,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    minWidth: 32,
+                                                    minHeight: 32,
+                                                  ),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _webImages
+                                                          .removeAt(index);
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    } else {
+                                      final imgIndex =
+                                          index - _webImages.length;
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Stack(
+                                          children: [
+                                            Image.memory(
+                                              _images[imgIndex]
+                                                  .readAsBytesSync(),
+                                              width: 110,
+                                              height: double.infinity,
+                                              fit: BoxFit.cover,
+                                            ),
+                                            Positioned(
+                                              top: 4,
+                                              right: 4,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black54,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: IconButton(
+                                                  icon: const Icon(
+                                                    Icons.close,
+                                                    color: Colors.white,
+                                                    size: 18,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    minWidth: 32,
+                                                    minHeight: 32,
+                                                  ),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _images
+                                                          .removeAt(imgIndex);
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 12),
+                                ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // 360° View Photos Header
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFf48c25),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.threed_rotation,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '360° View Photos',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Capture 16 angles of your car for a smooth 360° drag-to-rotate experience',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // 360° Capture Options
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_360PreviewImages.isNotEmpty)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton.icon(
+                                  onPressed: _clear360Images,
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  label: const Text('Clear 360°'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if (_360PreviewImages.isEmpty ||
+                              _360PreviewImages.every((img) => img == null))
+                            // Capture options: Photo or Video
+                            Column(
+                              children: [
+                                // Photo-based capture
+                                GestureDetector(
+                                  onTap: _open360CaptureScreen,
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 20,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                            shape: BoxShape.circle,
                                           ),
-                                          Positioned(
-                                            top: 4,
-                                            left: 4,
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 6,
-                                                vertical: 2,
+                                          child: const Icon(
+                                            Icons.camera_alt,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Photo Capture (16 angles)',
+                                                style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Take 16 photos around car',
+                                                style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withOpacity(0.5),
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.arrow_forward_ios,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          size: 16,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                // Video-based capture
+                                GestureDetector(
+                                  onTap: _openVideo360CaptureScreen,
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 20,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.blue,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.blue,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.videocam,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  const Text(
+                                                    'Video Capture (60 frames)',
+                                                    style: TextStyle(
+                                                      color: Colors.blue,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.green,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                    ),
+                                                    child: const Text(
+                                                      'NEW',
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 9,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                'Record 15-20 sec video',
+                                                style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withOpacity(0.5),
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.arrow_forward_ios,
+                                          color: Colors.blue,
+                                          size: 16,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            // Preview captured images (16 angles)
+                            Builder(
+                              builder: (context) {
+                                final capturedImages = _360PreviewImages
+                                    .where((img) => img != null)
+                                    .toList();
+                                final capturedCount = capturedImages.length;
+
+                                return Column(
+                                  children: [
+                                    Container(
+                                      height: 100,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        color: Colors.grey.shade100,
+                                      ),
+                                      child: ListView.separated(
+                                        scrollDirection: Axis.horizontal,
+                                        padding: const EdgeInsets.all(8),
+                                        itemCount: capturedCount + 1,
+                                        separatorBuilder: (_, __) =>
+                                            const SizedBox(width: 8),
+                                        itemBuilder: (context, index) {
+                                          if (index == capturedCount) {
+                                            // Add more button
+                                            return GestureDetector(
+                                              onTap: _open360CaptureScreen,
+                                              child: Container(
+                                                width: 80,
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFf48c25)
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                      color: const Color(
+                                                              0xFFf48c25)
+                                                          .withOpacity(0.5)),
+                                                ),
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(Icons.edit,
+                                                        color: const Color(
+                                                            0xFFf48c25)),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      'Edit',
+                                                      style: TextStyle(
+                                                        color: const Color(
+                                                            0xFFf48c25),
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          return ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            child: Stack(
+                                              children: [
+                                                Image.memory(
+                                                  capturedImages[index]!,
+                                                  width: 80,
+                                                  height: 84,
+                                                  fit: BoxFit.cover,
+                                                ),
+                                                Positioned(
+                                                  top: 4,
+                                                  left: 4,
+                                                  child: Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black54,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              10),
+                                                    ),
+                                                    child: Text(
+                                                      '${index + 1}',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                            color: Colors.green.shade300),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green.shade700,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            '$capturedCount/16 angles captured',
+                                            style: TextStyle(
+                                              color: Colors.green.shade700,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          if (capturedCount == 16)
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 4,
                                               ),
                                               decoration: BoxDecoration(
-                                                color: Colors.black54,
-                                                borderRadius: BorderRadius.circular(10),
+                                                color: Colors.green.shade700,
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
-                                              child: Text(
-                                                '${index + 1}',
-                                                style: const TextStyle(
+                                              child: const Text(
+                                                '360° Ready',
+                                                style: TextStyle(
                                                   color: Colors.white,
-                                                  fontSize: 10,
+                                                  fontSize: 11,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                             ),
-                                          ),
                                         ],
                                       ),
-                                    );
-                                  },
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ========== Section Header: Car Information ==========
+              // Container wrapping all car information fields
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Section header
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFf48c25).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.directions_car,
+                              color: Color(0xFFf48c25),
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Car Information',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
                                 ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Tell us about your vehicle',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      // Location selector
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 0, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Location',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
-                              const SizedBox(height: 8),
-                              Container(
+                            ),
+                            const SizedBox(height: 8),
+                            InkWell(
+                              onTap: _openLocationSelector,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                width: double.infinity,
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
+                                    horizontal: 16, vertical: 16),
                                 decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.green.shade300),
+                                  border: Border.fromBorderSide(
+                                    BorderSide(
+                                      color: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.white12
+                                          : Colors.black12,
+                                    ),
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainer,
                                 ),
                                 child: Row(
                                   children: [
                                     Icon(
-                                      Icons.check_circle,
-                                      color: Colors.green.shade700,
+                                      Icons.location_city,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
                                       size: 20,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '$capturedCount/16 angles captured',
-                                      style: TextStyle(
-                                        color: Colors.green.shade700,
-                                        fontWeight: FontWeight.w500,
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        selectedLocation ?? 'Select location',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          color: selectedLocation != null
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withOpacity(0.5),
+                                        ),
                                       ),
                                     ),
-                                    const Spacer(),
-                                    if (capturedCount == 16)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green.shade700,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: const Text(
-                                          '360° Ready',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
+                                    Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
+                                      size: 16,
+                                    ),
                                   ],
                                 ),
                               ),
-                            ],
-                          );
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildFormTile(
+                          "Car model${selectedCarModel != null ? " ($selectedCarModel)" : ""}",
+                          Icons.directions_car,
+                          _openModelYearSelector),
+                      // Car Brand Dropdown
+                      _buildCarBrandDropdown(),
+                      // Car Name Field
+                      _buildTextFieldTile(
+                        label: "Car Name / Model",
+                        icon: Icons.label,
+                        controller: _carNameController,
+                        hint: "Civic, Corolla, Camry, etc.",
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Car name/model is required';
+                          }
+                          return null;
                         },
                       ),
-                  ],
+                      _buildFormTile(
+                          "Registered${selectedRegisteredIn != null ? " ($selectedRegisteredIn)" : ""}",
+                          Icons.how_to_reg,
+                          _openRegisteredCitySelector),
+                      _buildTextFieldTile(
+                        label: "Body Color",
+                        icon: Icons.color_lens,
+                        controller: _bodyColorController,
+                        validator: (value) {
+                          try {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Body color is required';
+                            }
+                            final trimmedValue = value.trim();
+                            if (!RegExp(r'^[a-zA-Z\\s]+$')
+                                .hasMatch(trimmedValue)) {
+                              return 'Body color should contain only alphabets';
+                            }
+                            return null;
+                          } catch (e) {
+                            return 'Body color validation error';
+                          }
+                        },
+                      ),
+                      _buildTextFieldTile(
+                        label: "Mileage (KMs)",
+                        icon: Icons.speed,
+                        controller: _mileageController,
+                        hint: "50000",
+                        validator: (value) {
+                          try {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Mileage is required';
+                            }
+                            final trimmedValue = value.trim();
+                            if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
+                              return 'Mileage should contain only numbers';
+                            }
+                            return null;
+                          } catch (e) {
+                            return 'Mileage validation error';
+                          }
+                        },
+                      ),
+                      _buildTextFieldTile(
+                        label: "Fuel Type",
+                        icon: Icons.local_gas_station,
+                        controller: _fuelController,
+                        hint: "Petrol",
+                        validator: (value) {
+                          try {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Fuel type is required';
+                            }
+                            final trimmedValue = value.trim();
+                            if (!RegExp(r'^[a-zA-Z\\s]+$')
+                                .hasMatch(trimmedValue)) {
+                              return 'Fuel type should contain only alphabets';
+                            }
+                            return null;
+                          } catch (e) {
+                            return 'Fuel type validation error';
+                          }
+                        },
+                      ),
+                      _buildTextFieldTile(
+                        label: "Price (PKR)",
+                        icon: Icons.local_offer,
+                        controller: _priceController,
+                        validator: (value) {
+                          try {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Price is required';
+                            }
+                            final trimmedValue = value.trim();
+                            if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
+                              return 'Price should contain only numbers';
+                            }
+                            return null;
+                          } catch (e) {
+                            return 'Price validation error';
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
-              const Divider(height: 32),
+              const SizedBox(height: 24),
 
-              // Location selector
+              // ========== Description Section ==========
+              // Container wrapping description fields
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Location *',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: _openLocationSelector,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade400),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              selectedLocationCoords != null 
-                                  ? Icons.location_on 
-                                  : Icons.location_city,
-                              color: selectedLocation != null 
-                                  ? const Color(0xFFf48c25) 
-                                  : Colors.grey,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Section header
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFf48c25).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    selectedLocation ?? 'Select Location',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: selectedLocation != null 
-                                          ? Colors.black87 
-                                          : Colors.grey,
-                                    ),
+                            child: const Icon(
+                              Icons.description,
+                              color: Color(0xFFf48c25),
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Description',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
                                   ),
-                                  if (selectedLocationAddress.isNotEmpty && 
-                                      selectedLocationAddress != selectedLocation) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      selectedLocationAddress,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Tell us about your car',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      _buildTextFieldTile(
+                        label: "Description",
+                        icon: Icons.notes,
+                        controller: _descriptionController,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Tags/Features
+                      Wrap(
+                        spacing: 8.0,
+                        runSpacing: 8.0,
+                        children: chipOptions
+                            .map((option) => InkWell(
+                                  onTap: () => _appendToDescription(option),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
                                     ),
-                                  ],
-                                  if (selectedLocationCoords != null) ...[
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green.shade100,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        'Precise Location',
-                                        style: TextStyle(
-                                          color: Colors.green.shade800,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainer,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.fromBorderSide(
+                                        BorderSide(
+                                          color: Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? Colors.white12
+                                              : Colors.black12,
                                         ),
                                       ),
                                     ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            Icon(
-                              Icons.arrow_drop_down,
-                              color: Colors.grey[600],
+                                    child: Text(
+                                      option,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ],
+                  ),
                 ),
-                          ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // ========== Seller Information Section ==========
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Section header inside container
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFf48c25).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.person,
+                              color: Color(0xFFf48c25),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Seller Information',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Tell us about yourself',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      // User profile information display
+                      if (_isLoadingProfile)
+                        const Center(child: CircularProgressIndicator())
+                      else ...[
+                        _buildProfileInfoTile(
+                            "Name", Icons.person, _userName ?? 'Not set'),
+                        _buildProfileInfoTile("Phone Number", Icons.phone,
+                            _userPhone ?? 'Not set'),
+                        _buildProfileInfoTile(
+                            "Email", Icons.email, _userEmail ?? 'Not set'),
+                        _buildProfileInfoTile("City", Icons.location_city,
+                            _userCity ?? 'Not set'),
+                        _buildProfileInfoTile("Username", Icons.alternate_email,
+                            _userUsername ?? 'Not set'),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ========== Vehicle Verification Section ==========
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Section header inside container
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFf48c25).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.verified_user,
+                              color: Color(0xFFf48c25),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Vehicle Verification',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Secure verification of your vehicle',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Please provide vehicle details for automatic verification. This information will be encrypted and kept secure.',
+                        style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.6),
+                          fontSize: 12,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildFormTile(
-                  "Car model${selectedCarModel != null ? " ($selectedCarModel)" : ""}",
-                  Icons.directions_car,
-                  _openModelYearSelector),
-              // Car Brand Dropdown
-              _buildCarBrandDropdown(),
-              // Car Name Field
-              _buildTextFieldTile(
-                label: "Car Name / Model",
-                icon: Icons.label,
-                controller: _carNameController,
-                hint: "Civic, Corolla, Camry, etc.",
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Car name/model is required';
-                  }
-                  return null;
-                },
-              ),
-              _buildFormTile(
-                  "Registered${selectedRegisteredIn != null ? " ($selectedRegisteredIn)" : ""}",
-                  Icons.how_to_reg,
-                  _openRegisteredCitySelector),
-              _buildTextFieldTile(
-                label: "Body Color",
-                icon: Icons.color_lens,
-                controller: _bodyColorController,
-                validator: (value) {
-                  try {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Body color is required';
-                    }
-                    final trimmedValue = value.trim();
-                    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(trimmedValue)) {
-                      return 'Body color should contain only alphabets';
-                    }
-                    return null;
-                  } catch (e) {
-                    return 'Body color validation error';
-                  }
-                },
-              ),
-              _buildTextFieldTile(
-                label: "Mileage (KMs)",
-                icon: Icons.speed,
-                controller: _mileageController,
-                hint: "50000",
-                validator: (value) {
-                  try {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Mileage is required';
-                    }
-                    final trimmedValue = value.trim();
-                    if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
-                      return 'Mileage should contain only numbers';
-                    }
-                    return null;
-                  } catch (e) {
-                    return 'Mileage validation error';
-                  }
-                },
-              ),
-              _buildTextFieldTile(
-                label: "Fuel Type",
-                icon: Icons.local_gas_station,
-                controller: _fuelController,
-                hint: "Petrol",
-                validator: (value) {
-                  try {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Fuel type is required';
-                    }
-                    final trimmedValue = value.trim();
-                    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(trimmedValue)) {
-                      return 'Fuel type should contain only alphabets';
-                    }
-                    return null;
-                  } catch (e) {
-                    return 'Fuel type validation error';
-                  }
-                },
-              ),
-              _buildTextFieldTile(
-                label: "Price (PKR)",
-                icon: Icons.local_offer,
-                controller: _priceController,
-                validator: (value) {
-                  try {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Price is required';
-                    }
-                    final trimmedValue = value.trim();
-                    if (!RegExp(r'^[0-9]+$').hasMatch(trimmedValue)) {
-                      return 'Price should contain only numbers';
-                    }
-                    return null;
-                  } catch (e) {
-                    return 'Price validation error';
-                  }
-                },
-              ),
-              _buildTextFieldTile(
-                label: "Description",
-                icon: Icons.notes,
-                controller: _descriptionController,
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Wrap(
-                    spacing: 8.0,
-                    runSpacing: 8.0,
-                    children: chipOptions
-                        .map((option) => ActionChip(
-                              label: Text(option),
-                              onPressed: () => _appendToDescription(option),
-                            ))
-                        .toList(),
+                      const SizedBox(height: 24),
+                      _buildTextFieldTile(
+                        label: "Registration No",
+                        icon: Icons.confirmation_number,
+                        controller: _registrationNoController,
+                        hint: "ABC-123",
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Registration number is required';
+                          }
+                          return null;
+                        },
+                      ),
+                      _buildTextFieldTile(
+                        label: "Registration Date",
+                        icon: Icons.calendar_today,
+                        controller: _registrationDateController,
+                        hint: "MM/DD/YYYY",
+                        readOnly: true,
+                        onTap: () => _selectRegistrationDate(),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Registration date is required';
+                          }
+                          final datePattern = RegExp(r'^\d{2}/\d{2}/\d{4}$');
+                          if (!datePattern.hasMatch(value.trim())) {
+                            return 'Please enter date in MM/DD/YYYY format';
+                          }
+                          return null;
+                        },
+                      ),
+                      _buildTextFieldTile(
+                        label: "Chassis No",
+                        icon: Icons.vpn_key,
+                        controller: _chassisNoController,
+                        hint: "Enter chassis number",
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Chassis number is required';
+                          }
+                          return null;
+                        },
+                      ),
+                      _buildTextFieldTile(
+                        label: "Owner Name",
+                        icon: Icons.person,
+                        controller: _ownerNameController,
+                        hint: "Enter owner name",
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Owner name is required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
-              
-              // Vehicle Verification Section
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Card(
-                  color: Colors.blue.shade50,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.verified_user, color: Colors.blue.shade700),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Vehicle Verification',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Please provide vehicle details for automatic verification. This information will be encrypted and kept secure.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextFieldTile(
-                          label: "Registration No",
-                          icon: Icons.confirmation_number,
-                          controller: _registrationNoController,
-                          hint: "ABC-123",
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Registration number is required';
-                            }
-                            return null;
-                          },
-                        ),
-                        _buildTextFieldTile(
-                          label: "Registration Date",
-                          icon: Icons.calendar_today,
-                          controller: _registrationDateController,
-                          hint: "MM/DD/YYYY",
-                          readOnly: true,
-                          onTap: () => _selectRegistrationDate(),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Registration date is required';
-                            }
-                            final datePattern = RegExp(r'^\d{2}/\d{2}/\d{4}$');
-                            if (!datePattern.hasMatch(value.trim())) {
-                              return 'Please enter date in MM/DD/YYYY format';
-                            }
-                            return null;
-                          },
-                        ),
-                        _buildTextFieldTile(
-                          label: "Chassis No",
-                          icon: Icons.vpn_key,
-                          controller: _chassisNoController,
-                          hint: "Enter chassis number",
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Chassis number is required';
-                            }
-                            return null;
-                          },
-                        ),
-                        _buildTextFieldTile(
-                          label: "Owner Name",
-                          icon: Icons.person,
-                          controller: _ownerNameController,
-                          hint: "Enter owner name",
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Owner name is required';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+
               // Image upload progress
               if (_isUploadingImages)
                 Padding(
@@ -1579,263 +2167,295 @@ class _PostAdCarState extends State<PostAdCar> {
                     ],
                   ),
                 ),
-              // User profile information display
-              if (_isLoadingProfile)
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else ...[
-                _buildProfileInfoTile(
-                    "Name", Icons.person, _userName ?? 'Not set'),
-                _buildProfileInfoTile(
-                    "Phone Number", Icons.phone, _userPhone ?? 'Not set'),
-                _buildProfileInfoTile(
-                    "Email", Icons.email, _userEmail ?? 'Not set'),
-                _buildProfileInfoTile(
-                    "City", Icons.location_city, _userCity ?? 'Not set'),
-                _buildProfileInfoTile("Username", Icons.alternate_email,
-                    _userUsername ?? 'Not set'),
-              ],
+
               const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SizedBox(
-                  width: double.infinity,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFFF6B35),
-                          Color(0xFFFF8C42),
+                    width: double.infinity,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFFFF6B35),
+                            Color(0xFFFF8C42),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF6B35).withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
                         ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                      ),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF6B35).withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    onPressed: (_isUploadingImages || _isUploading360 || _isVerifying) ? null : () async {
-                      if (_formKey.currentState!.validate()) {
-                        // Verify vehicle details first
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Verifying vehicle details...'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
+                        onPressed: (_isUploadingImages ||
+                                _isUploading360 ||
+                                _isVerifying)
+                            ? null
+                            : () async {
+                                if (_formKey.currentState!.validate()) {
+                                  // Verify vehicle details first
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Verifying vehicle details...'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
 
-                        final isVerified = await _verifyVehicleDetails();
+                                  final isVerified =
+                                      await _verifyVehicleDetails();
 
-                        if (!isVerified) {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Vehicle verification failed. Please ensure all details match the official records.'),
-                              backgroundColor: Colors.red,
-                              duration: Duration(seconds: 4),
-                            ),
-                          );
-                          return;
-                        }
+                                  if (!isVerified) {
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            'Vehicle verification failed. Please ensure all details match the official records.'),
+                                        backgroundColor: Colors.red,
+                                        duration: Duration(seconds: 4),
+                                      ),
+                                    );
+                                    return;
+                                  }
 
-                        // Verification successful, proceed with upload
-                        List<String> imageUrls = [];
-                        
-                        // Upload images to Cloudinary
-                        if (_images.isNotEmpty || _webImages.isNotEmpty) {
-                          try {
-                            imageUrls = await _uploadImages();
-                            if (imageUrls.isEmpty) {
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('No images were uploaded. Please try again.'),
-                                ),
-                              );
-                              return;
-                            }
-                          } catch (e) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Failed to upload images: $e'),
-                              ),
-                            );
-                            return;
-                          }
-                        }
+                                  // Verification successful, proceed with upload
+                                  List<String> imageUrls = [];
 
-                        // Upload 360° images if captured (16 angles)
-                        List<String>? images360Urls;
-                        if (_captured360Set != null && _captured360Set!.capturedCount > 0) {
-                          try {
-                            setState(() => _isUploading360 = true);
-                            images360Urls = await _car360Service.uploadCar360Set(
-                              _captured360Set!,
-                              onProgress: (current, total) {
-                                // Optional: show progress
+                                  // Upload images to Cloudinary
+                                  if (_images.isNotEmpty ||
+                                      _webImages.isNotEmpty) {
+                                    try {
+                                      imageUrls = await _uploadImages();
+                                      if (imageUrls.isEmpty) {
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                'No images were uploaded. Please try again.'),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                    } catch (e) {
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Failed to upload images: $e'),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  }
+
+                                  // Upload 360° images if captured (16 angles)
+                                  List<String>? images360Urls;
+                                  if (_captured360Set != null &&
+                                      _captured360Set!.capturedCount > 0) {
+                                    try {
+                                      setState(() => _isUploading360 = true);
+                                      images360Urls =
+                                          await _car360Service.uploadCar360Set(
+                                        _captured360Set!,
+                                        onProgress: (current, total) {
+                                          // Optional: show progress
+                                        },
+                                      );
+                                    } catch (e) {
+                                      if (!mounted) return;
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                                'Failed to upload 360° images: $e')),
+                                      );
+                                      // Continue without 360 images
+                                    } finally {
+                                      if (mounted)
+                                        setState(() => _isUploading360 = false);
+                                    }
+                                  }
+
+                                  // Use selected location coordinates or get current location
+                                  Map<String, double>? locationCoords;
+                                  if (selectedLocationCoords != null) {
+                                    // Use the precise location selected by user
+                                    locationCoords = {
+                                      'lat': selectedLocationCoords!.latitude,
+                                      'lng': selectedLocationCoords!.longitude,
+                                    };
+                                  } else {
+                                    // Fallback to current location if no precise location selected
+                                    try {
+                                      LocationPermission permission =
+                                          await Geolocator.checkPermission();
+                                      if (permission ==
+                                          LocationPermission.denied) {
+                                        permission = await Geolocator
+                                            .requestPermission();
+                                      }
+
+                                      if (permission ==
+                                              LocationPermission.whileInUse ||
+                                          permission ==
+                                              LocationPermission.always) {
+                                        Position position =
+                                            await Geolocator.getCurrentPosition(
+                                          desiredAccuracy:
+                                              LocationAccuracy.medium,
+                                        );
+                                        locationCoords = {
+                                          'lat': position.latitude,
+                                          'lng': position.longitude,
+                                        };
+                                      }
+                                    } catch (e) {
+                                      print('Error getting location: $e');
+                                      // Continue without location coordinates
+                                    }
+                                  }
+
+                                  // Prepare vehicle verification data
+                                  // Normalize registration number for consistent duplicate checking
+                                  final plainRegistrationNo =
+                                      _registrationNoController.text
+                                          .trim()
+                                          .toUpperCase()
+                                          .replaceAll('*', '')
+                                          .replaceAll(' ', '')
+                                          .replaceAll(RegExp(r'[^\w\-]'), '');
+                                  final vehicleData = {
+                                    'registrationNo': plainRegistrationNo,
+                                    'registrationDate':
+                                        _registrationDateController.text.trim(),
+                                    'chassisNo':
+                                        _chassisNoController.text.trim(),
+                                    'ownerName':
+                                        _ownerNameController.text.trim(),
+                                  };
+
+                                  // Encrypt sensitive vehicle data
+                                  final encryptedVehicleData =
+                                      EncryptionService.encryptFields(
+                                          vehicleData);
+
+                                  // Add plain registration number temporarily for duplicate checking
+                                  // This will be removed before storing in Firestore
+                                  encryptedVehicleData['_plainRegistrationNo'] =
+                                      plainRegistrationNo;
+
+                                  // Create ad with image URLs and encrypted vehicle data
+                                  final newAd = AdModel(
+                                    title: _titleController.text,
+                                    price: _priceController.text,
+                                    location: selectedLocationAddress.isNotEmpty
+                                        ? selectedLocationAddress
+                                        : selectedLocation ??
+                                            _locationController.text,
+                                    year: selectedCarModel ?? '',
+                                    mileage: _mileageController.text,
+                                    fuel: _fuelController.text,
+                                    description: _descriptionController.text,
+                                    carBrand: _selectedBrand?.displayName ?? '',
+                                    carName: _carNameController.text.trim(),
+                                    bodyColor: _bodyColorController.text,
+                                    kmsDriven: _mileageController
+                                        .text, // Use mileage for kmsDriven
+                                    registeredIn: selectedRegisteredIn,
+                                    name: _nameController.text,
+                                    phone: _phoneController.text,
+                                    imageUrls:
+                                        imageUrls.isNotEmpty ? imageUrls : null,
+                                    locationCoordinates: locationCoords,
+                                    images360Urls: images360Urls != null &&
+                                            images360Urls.isNotEmpty
+                                        ? images360Urls
+                                        : null,
+                                  );
+
+                                  try {
+                                    // Add ad with encrypted vehicle data and auto-approve (status = 'active')
+                                    await GlobalAdStore().addAdWithVerification(
+                                        newAd, encryptedVehicleData);
+
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Text(
+                                            'Vehicle verified successfully! Your ad has been posted.'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+
+                                    await Future.delayed(
+                                        const Duration(seconds: 1));
+                                    if (!mounted) return;
+                                    Navigator.pushReplacementNamed(
+                                        context, '/myads');
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    final errorMessage = e
+                                        .toString()
+                                        .replaceAll('Exception: ', '')
+                                        .replaceAll(
+                                            'Failed to add verified ad: ', '');
+                                    final isDuplicateError =
+                                        errorMessage.contains('already exists');
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(errorMessage),
+                                        backgroundColor: isDuplicateError
+                                            ? Colors.orange
+                                            : Colors.red,
+                                        duration: const Duration(seconds: 5),
+                                      ),
+                                    );
+                                  }
+                                }
                               },
-                            );
-                          } catch (e) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Failed to upload 360° images: $e')),
-                            );
-                            // Continue without 360 images
-                          } finally {
-                            if (mounted) setState(() => _isUploading360 = false);
-                          }
-                        }
-
-                        // Use selected location coordinates or get current location
-                        Map<String, double>? locationCoords;
-                        if (selectedLocationCoords != null) {
-                          // Use the precise location selected by user
-                          locationCoords = {
-                            'lat': selectedLocationCoords!.latitude,
-                            'lng': selectedLocationCoords!.longitude,
-                          };
-                        } else {
-                          // Fallback to current location if no precise location selected
-                          try {
-                          LocationPermission permission = await Geolocator.checkPermission();
-                          if (permission == LocationPermission.denied) {
-                            permission = await Geolocator.requestPermission();
-                          }
-                          
-                          if (permission == LocationPermission.whileInUse ||
-                              permission == LocationPermission.always) {
-                            Position position = await Geolocator.getCurrentPosition(
-                              desiredAccuracy: LocationAccuracy.medium,
-                            );
-                            locationCoords = {
-                              'lat': position.latitude,
-                              'lng': position.longitude,
-                            };
-                          }
-                        } catch (e) {
-                          print('Error getting location: $e');
-                          // Continue without location coordinates
-                          }
-                        }
-
-                        // Prepare vehicle verification data
-                        // Normalize registration number for consistent duplicate checking
-                        final plainRegistrationNo = _registrationNoController.text
-                            .trim()
-                            .toUpperCase()
-                            .replaceAll('*', '')
-                            .replaceAll(' ', '')
-                            .replaceAll(RegExp(r'[^\w\-]'), '');
-                        final vehicleData = {
-                          'registrationNo': plainRegistrationNo,
-                          'registrationDate': _registrationDateController.text.trim(),
-                          'chassisNo': _chassisNoController.text.trim(),
-                          'ownerName': _ownerNameController.text.trim(),
-                        };
-
-                        // Encrypt sensitive vehicle data
-                        final encryptedVehicleData = EncryptionService.encryptFields(vehicleData);
-                        
-                        // Add plain registration number temporarily for duplicate checking
-                        // This will be removed before storing in Firestore
-                        encryptedVehicleData['_plainRegistrationNo'] = plainRegistrationNo;
-
-                        // Create ad with image URLs and encrypted vehicle data
-                        final newAd = AdModel(
-                          title: _titleController.text,
-                          price: _priceController.text,
-                          location: selectedLocationAddress.isNotEmpty 
-                              ? selectedLocationAddress 
-                              : selectedLocation ?? _locationController.text,
-                          year: selectedCarModel ?? '',
-                          mileage: _mileageController.text,
-                          fuel: _fuelController.text,
-                          description: _descriptionController.text,
-                          carBrand: _selectedBrand?.displayName ?? '',
-                          carName: _carNameController.text.trim(),
-                          bodyColor: _bodyColorController.text,
-                          kmsDriven: _mileageController
-                              .text, // Use mileage for kmsDriven
-                          registeredIn: selectedRegisteredIn,
-                          name: _nameController.text,
-                          phone: _phoneController.text,
-                          imageUrls: imageUrls.isNotEmpty ? imageUrls : null,
-                          locationCoordinates: locationCoords,
-                          images360Urls: images360Urls != null && images360Urls.isNotEmpty
-                              ? images360Urls
-                              : null,
-                        );
-
-                        try {
-                          // Add ad with encrypted vehicle data and auto-approve (status = 'active')
-                          await GlobalAdStore().addAdWithVerification(newAd, encryptedVehicleData);
-
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text(
-                                  'Vehicle verified successfully! Your ad has been posted.'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-
-                          await Future.delayed(const Duration(seconds: 1));
-                          if (!mounted) return;
-                          Navigator.pushReplacementNamed(context, '/myads');
-                        } catch (e) {
-                          if (!mounted) return;
-                          final errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('Failed to add verified ad: ', '');
-                          final isDuplicateError = errorMessage.contains('already exists');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(errorMessage),
-                              backgroundColor: isDuplicateError ? Colors.orange : Colors.red,
-                              duration: const Duration(seconds: 5),
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    child: (_isUploadingImages || _isUploading360)
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
+                        child: (_isUploadingImages || _isUploading360)
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    _isUploading360
+                                        ? "Uploading 360° images..."
+                                        : "Uploading...",
+                                    style: const TextStyle(
+                                        fontSize: 16, color: Colors.white),
+                                  ),
+                                ],
+                              )
+                            : const Text(
+                                "Post Ad",
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.white),
                               ),
-                              const SizedBox(width: 12),
-                              Text(
-                                _isUploading360 ? "Uploading 360° images..." : "Uploading...",
-                                style: const TextStyle(fontSize: 16, color: Colors.white),
-                              ),
-                            ],
-                          )
-                        : const Text(
-                            "Post Ad",
-                            style: TextStyle(fontSize: 16, color: Colors.white),
-                          ),
-                  ),
-                  )
-                ),
+                      ),
+                    )),
               ),
               const SizedBox(height: 40),
             ],
@@ -1854,33 +2474,76 @@ class _PostAdCarState extends State<PostAdCar> {
     bool readOnly = false,
     VoidCallback? onTap,
   }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final Color fill_color = isDark 
-        ? const Color.fromARGB(255, 15, 15, 15) 
-        : Colors.grey.shade200;
-
-    return ListTile(
-      leading: Icon(icon, color: Colors.grey.shade700),
-      title: TextFormField(
-        controller: controller,
-        validator: validator ??
-            ((value) {
-              try {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Required';
-                }
-                return null;
-              } catch (e) {
-                return 'Validation error';
-              }
-            }),
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          border: InputBorder.none,
-          fillColor: fill_color,
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: controller,
+            readOnly: readOnly,
+            onTap: onTap,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 15,
+            ),
+            validator: validator ??
+                ((value) {
+                  try {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Required';
+                    }
+                    return null;
+                  } catch (e) {
+                    return 'Validation error';
+                  }
+                }),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+              ),
+              prefixIcon: Icon(
+                icon,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surfaceContainer,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white12
+                      : Colors.black12,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1888,49 +2551,61 @@ class _PostAdCarState extends State<PostAdCar> {
   Widget _buildCarBrandDropdown() {
     final carBrandService = CarBrandService();
     final brands = carBrandService.getAllBrands();
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.directions_car,
-                color: theme.colorScheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Car Brand',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-              const Text(
-                ' *',
-                style: TextStyle(color: Colors.red),
-              ),
-            ],
+          Text(
+            'Car Brand',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<CarBrand>(
             value: _selectedBrand,
             decoration: InputDecoration(
               hintText: 'Select car brand',
+              hintStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+              ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white12
+                      : Colors.black12,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white12
+                      : Colors.black12,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 2,
+                ),
               ),
               filled: true,
-              fillColor: isDark ? Colors.grey[900] : Colors.grey[50],
+              fillColor: Theme.of(context).colorScheme.surfaceContainer,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: 12,
+                vertical: 16,
+              ),
+              prefixIcon: Icon(
+                Icons.directions_car,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                size: 20,
               ),
             ),
             items: brands.map((brand) {
@@ -1940,16 +2615,16 @@ class _PostAdCarState extends State<PostAdCar> {
                   children: [
                     Image.asset(
                       brand.logoPath,
-                      width: 32,
-                      height: 32,
+                      width: 24,
+                      height: 24,
                       errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.directions_car, size: 24);
+                        return const Icon(Icons.directions_car, size: 20);
                       },
                     ),
                     const SizedBox(width: 12),
                     Text(
                       brand.displayName,
-                      style: const TextStyle(fontSize: 16),
+                      style: const TextStyle(fontSize: 15),
                     ),
                   ],
                 ),
@@ -1968,13 +2643,57 @@ class _PostAdCarState extends State<PostAdCar> {
             },
             icon: Icon(
               Icons.arrow_drop_down,
-              color: theme.colorScheme.primary,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
             ),
-            dropdownColor: isDark ? Colors.grey[900] : Colors.white,
+            dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
             style: TextStyle(
-              color: isDark ? Colors.white : Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon,
+                  color: Theme.of(context).colorScheme.primary, size: 22),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 34),
+              child: Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1983,32 +2702,142 @@ class _PostAdCarState extends State<PostAdCar> {
   Widget _buildFormTile(
     String title,
     IconData icon,
-    VoidCallback onTap, {
-    String? subtitle,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.grey.shade700),
-      title: Text(title),
-      subtitle: subtitle != null ? Text(subtitle) : null,
-      trailing: const Icon(Icons.keyboard_arrow_right),
-      onTap: onTap,
+    VoidCallback onTap,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.split('(')[0].trim(),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.fromBorderSide(
+                  BorderSide(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white12
+                        : Colors.black12,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title.contains('(')
+                          ? title.split('(')[1].replaceAll(')', '')
+                          : 'Select ${title.toLowerCase()}',
+                      style: TextStyle(
+                        color: title.contains('(')
+                            ? Theme.of(context).colorScheme.onSurface
+                            : Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.4),
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildProfileInfoTile(String label, IconData icon, String value) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.grey.shade700),
-      title: Text(label),
-      subtitle: Text(
-        value,
-        style: TextStyle(
-          color: value == 'Not set' ? Colors.grey : null,
-          fontStyle: value == 'Not set' ? FontStyle.italic : null,
-        ),
+    final bool hasValue = value.isNotEmpty && value != 'Not set';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.fromBorderSide(
+                BorderSide(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white12
+                      : Colors.black12,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      color: hasValue
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.4),
+                      fontSize: 15,
+                      fontStyle: hasValue ? FontStyle.normal : FontStyle.italic,
+                    ),
+                  ),
+                ),
+                if (hasValue)
+                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
+              ],
+            ),
+          ),
+        ],
       ),
-      trailing: value == 'Not set'
-          ? const Icon(Icons.warning, color: Colors.orange)
-          : const Icon(Icons.check_circle, color: Colors.green),
     );
   }
 }

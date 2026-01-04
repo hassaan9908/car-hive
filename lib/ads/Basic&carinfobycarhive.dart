@@ -1,4 +1,3 @@
-
 import 'package:carhive/ads/Bookcarvisit.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -92,44 +91,50 @@ class _CombinedInfoScreenState extends State<CombinedInfoScreen> {
 
     if (_isLoading) {
       return Scaffold(
-        backgroundColor:
-            isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
-        body: const Center(
-            child: CircularProgressIndicator(color: Color(0xFFFF6B35))),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Center(
+            child: CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary)),
       );
     }
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF121212) : const Color(0xFFF5F7FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: isDark ? Colors.white : Colors.black87),
+              color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'CarHive Assisted',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFf48c25),
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             Text(
               'We\'ll help you sell',
               style: TextStyle(
                 fontSize: 12,
-                color: isDark ? Colors.white70 : Colors.black54,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 fontWeight: FontWeight.w400,
               ),
             ),
           ],
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: isDark ? Colors.grey[800] : Colors.grey[400],
+            height: 1,
+          ),
         ),
       ),
       body: Stack(
