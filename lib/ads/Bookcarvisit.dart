@@ -91,6 +91,13 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
       appBar: AppBar(
         title: const Text("Book Visit"),
         backgroundColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: isDark ? Colors.grey[800] : Colors.grey[400],
+            height: 1,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -102,7 +109,10 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildStepCircle("1", "Info", completed: true),
-                Container(width: 40, height: 2, color: const Color(0xFFFF6B35)),
+                Container(
+                    width: 40,
+                    height: 2,
+                    color: Theme.of(context).colorScheme.primary),
                 _buildStepCircle("2", "Visit", active: true),
                 Container(width: 40, height: 2, color: Colors.grey),
                 _buildStepCircle("3", "Checkout"),
@@ -133,8 +143,8 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.event_available,
-                          color: Color(0xFFFF6B35)),
+                      Icon(Icons.event_available,
+                          color: Theme.of(context).colorScheme.primary),
                       const SizedBox(width: 8),
                       Text(
                         "Visit Details",
@@ -168,10 +178,11 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                               const BorderRadius.all(Radius.circular(14)),
                           borderSide: BorderSide(
                               color: isDark ? Colors.white12 : Colors.black12)),
-                      focusedBorder: const OutlineInputBorder(
+                      focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(14)),
-                          borderSide:
-                              BorderSide(color: Color(0xFFf48c25), width: 2)),
+                          borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2)),
                     ),
                     value: selectedCity,
                     items: cityAreas.keys
@@ -213,10 +224,11 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                             borderSide: BorderSide(
                                 color:
                                     isDark ? Colors.white12 : Colors.black12)),
-                        focusedBorder: const OutlineInputBorder(
+                        focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.all(Radius.circular(14)),
-                            borderSide:
-                                BorderSide(color: Color(0xFFf48c25), width: 2)),
+                            borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 2)),
                       ),
                       value: selectedArea,
                       items: (cityAreas[selectedCity] ?? [])
@@ -262,8 +274,8 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.calendar_today_rounded,
-                            color: Color(0xFFFF6B35)),
+                        Icon(Icons.calendar_today_rounded,
+                            color: Theme.of(context).colorScheme.primary),
                         const SizedBox(width: 8),
                         Text(
                           "Available Dates",
@@ -386,7 +398,7 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: selectedDate != null
-                      ? const Color(0xFFf48c25)
+                      ? Theme.of(context).colorScheme.primary
                       : Colors.grey,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
@@ -406,8 +418,9 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
   /// Step Circle Widget
   Widget _buildStepCircle(String number, String label,
       {bool active = false, bool completed = false}) {
-    const Color brand = Color(0xFFFF6B35);
-    final Color color = completed || active ? brand : Colors.grey;
+    final Color color = completed || active
+        ? Theme.of(context).colorScheme.primary
+        : Colors.grey;
     return Column(
       children: [
         CircleAvatar(
@@ -445,12 +458,12 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFFf48c25)
+                  ? Theme.of(context).colorScheme.primary
                   : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                   color: isSelected
-                      ? const Color(0xFFf48c25)
+                      ? Theme.of(context).colorScheme.primary
                       : (isDark ? Colors.white12 : Colors.black12)),
             ),
             child: Column(
@@ -475,7 +488,9 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                     _weekdayFor(date),
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black87,
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? Colors.white : Colors.black87),
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
@@ -498,7 +513,9 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                         Text(
                           date,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black87,
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark ? Colors.white : Colors.black87),
                             fontWeight: FontWeight.w700,
                             fontSize: 18,
                           ),
@@ -524,13 +541,16 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
                         children: [
                           Icon(Icons.event_seat,
                               size: 16,
-                              color:
-                                  isSelected ? Colors.white : Colors.black54),
+                              color: isSelected
+                                  ? Colors.white
+                                  : (isDark ? Colors.white70 : Colors.black54)),
                           const SizedBox(width: 6),
                           Text(
                             "$seats",
                             style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black87,
+                              color: isSelected
+                                  ? Colors.white
+                                  : (isDark ? Colors.white : Colors.black87),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -562,12 +582,12 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: isSelectedSlot
-              ? const Color(0xFFf48c25)
+              ? Theme.of(context).colorScheme.primary
               : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
               color: isSelectedSlot
-                  ? const Color(0xFFf48c25)
+                  ? Theme.of(context).colorScheme.primary
                   : (isDark ? Colors.white12 : Colors.black12)),
         ),
         child: Row(
@@ -575,11 +595,15 @@ class _BookVisitScreenState extends State<BookVisitScreen> {
           children: [
             Icon(Icons.access_time,
                 size: 16,
-                color: isSelectedSlot ? Colors.white : Colors.black54),
+                color: isSelectedSlot
+                    ? Colors.white
+                    : (isDark ? Colors.white70 : Colors.black54)),
             const SizedBox(width: 6),
             Text(slot,
                 style: TextStyle(
-                    color: isSelectedSlot ? Colors.white : Colors.black87,
+                    color: isSelectedSlot
+                        ? Colors.white
+                        : (isDark ? Colors.white : Colors.black87),
                     fontWeight: FontWeight.w600)),
           ],
         ),

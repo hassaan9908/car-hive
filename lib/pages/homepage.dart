@@ -60,11 +60,11 @@ class _HomepageState extends State<Homepage> {
     if (ad.title != null && ad.title.toString().isNotEmpty) {
       return ad.title.toString();
     }
-    
+
     // Otherwise, combine brand + name
     final brand = ad.carBrand?.toString() ?? '';
     final name = ad.carName?.toString() ?? '';
-    
+
     if (brand.isNotEmpty && name.isNotEmpty) {
       return '$brand $name';
     } else if (brand.isNotEmpty) {
@@ -72,7 +72,7 @@ class _HomepageState extends State<Homepage> {
     } else if (name.isNotEmpty) {
       return name;
     }
-    
+
     return 'Car';
   }
 
@@ -102,6 +102,15 @@ class _HomepageState extends State<Homepage> {
             centerTitle: true,
             // Prevent showing a back arrow when arriving from auth flow
             automaticallyImplyLeading: false,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Container(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.grey[800]
+                    : Colors.grey[400],
+                height: 1,
+              ),
+            ),
             actions: [
               // Admin Panel button (web only)
               if (kIsWeb)
@@ -185,14 +194,18 @@ class _HomepageState extends State<Homepage> {
                     child: Row(
                       children: [
                         Chip(
-                          label: Text('Filtered by: ${_getBrandName(_selectedBrandId!)}'),
+                          label: Text(
+                              'Filtered by: ${_getBrandName(_selectedBrandId!)}'),
                           onDeleted: () {
                             setState(() {
                               _selectedBrandId = null;
                             });
                           },
                           deleteIcon: const Icon(Icons.close, size: 18),
-                          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.1),
                         ),
                       ],
                     ),

@@ -273,7 +273,10 @@ class GlobalAdStore {
           final existingAdsQuery = await _firestore
               .collection('ads')
               .where('registrationNoHash', isEqualTo: registrationHash)
-              .where('status', whereIn: ['active', 'pending']) // Only check active and pending ads
+              .where('status', whereIn: [
+                'active',
+                'pending'
+              ]) // Only check active and pending ads
               .limit(1)
               .get();
 
@@ -296,20 +299,23 @@ class GlobalAdStore {
                 .where('registrationNoHash', isEqualTo: registrationHash)
                 .limit(10) // Get more to filter by status
                 .get();
-            
+
             // Filter to only check active and pending ads (sold ads can be reposted)
             final blockingAds = fallbackQuery.docs.where((doc) {
               final adData = doc.data();
               final status = adData['status'] as String? ?? 'unknown';
               return ['active', 'pending'].contains(status);
             }).toList();
-            
+
             if (blockingAds.isNotEmpty) {
               final existingAd = blockingAds.first;
               final existingAdData = existingAd.data();
-              final existingStatus = existingAdData['status'] as String? ?? 'unknown';
-              print('Found existing ad with same registration number: ${existingAd.id}, status: $existingStatus');
-              throw Exception('An ad with registration number "$normalizedRegNo" already exists. Each vehicle can only be listed once. Please check your existing ads or contact support if you believe this is an error.');
+              final existingStatus =
+                  existingAdData['status'] as String? ?? 'unknown';
+              print(
+                  'Found existing ad with same registration number: ${existingAd.id}, status: $existingStatus');
+              throw Exception(
+                  'An ad with registration number "$normalizedRegNo" already exists. Each vehicle can only be listed once. Please check your existing ads or contact support if you believe this is an error.');
             }
           } else {
             // Re-throw if it's not an index error

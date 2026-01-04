@@ -54,6 +54,15 @@ class Profilepage extends StatelessWidget {
           ),
           backgroundColor: Colors.transparent,
           centerTitle: true,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[400],
+              height: 1,
+            ),
+          ),
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -158,6 +167,12 @@ class Profilepage extends StatelessWidget {
                 // More section
                 _sectionHeader(context, 'More'),
                 _settingsCard(context, [
+                  if (authProvider.isLoggedIn) ...[
+                    _settingsTile(context, Icons.bookmark, 'Saved Ads',
+                        subtitle: 'View your saved ads',
+                        onTap: () => _navigateToSavedAds(context)),
+                    _dividerInset(context),
+                  ],
                   _settingsTile(
                       context, Icons.reviews_outlined, 'Rate & Review',
                       onTap: () {}),
@@ -1053,5 +1068,9 @@ class Profilepage extends StatelessWidget {
       context,
       MaterialPageRoute(builder: (context) => const VideoListPage()),
     );
+  }
+
+  void _navigateToSavedAds(BuildContext context) {
+    Navigator.pushNamed(context, '/saved-ads');
   }
 }

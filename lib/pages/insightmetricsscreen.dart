@@ -401,15 +401,39 @@ class _InsightMetricsScreenState extends State<InsightMetricsScreen>
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.directions_car,
-                        color: Colors.white, size: 30),
+                  // Car Image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: (widget.ad.imageUrls != null &&
+                            widget.ad.imageUrls!.isNotEmpty)
+                        ? Image.network(
+                            widget.ad.imageUrls!.first,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.directions_car,
+                                    color: Colors.white, size: 40),
+                              );
+                            },
+                          )
+                        : Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.directions_car,
+                                color: Colors.white, size: 40),
+                          ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -417,21 +441,32 @@ class _InsightMetricsScreenState extends State<InsightMetricsScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.ad.title,
+                          widget.ad.title.isNotEmpty
+                              ? widget.ad.title
+                              : (widget.ad.carBrand ?? 'Car'),
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${widget.ad.year}  •  ${widget.ad.mileage} km',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
                         Text(
                           'PKR ${widget.ad.price}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.9),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
                       ],

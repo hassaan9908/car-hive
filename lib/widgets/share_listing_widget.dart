@@ -140,141 +140,203 @@ class _ShareListingWidgetState extends State<ShareListingWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final shareValue = widget.vehicle.salePrice > 0
         ? widget.vehicle.salePrice * widget.investment.investmentRatio
         : widget.investment.amount;
 
-    return Card(
-      elevation: 4,
-      color: Colors.orange[50],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'List Shares for Sale',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close,
+                      color: theme.colorScheme.onSurfaceVariant),
+                  onPressed: widget.onCancel,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Share Information
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2196F3).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF2196F3).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
                 children: [
-                  const Text(
-                    'List Shares for Sale',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: widget.onCancel,
-                  ),
+                  _buildInfoRow('Your Share',
+                      '${(widget.investment.investmentRatio * 100).toStringAsFixed(2)}%'),
+                  Divider(color: theme.colorScheme.surfaceVariant, height: 16),
+                  _buildInfoRow('Original Investment',
+                      '${widget.investment.amount.toStringAsFixed(0)} PKR'),
+                  Divider(color: theme.colorScheme.surfaceVariant, height: 16),
+                  _buildInfoRow('Estimated Current Value',
+                      '${shareValue.toStringAsFixed(0)} PKR'),
                 ],
               ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 20),
 
-              // Share Information
+            // Asking Price
+            TextFormField(
+              controller: _priceController,
+              style: TextStyle(color: theme.colorScheme.onSurface),
+              decoration: InputDecoration(
+                labelText: 'Asking Price (PKR)',
+                hintText: 'Enter price you want to sell for',
+                prefixIcon: Icon(Icons.attach_money,
+                    color: theme.colorScheme.onSurfaceVariant),
+                filled: true,
+                fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: const Color(0xFFFF6B35), width: 2),
+                ),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
+              validator: _validatePrice,
+            ),
+            const SizedBox(height: 12),
+
+            // Price Comparison
+            if (_getAskingPrice() != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
+                  color: (_getAskingPrice()! >= widget.investment.amount
+                          ? const Color(0xFF4CAF50)
+                          : const Color(0xFFF44336))
+                      .withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: (_getAskingPrice()! >= widget.investment.amount
+                            ? const Color(0xFF4CAF50)
+                            : const Color(0xFFF44336))
+                        .withOpacity(0.3),
+                    width: 1,
+                  ),
                 ),
-                child: Column(
+                child: Row(
                   children: [
-                    _buildInfoRow('Your Share', '${(widget.investment.investmentRatio * 100).toStringAsFixed(2)}%'),
-                    const SizedBox(height: 4),
-                    _buildInfoRow('Original Investment', '${widget.investment.amount.toStringAsFixed(0)} PKR'),
-                    const SizedBox(height: 4),
-                    _buildInfoRow('Estimated Current Value', '${shareValue.toStringAsFixed(0)} PKR'),
+                    Icon(
+                      _getAskingPrice()! >= widget.investment.amount
+                          ? Icons.trending_up
+                          : Icons.trending_down,
+                      size: 20,
+                      color: _getAskingPrice()! >= widget.investment.amount
+                          ? const Color(0xFF4CAF50)
+                          : const Color(0xFFF44336),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _getAskingPrice()! >= widget.investment.amount
+                            ? 'Premium: ${((_getAskingPrice()! - widget.investment.amount) / widget.investment.amount * 100).toStringAsFixed(2)}%'
+                            : 'Discount: ${((widget.investment.amount - _getAskingPrice()!) / widget.investment.amount * 100).toStringAsFixed(2)}%',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: _getAskingPrice()! >= widget.investment.amount
+                              ? const Color(0xFF4CAF50)
+                              : const Color(0xFFF44336),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Asking Price
-              TextFormField(
-                controller: _priceController,
-                decoration: InputDecoration(
-                  labelText: 'Asking Price (PKR)',
-                  hintText: 'Enter price you want to sell for',
-                  prefixIcon: const Icon(Icons.attach_money),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+              const SizedBox(height: 20),
+            ],
+            // Description
+            TextFormField(
+              controller: _descriptionController,
+              style: TextStyle(color: theme.colorScheme.onSurface),
+              decoration: InputDecoration(
+                labelText: 'Description (Optional)',
+                hintText: 'Why are you selling?',
+                filled: true,
+                fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                ],
-                validator: _validatePrice,
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: const Color(0xFFFF6B35), width: 2),
+                ),
               ),
-              const SizedBox(height: 8),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 24),
 
-              // Price Comparison
-              if (_getAskingPrice() != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: _getAskingPrice()! >= widget.investment.amount
-                        ? Colors.green[50]
-                        : Colors.red[50],
-                    borderRadius: BorderRadius.circular(4),
+            // Submit Button
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _getAskingPrice()! >= widget.investment.amount
-                            ? Icons.trending_up
-                            : Icons.trending_down,
-                        size: 16,
-                        color: _getAskingPrice()! >= widget.investment.amount
-                            ? Colors.green
-                            : Colors.red,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _getAskingPrice()! >= widget.investment.amount
-                              ? 'Premium: ${((_getAskingPrice()! - widget.investment.amount) / widget.investment.amount * 100).toStringAsFixed(2)}%'
-                              : 'Discount: ${((widget.investment.amount - _getAskingPrice()!) / widget.investment.amount * 100).toStringAsFixed(2)}%',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: _getAskingPrice()! >= widget.investment.amount
-                                ? Colors.green[700]
-                                : Colors.red[700],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF6B35).withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-              ],
-
-              // Description
-              TextFormField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  labelText: 'Description (Optional)',
-                  hintText: 'Why are you selling?',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitListing,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: _isSubmitting
                       ? const SizedBox(
@@ -288,34 +350,42 @@ class _ShareListingWidgetState extends State<ShareListingWidget> {
                         )
                       : const Text(
                           'List Shares',
-                          style: TextStyle(fontSize: 16),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final theme = Theme.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          style: TextStyle(
+            fontSize: 13,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: 13,
             fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ],
     );
   }
 }
-
