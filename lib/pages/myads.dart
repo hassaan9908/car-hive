@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../components/custom_bottom_nav.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:carhive/ads/postadcar.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class Myads extends StatefulWidget {
   const Myads({super.key});
@@ -416,7 +417,20 @@ class _MyadsState extends State<Myads> {
                     width: 96,
                     height: 64,
                     color: cs.surfaceContainerHighest,
-                    child: Icon(Icons.directions_car_filled,
+                    child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
+                        ? CachedNetworkImage(
+                            imageUrl: ad.imageUrls![0],
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            errorWidget: (context, url, error) => Icon(
+                              Icons.directions_car_filled,
+                              size: 32,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          )
+                        : Icon(Icons.directions_car_filled,
                         size: 32, color: cs.onSurfaceVariant),
                   ),
                 ),
@@ -458,8 +472,10 @@ class _MyadsState extends State<Myads> {
 
             const SizedBox(height: 12),
 
-            // Bottom action row (status + actions)
-            Row(
+            // Bottom action row (status + actions) - wrapped in SingleChildScrollView to prevent overflow
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
               children: [
                 // Status pill
                 Container(
@@ -484,7 +500,7 @@ class _MyadsState extends State<Myads> {
                     ],
                   ),
                 ),
-                const Spacer(),
+                  const SizedBox(width: 8),
 
                 // Edit and Delete buttons (not shown for sold ads)
                 if (ad.status != 'sold') ...[
@@ -651,6 +667,7 @@ class _MyadsState extends State<Myads> {
                     ),
                   ),
               ],
+              ),
             ),
           ],
         ),

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/investment_vehicle_model.dart';
 import '../services/investment_service.dart';
 import '../services/investment_vehicle_service.dart';
 import '../services/investment_transaction_service.dart';
 import '../services/payment_service.dart';
+import '../services/currency_converter_service.dart';
 
 class InvestmentFormWidget extends StatefulWidget {
   final InvestmentVehicleModel vehicle;
@@ -35,11 +37,13 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
 
   bool _isSubmitting = false;
   String? _selectedPaymentMethod;
-  final List<String> _paymentMethods = [
+  
+  // Payment methods - exclude Stripe on web since payment sheet doesn't work on web
+  List<String> get _paymentMethods => [
     'jazzcash',
     'easypay',
     'bank_transfer',
-    'stripe',
+    if (!kIsWeb) 'stripe', // Stripe only on mobile (payment sheet not supported on web)
   ];
 
   @override
@@ -67,7 +71,16 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
       return 'Please enter a valid number';
     }
 
-    if (amount < widget.vehicle.minimumContribution) {
+    // Get the effective minimum: if remaining amount is less than minimum,
+    // allow investing the exact remaining amount
+    final effectiveMinimum = widget.vehicle.remainingAmount < widget.vehicle.minimumContribution
+        ? widget.vehicle.remainingAmount
+        : widget.vehicle.minimumContribution;
+
+    if (amount < effectiveMinimum) {
+      if (widget.vehicle.remainingAmount < widget.vehicle.minimumContribution) {
+        return 'You can invest the remaining amount: ${widget.vehicle.remainingAmount.toStringAsFixed(0)} PKR';
+      }
       return 'Minimum investment is ${widget.vehicle.minimumContribution.toStringAsFixed(0)} PKR';
     }
 
@@ -261,9 +274,12 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
                 ),
                 child: Column(
                   children: [
+                    // Show effective minimum (remaining if less than minimum)
                     _buildInfoRow(
                       'Minimum',
-                      '${widget.vehicle.minimumContribution.toStringAsFixed(0)} PKR',
+                      widget.vehicle.remainingAmount < widget.vehicle.minimumContribution
+                          ? '${widget.vehicle.remainingAmount.toStringAsFixed(0)} PKR (remaining)'
+                          : '${widget.vehicle.minimumContribution.toStringAsFixed(0)} PKR',
                     ),
                     const SizedBox(height: 4),
                     _buildInfoRow(
@@ -271,6 +287,19 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
                       '${widget.vehicle.remainingAmount.toStringAsFixed(0)} PKR',
                     ),
                     const SizedBox(height: 4),
+                    // Show USD equivalent if Stripe is selected
+                    if (_selectedPaymentMethod == 'stripe' && 
+                        _amountController.text.isNotEmpty &&
+                        _getInvestmentAmount() != null) ...[
+                      _buildInfoRow(
+                        'Amount (USD)',
+                        CurrencyConverterService.formatCurrency(
+                          CurrencyConverterService.convertPkrToUsd(_getInvestmentAmount()!),
+                          currency: 'USD',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     _buildInfoRow(
                       'Your Share',
                       _amountController.text.isNotEmpty &&

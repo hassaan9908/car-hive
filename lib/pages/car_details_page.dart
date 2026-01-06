@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/ad_model.dart';
 import '../services/review_service.dart';
 import '../models/review_model.dart';
-import '../widgets/car_360_viewer.dart';
-import '../screens/car_360_viewer_screen.dart';
+import '../360_viewer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,6 +11,7 @@ import 'chat_detail_page.dart';
 import '../features/inspection/screens/inspection_start_page.dart';
 import '../services/save_service.dart';
 import '../services/insight_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CarDetailsPage extends StatefulWidget {
   final AdModel ad;
@@ -38,6 +38,14 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     super.initState();
     // Record view when page opens
     _recordView();
+    // Debug: Check 360 view data
+    print('DEBUG: 360 View Data - images360Urls: ${widget.ad.images360Urls}');
+    print('DEBUG: 360 View Data - isNull: ${widget.ad.images360Urls == null}');
+    print('DEBUG: 360 View Data - isEmpty: ${widget.ad.images360Urls?.isEmpty ?? true}');
+    if (widget.ad.images360Urls != null && widget.ad.images360Urls!.isNotEmpty) {
+      print('DEBUG: 360 View Data - count: ${widget.ad.images360Urls!.length}');
+      print('DEBUG: 360 View Data - first URL: ${widget.ad.images360Urls![0]}');
+    }
   }
 
   Future<void> _recordView() async {
@@ -386,29 +394,48 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
               ),
             ),
 
-            // 360° View Section (if available)
-            if (ad.images360Urls != null && ad.images360Urls!.isNotEmpty)
-              Padding(
+            // 360° View Section - Always visible
+            Container(
+              key: const ValueKey('360_view_section'), // Key for debugging
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colorScheme.primary.withOpacity(0.5),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.primary.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha: 0.1),
+                          color: colorScheme.primary.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
                             Icons.rotate_right,
                             color: colorScheme.primary,
-                            size: 20,
+                          size: 24,
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Text(
+                      Expanded(
+                        child: Text(
                           '360° View',
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -416,7 +443,8 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                     color: colorScheme.onSurface,
                                   ),
                         ),
-                        const Spacer(),
+                      ),
+                      if (ad.images360Urls != null && ad.images360Urls!.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -443,20 +471,145 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Car360PreviewWidget(
-                      imageUrls: ad.images360Urls!,
-                      size: 220,
+                  // Show 360 view if available, otherwise show message
+                  if (ad.images360Urls != null && ad.images360Urls!.isNotEmpty)
+                    GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => Car360ViewerScreen(
-                              imageUrls: ad.images360Urls!,
-                              title: ad.title,
+                              builder: (context) => Viewer360Screen(
+                                frameUrls: ad.images360Urls!,
                             ),
                           ),
                         );
                       },
+                        child: Stack(
+                          children: [
+                            Container(
+                              height: 220,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: CachedNetworkImage(
+                                  imageUrl: ad.images360Urls![0],
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color: colorScheme.surfaceContainerHighest,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) => Container(
+                                    color: colorScheme.surfaceContainerHighest,
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.rotate_right,
+                                        size: 48,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Overlay with tap hint
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withOpacity(0.3),
+                                    ],
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.6),
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.touch_app,
+                                              color: Colors.white,
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Tap to view 360°',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                  else
+                    // Show message if no 360 view available
+                    Container(
+                      height: 220,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                        color: colorScheme.surfaceContainerHighest,
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.rotate_right,
+                              size: 48,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              '360° View Not Available',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'This car doesn\'t have a 360° view',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),

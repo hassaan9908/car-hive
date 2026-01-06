@@ -3,11 +3,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:typed_data';
+import '../config/backend_config.dart';
 
 /// Service for communicating with the 360 video processing backend
 class Backend360Service {
-  // Change this to your backend URL
-  static const String baseUrl = 'http://localhost:8000';
+  // Backend URL from configuration (async)
+  static Future<String> get baseUrl async => await BackendConfig.baseUrl;
   
   /// Upload video and process it to generate 360 frames
   /// Returns list of frame URLs
@@ -23,10 +24,25 @@ class Backend360Service {
     try {
       onProgress?.call(0, 100, 'Uploading video...');
       
+      // Check if backend is reachable
+      final url = await baseUrl;
+      final healthCheck = await checkHealth();
+      if (!healthCheck) {
+        throw Exception(
+          'Backend service is not reachable at $url.\n\n'
+          'Please ensure:\n'
+          '1. Backend server is running (python process.py)\n'
+          '2. For physical devices, configure the backend URL in the app settings\n'
+          '   (e.g., http://192.168.1.100:8000)\n'
+          '3. Both devices are on the same network\n'
+          '4. Firewall allows connections on port 8000'
+        );
+      }
+      
       // Create multipart request
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/process360'),
+        Uri.parse(await BackendConfig.process360Url),
       );
       
       // Add video file - handle web and mobile differently
@@ -120,7 +136,9 @@ class Backend360Service {
   /// Health check
   Future<bool> checkHealth() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/health'));
+      final response = await http.get(
+        Uri.parse(await BackendConfig.healthUrl),
+      ).timeout(const Duration(seconds: 5));
       return response.statusCode == 200;
     } catch (e) {
       return false;
