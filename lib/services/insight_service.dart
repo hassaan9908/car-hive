@@ -10,6 +10,8 @@ class InsightService {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
+    print('InsightService.recordView: Starting for adId: $adId');
+
     try {
       final statsRef = _firestore
           .collection('ads')
@@ -34,6 +36,7 @@ class InsightService {
         'userId': currentUser.uid,
         'ts': FieldValue.serverTimestamp(),
       });
+      print('InsightService.recordView: Successfully recorded');
     } catch (e) {
       print('Error recording view: $e');
     }
@@ -44,6 +47,8 @@ class InsightService {
     if (adId.isEmpty) return;
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
+
+    print('InsightService.recordContactClick: Starting for adId: $adId');
 
     try {
       final statsRef = _firestore
@@ -69,6 +74,7 @@ class InsightService {
         'userId': currentUser.uid,
         'ts': FieldValue.serverTimestamp(),
       });
+      print('InsightService.recordContactClick: Successfully recorded');
     } catch (e) {
       print('Error recording contact: $e');
     }
@@ -79,6 +85,8 @@ class InsightService {
     if (adId.isEmpty) return;
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
+
+    print('InsightService.recordMessageSent: Starting for adId: $adId');
 
     try {
       final statsRef = _firestore
@@ -104,6 +112,7 @@ class InsightService {
         'userId': currentUser.uid,
         'ts': FieldValue.serverTimestamp(),
       });
+      print('InsightService.recordMessageSent: Successfully recorded');
     } catch (e) {
       print('Error recording message: $e');
     }
@@ -114,6 +123,8 @@ class InsightService {
     if (adId.isEmpty) return;
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
+
+    print('InsightService: Recording save for adId: $adId');
 
     try {
       final statsRef = _firestore
@@ -134,11 +145,15 @@ class InsightService {
         'lastSavedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
+      print('InsightService: Stats updated successfully');
+
       await eventsRef.add({
         'type': 'save',
         'userId': currentUser.uid,
         'ts': FieldValue.serverTimestamp(),
       });
+
+      print('InsightService: Event added successfully');
     } catch (e) {
       print('Error recording save: $e');
     }

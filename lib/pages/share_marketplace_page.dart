@@ -30,7 +30,7 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
   final PaymentService _paymentService = PaymentService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  String? _selectedVehicleFilter;
+  String _sortBy = 'default'; // default, price_asc, price_desc, name, fuel
 
   @override
   Widget build(BuildContext context) {
@@ -40,18 +40,128 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
       appBar: AppBar(
         title: const Text('Share Marketplace'),
         backgroundColor: Colors.transparent,
+        automaticallyImplyLeading: false,
         actions: [
           if (user != null)
-            IconButton(
+            PopupMenuButton<String>(
               icon: const Icon(Icons.filter_list),
-              onPressed: _showFilterDialog,
+              tooltip: 'Sort & Filter',
+              onSelected: (value) {
+                setState(() {
+                  _sortBy = value;
+                });
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'default',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.sort,
+                        color: _sortBy == 'default'
+                            ? const Color(0xFFFF6B35)
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Default',
+                        style: TextStyle(
+                          fontWeight: _sortBy == 'default'
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: _sortBy == 'default'
+                              ? const Color(0xFFFF6B35)
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'price_asc',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.arrow_upward,
+                        color: _sortBy == 'price_asc'
+                            ? const Color(0xFFFF6B35)
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Price: Low to High',
+                        style: TextStyle(
+                          fontWeight: _sortBy == 'price_asc'
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: _sortBy == 'price_asc'
+                              ? const Color(0xFFFF6B35)
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'price_desc',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.arrow_downward,
+                        color: _sortBy == 'price_desc'
+                            ? const Color(0xFFFF6B35)
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Price: High to Low',
+                        style: TextStyle(
+                          fontWeight: _sortBy == 'price_desc'
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: _sortBy == 'price_desc'
+                              ? const Color(0xFFFF6B35)
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'share_percentage',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.percent,
+                        color: _sortBy == 'share_percentage'
+                            ? const Color(0xFFFF6B35)
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Share Percentage',
+                        style: TextStyle(
+                          fontWeight: _sortBy == 'share_percentage'
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: _sortBy == 'share_percentage'
+                              ? const Color(0xFFFF6B35)
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
         ],
       ),
       body: StreamBuilder<List<ShareMarketplaceModel>>(
         stream: widget.vehicleInvestmentId != null
-            ? _marketplaceService.getShareListingsForVehicle(
-                widget.vehicleInvestmentId!)
+            ? _marketplaceService
+                .getShareListingsForVehicle(widget.vehicleInvestmentId!)
             : _marketplaceService.getActiveShareListings(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -62,7 +172,24 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final listings = snapshot.data ?? [];
+          var listings = snapshot.data ?? [];
+
+          // Apply sorting
+          if (_sortBy != 'default' && listings.isNotEmpty) {
+            listings = List.from(listings);
+            switch (_sortBy) {
+              case 'price_asc':
+                listings.sort((a, b) => a.askingPrice.compareTo(b.askingPrice));
+                break;
+              case 'price_desc':
+                listings.sort((a, b) => b.askingPrice.compareTo(a.askingPrice));
+                break;
+              case 'share_percentage':
+                listings.sort(
+                    (a, b) => b.sharePercentage.compareTo(a.sharePercentage));
+                break;
+            }
+          }
 
           if (listings.isEmpty) {
             return const Center(
@@ -95,214 +222,295 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
 
   Widget _buildShareListingCard(ShareMarketplaceModel listing) {
     return FutureBuilder<InvestmentVehicleModel?>(
-      future: _vehicleService.getInvestmentVehicleById(listing.vehicleInvestmentId),
+      future:
+          _vehicleService.getInvestmentVehicleById(listing.vehicleInvestmentId),
       builder: (context, snapshot) {
         final vehicle = snapshot.data;
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
 
-        return Card(
+        return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          elevation: 2,
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => InvestmentDetailPage(
-                    vehicleInvestmentId: listing.vehicleInvestmentId,
-                  ),
-                ),
-              );
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Vehicle Info
-                  if (vehicle != null) ...[
-                    Row(
-                      children: [
-                        if (vehicle.imageUrls != null &&
-                            vehicle.imageUrls!.isNotEmpty)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              vehicle.imageUrls!.first,
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  width: 80,
-                                  height: 80,
-                                  color: Colors.grey[300],
-                                  child: const Icon(Icons.image),
-                                );
-                              },
-                            ),
-                          ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                vehicle.title,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${vehicle.year} • ${vehicle.fuel}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Share Details
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Share Percentage:'),
-                            Text(
-                              '${listing.sharePercentage.toStringAsFixed(2)}%',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Original Investment:'),
-                            Text(
-                              '${listing.originalInvestment.toStringAsFixed(0)} PKR',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Asking Price:'),
-                            Text(
-                              '${listing.askingPrice.toStringAsFixed(0)} PKR',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green[700],
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: listing.priceChangePercentage >= 0
-                                ? Colors.green[100]
-                                : Colors.red[100],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                listing.priceChangePercentage >= 0
-                                    ? Icons.trending_up
-                                    : Icons.trending_down,
-                                size: 16,
-                                color: listing.priceChangePercentage >= 0
-                                    ? Colors.green[700]
-                                    : Colors.red[700],
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                listing.priceChangePercentage >= 0
-                                    ? 'Premium: ${listing.priceChangePercentage.toStringAsFixed(2)}%'
-                                    : 'Discount: ${listing.priceChangePercentage.abs().toStringAsFixed(2)}%',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: listing.priceChangePercentage >= 0
-                                      ? Colors.green[700]
-                                      : Colors.red[700],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => InvestmentDetailPage(
+                      vehicleInvestmentId: listing.vehicleInvestmentId,
                     ),
                   ),
-
-                  if (listing.description != null &&
-                      listing.description!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      listing.description!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 16),
-
-                  // Purchase Button
-                  if (_auth.currentUser != null &&
-                      _auth.currentUser!.uid != listing.sellerUserId)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _purchaseShares(listing),
-                        icon: const Icon(Icons.shopping_cart),
-                        label: const Text('Purchase Shares'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    )
-                  else if (_auth.currentUser != null)
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Vehicle Info
+                    if (vehicle != null) ...[
+                      Row(
                         children: [
-                          Icon(Icons.info_outline, size: 16),
-                          SizedBox(width: 8),
-                          Text('Your listing'),
+                          if (vehicle.imageUrls != null &&
+                              vehicle.imageUrls!.isNotEmpty)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                vehicle.imageUrls!.first,
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.surfaceVariant,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      Icons.directions_car,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  vehicle.title,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${vehicle.year} • ${vehicle.fuel}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Share Details
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? theme.colorScheme.surfaceVariant
+                            : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Share Percentage:',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              Text(
+                                '${listing.sharePercentage.toStringAsFixed(2)}%',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Original Investment:',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              Text(
+                                '${listing.originalInvestment.toStringAsFixed(0)} PKR',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Asking Price:',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              Text(
+                                '${listing.askingPrice.toStringAsFixed(0)} PKR',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF4CAF50),
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: listing.priceChangePercentage >= 0
+                                  ? const Color(0xFF4CAF50).withOpacity(0.15)
+                                  : Colors.red.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  listing.priceChangePercentage >= 0
+                                      ? Icons.trending_up
+                                      : Icons.trending_down,
+                                  size: 18,
+                                  color: listing.priceChangePercentage >= 0
+                                      ? const Color(0xFF4CAF50)
+                                      : Colors.red,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  listing.priceChangePercentage >= 0
+                                      ? 'Premium: ${listing.priceChangePercentage.toStringAsFixed(2)}%'
+                                      : 'Discount: ${listing.priceChangePercentage.abs().toStringAsFixed(2)}%',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: listing.priceChangePercentage >= 0
+                                        ? const Color(0xFF4CAF50)
+                                        : Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                ],
+
+                    if (listing.description != null &&
+                        listing.description!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        listing.description!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 16),
+
+                    // Purchase Button
+                    if (_auth.currentUser != null &&
+                        _auth.currentUser!.uid != listing.sellerUserId)
+                      Container(
+                        width: double.infinity,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: () => _purchaseShares(listing),
+                          icon: const Icon(Icons.shopping_cart,
+                              color: Colors.white),
+                          label: const Text(
+                            'Purchase Shares',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (_auth.currentUser != null)
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 18,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Your listing',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -336,7 +544,8 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Share Percentage: ${listing.sharePercentage.toStringAsFixed(2)}%'),
+            Text(
+                'Share Percentage: ${listing.sharePercentage.toStringAsFixed(2)}%'),
             Text('Price: ${listing.askingPrice.toStringAsFixed(0)} PKR'),
             const SizedBox(height: 16),
             const Text('Are you sure you want to purchase these shares?'),
@@ -389,7 +598,8 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
         amount: listing.askingPrice,
         paymentMethod: paymentMethod,
         transactionId: transactionId,
-        description: 'Purchase of ${listing.sharePercentage.toStringAsFixed(2)}% shares',
+        description:
+            'Purchase of ${listing.sharePercentage.toStringAsFixed(2)}% shares',
         additionalData: {
           'vehicleInvestmentId': listing.vehicleInvestmentId,
           'investmentId': listing.investmentId,
@@ -438,7 +648,8 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Payment failed: ${paymentResult['error'] ?? 'Unknown error'}'),
+              content: Text(
+                  'Payment failed: ${paymentResult['error'] ?? 'Unknown error'}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -489,12 +700,4 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
       ),
     );
   }
-
-  void _showFilterDialog() {
-    // TODO: Implement filter dialog for filtering by vehicle
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Filter functionality coming soon')),
-    );
-  }
 }
-

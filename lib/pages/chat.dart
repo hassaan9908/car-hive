@@ -44,6 +44,15 @@ class _ChatState extends State<Chat> {
           title: const Text('Chats'),
           backgroundColor: Colors.transparent,
           centerTitle: true,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[400],
+              height: 1,
+            ),
+          ),
         ),
         body: Center(
           child: Column(
@@ -109,6 +118,15 @@ class _ChatState extends State<Chat> {
         ),
         iconTheme: IconThemeData(
           color: isDark ? const Color(0xFFf48c25) : Colors.black,
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey[800]
+                : Colors.grey[400],
+            height: 1,
+          ),
         ),
       ),
       body: StreamBuilder<List<Conversation>>(
@@ -207,7 +225,8 @@ class _ChatState extends State<Chat> {
                   }
 
                   final userData = userSnapshot.data;
-                  final displayName = userData?['displayName']?.toString() ?? 'Unknown User';
+                  final displayName =
+                      userData?['displayName']?.toString() ?? 'Unknown User';
                   final userEmail = userData?['email']?.toString() ?? '';
                   final photoUrl = userData?['photoUrl']?.toString();
 
@@ -219,7 +238,8 @@ class _ChatState extends State<Chat> {
                           : null,
                       child: photoUrl == null || photoUrl.isEmpty
                           ? Text(
-                              displayName.isNotEmpty && displayName != 'Unknown User'
+                              displayName.isNotEmpty &&
+                                      displayName != 'Unknown User'
                                   ? displayName[0].toUpperCase()
                                   : userEmail.isNotEmpty
                                       ? userEmail[0].toUpperCase()
@@ -227,7 +247,8 @@ class _ChatState extends State<Chat> {
                               style: const TextStyle(color: Colors.white),
                             )
                           : null,
-                      onBackgroundImageError: photoUrl != null && photoUrl.isNotEmpty
+                      onBackgroundImageError: photoUrl != null &&
+                              photoUrl.isNotEmpty
                           ? (exception, stackTrace) {
                               // If image fails to load, show initials
                               // This is handled by the child widget
@@ -245,8 +266,8 @@ class _ChatState extends State<Chat> {
                       ),
                     ),
                     subtitle: Text(
-                      conversation.lastMessage.isNotEmpty 
-                          ? conversation.lastMessage 
+                      conversation.lastMessage.isNotEmpty
+                          ? conversation.lastMessage
                           : 'No messages yet',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

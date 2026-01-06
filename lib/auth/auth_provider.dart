@@ -134,4 +134,16 @@ class AuthProvider extends ChangeNotifier {
 
     return '';
   }
+
+  Future<void> resetPassword(String email) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _authService.resetPassword(email);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

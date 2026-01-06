@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart' as carhive_auth;
 import 'package:carhive/services/phone_auth_service.dart';
@@ -113,13 +114,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
     });
 
     try {
-      // First verify the phone OTP is correct
-      final phoneCredential = PhoneAuthProvider.credential(
-        verificationId: _verificationId!,
-        smsCode: _otpController.text,
-      );
-
-      // Create the user with email and password
+      // Create the user with email and password first
       final authProvider =
           Provider.of<carhive_auth.AuthProvider>(context, listen: false);
       final user = await authProvider.createUserWithEmailAndPassword(
@@ -132,8 +127,19 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
 
       if (user != null && mounted) {
         try {
-          // Then link the phone number with the OTP
-          await user.linkWithCredential(phoneCredential);
+          if (kIsWeb && _phoneAuthService.isWebVerification) {
+            // For web, verify using the stored ConfirmationResult
+            // Note: On web, phone verification is separate from email/password account
+            await _phoneAuthService.verifyOtpWeb(_otpController.text);
+            print('Web phone verification successful');
+          } else {
+            // For mobile, link phone credential to the user
+            final phoneCredential = PhoneAuthProvider.credential(
+              verificationId: _verificationId!,
+              smsCode: _otpController.text,
+            );
+            await user.linkWithCredential(phoneCredential);
+          }
 
           // Navigate to home screen
           if (mounted) {

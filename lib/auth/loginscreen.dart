@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carhive/auth/signupscreen.dart';
+import 'package:carhive/auth/forgot_password_screen.dart';
 import 'package:carhive/pages/homepage.dart';
 import 'package:provider/provider.dart';
 import 'package:carhive/auth/auth_provider.dart';
@@ -97,7 +98,30 @@ class _LoginscreenState extends State<Loginscreen> {
                       },
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
+
+                  // Forgot Password Link
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Forgot Password?',
+                        style: TextStyle(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
                   // Login Button
                   Container(

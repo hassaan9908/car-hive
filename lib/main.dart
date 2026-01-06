@@ -8,6 +8,7 @@ import 'package:carhive/pages/profilepage.dart';
 import 'package:carhive/pages/upload.dart';
 import 'package:carhive/pages/car_details_page.dart';
 import 'package:carhive/pages/map_view_screen.dart';
+import 'package:carhive/pages/saved_ads_page.dart';
 import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/store/global_ads.dart';
 import 'package:flutter/material.dart';
@@ -65,11 +66,11 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     print('Firebase initialized successfully');
-    
+
     // Note: Firebase App Check is optional and mainly for production security
     // The warning "No AppCheckProvider installed" is harmless and can be ignored
     // For production, configure App Check in Firebase Console with proper attestation providers
-    
+
     // Cleanup expired ads on app startup (non-blocking)
     GlobalAdStore().cleanupExpiredAds().catchError((e) {
       print('Error cleaning up expired ads on startup: $e');
@@ -84,7 +85,7 @@ void main() async {
   // Initialize Stripe
   try {
     Stripe.publishableKey = StripeConfig.publishableKey;
-    
+
     // Only set merchant identifier and apply settings on mobile platforms
     // Web platform doesn't support these operations
     if (!kIsWeb) {
@@ -167,6 +168,8 @@ class MyApp extends StatelessWidget {
               '/admin-debug': (context) => const AdminDebugPage(),
               '/blogs': (context) => const BlogListPage(), // Add this route
               '/videos': (context) => const VideoListPage(), // Add this route
+              '/saved-ads': (context) =>
+                  const SavedAdsPage(), // Add saved ads route
               '/video-360-capture': (context) => const VideoCapture360Screen(),
               '/debug-360': (context) => const Debug360Screen(),
               '/car-details': (context) {
