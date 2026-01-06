@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../components/custom_bottom_nav.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:carhive/ads/postadcar.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class Myads extends StatefulWidget {
   const Myads({super.key});
@@ -864,6 +865,7 @@ class _MyadsState extends State<Myads> {
                   ),
                 ],
               ],
+              ),
             ),
           ],
         ),

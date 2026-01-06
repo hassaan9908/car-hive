@@ -1,15 +1,12 @@
 import 'package:carhive/models/ad_model.dart' show AdModel;
 import 'package:carhive/store/global_ads.dart' show GlobalAdStore;
 import 'package:carhive/services/cloudinary_service.dart';
-import 'package:carhive/services/car_360_service.dart';
 import 'package:carhive/services/vehicle_service.dart';
 import 'package:carhive/services/car_brand_service.dart';
 import 'package:carhive/models/car_brand_model.dart';
 import 'package:carhive/utils/html_parser.dart';
 import 'package:carhive/utils/encryption_service.dart';
-import 'package:carhive/screens/capture_360_screen.dart';
 import 'package:carhive/screens/video_capture_360_screen.dart';
-import 'package:carhive/models/car_360_set.dart';
 import 'package:carhive/widgets/location_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -129,11 +126,9 @@ class _PostAdCarState extends State<PostAdCar> {
   bool _isUploadingImages = false;
   double _uploadProgress = 0.0;
   final CloudinaryService _cloudinaryService = CloudinaryService();
-
-  // 360° capture state (16 angles)
-  final Car360Service _car360Service = Car360Service();
-  Car360Set? _captured360Set;
-  List<Uint8List?> _360PreviewImages = [];
+  
+  // 360° video capture state
+  List<String>? _video360FrameUrls;
   bool _isUploading360 = false;
 
   final List<String> chipOptions = [
@@ -710,29 +705,6 @@ class _PostAdCarState extends State<PostAdCar> {
     }
   }
 
-  // Open 360° capture screen (16 angles)
-  Future<void> _open360CaptureScreen() async {
-    final result = await Navigator.push<Car360Set>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Capture360Screen(
-          existingSet: _captured360Set,
-          onCaptureComplete: (set) {
-            // Called when capture is complete
-          },
-        ),
-      ),
-    );
-
-    if (result != null && result.capturedCount > 0) {
-      setState(() {
-        _captured360Set = result;
-        _car360Service.setCurrentSet(result);
-        _360PreviewImages = result.imageBytes;
-      });
-    }
-  }
-
   // Open video-based 360 capture
   Future<void> _openVideo360CaptureScreen() async {
     final result = await Navigator.push<List<String>>(
@@ -741,16 +713,16 @@ class _PostAdCarState extends State<PostAdCar> {
         builder: (context) => VideoCapture360Screen(
           onComplete: (frameUrls) {
             // Video processing complete
-            // Note: Video capture returns frame URLs, not Car360Set
-            // You may need to handle this differently based on your needs
           },
         ),
       ),
     );
 
     if (result != null && result.isNotEmpty) {
-      // Handle video-based 360 frames
-      // For now, just show a message
+      setState(() {
+        _video360FrameUrls = result;
+      });
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -759,16 +731,13 @@ class _PostAdCarState extends State<PostAdCar> {
           ),
         );
       }
-      // TODO: Integrate video frames with your upload flow
     }
   }
 
-  // Clear 360° images
+  // Clear 360° video frames
   void _clear360Images() {
     setState(() {
-      _car360Service.clearAll();
-      _captured360Set = null;
-      _360PreviewImages = [];
+      _video360FrameUrls = null;
     });
   }
 
@@ -2400,59 +2369,139 @@ class _PostAdCarState extends State<PostAdCar> {
                                       ),
                                     );
 
-                                    await Future.delayed(
-                                        const Duration(seconds: 1));
-                                    if (!mounted) return;
-                                    Navigator.pushReplacementNamed(
-                                        context, '/myads');
-                                  } catch (e) {
-                                    if (!mounted) return;
-                                    final errorMessage = e
-                                        .toString()
-                                        .replaceAll('Exception: ', '')
-                                        .replaceAll(
-                                            'Failed to add verified ad: ', '');
-                                    final isDuplicateError =
-                                        errorMessage.contains('already exists');
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(errorMessage),
-                                        backgroundColor: isDuplicateError
-                                            ? Colors.orange
-                                            : Colors.red,
-                                        duration: const Duration(seconds: 5),
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                        child: (_isUploadingImages || _isUploading360)
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    _isUploading360
-                                        ? "Uploading 360° images..."
-                                        : "Uploading...",
-                                    style: const TextStyle(
-                                        fontSize: 16, color: Colors.white),
-                                  ),
-                                ],
-                              )
-                            : const Text(
-                                "Post Ad",
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.white),
+                        // Use video-generated 360° frame URLs
+                        List<String>? images360Urls;
+                        if (_video360FrameUrls != null && _video360FrameUrls!.isNotEmpty) {
+                          // Video frames are already processed and available as URLs
+                          images360Urls = _video360FrameUrls;
+                        }
+
+                        // Use selected location coordinates or get current location
+                        Map<String, double>? locationCoords;
+                        if (selectedLocationCoords != null) {
+                          // Use the precise location selected by user
+                          locationCoords = {
+                            'lat': selectedLocationCoords!.latitude,
+                            'lng': selectedLocationCoords!.longitude,
+                          };
+                        } else {
+                          // Fallback to current location if no precise location selected
+                          try {
+                          LocationPermission permission = await Geolocator.checkPermission();
+                          if (permission == LocationPermission.denied) {
+                            permission = await Geolocator.requestPermission();
+                          }
+                          
+                          if (permission == LocationPermission.whileInUse ||
+                              permission == LocationPermission.always) {
+                            Position position = await Geolocator.getCurrentPosition(
+                              desiredAccuracy: LocationAccuracy.medium,
+                            );
+                            locationCoords = {
+                              'lat': position.latitude,
+                              'lng': position.longitude,
+                            };
+                          }
+                        } catch (e) {
+                          print('Error getting location: $e');
+                          // Continue without location coordinates
+                          }
+                        }
+
+                        // Prepare vehicle verification data
+                        // Normalize registration number for consistent duplicate checking
+                        final plainRegistrationNo = _registrationNoController.text
+                            .trim()
+                            .toUpperCase()
+                            .replaceAll('*', '')
+                            .replaceAll(' ', '')
+                            .replaceAll(RegExp(r'[^\w\-]'), '');
+                        final vehicleData = {
+                          'registrationNo': plainRegistrationNo,
+                          'registrationDate': _registrationDateController.text.trim(),
+                          'chassisNo': _chassisNoController.text.trim(),
+                          'ownerName': _ownerNameController.text.trim(),
+                        };
+
+                        // Encrypt sensitive vehicle data
+                        final encryptedVehicleData = EncryptionService.encryptFields(vehicleData);
+                        
+                        // Add plain registration number temporarily for duplicate checking
+                        // This will be removed before storing in Firestore
+                        encryptedVehicleData['_plainRegistrationNo'] = plainRegistrationNo;
+
+                        // Create ad with image URLs and encrypted vehicle data
+                        final newAd = AdModel(
+                          title: _titleController.text,
+                          price: _priceController.text,
+                          location: selectedLocationAddress.isNotEmpty 
+                              ? selectedLocationAddress 
+                              : selectedLocation ?? _locationController.text,
+                          year: selectedCarModel ?? '',
+                          mileage: _mileageController.text,
+                          fuel: _fuelController.text,
+                          description: _descriptionController.text,
+                          carBrand: _selectedBrand?.displayName ?? '',
+                          carName: _carNameController.text.trim(),
+                          bodyColor: _bodyColorController.text,
+                          kmsDriven: _mileageController
+                              .text, // Use mileage for kmsDriven
+                          registeredIn: selectedRegisteredIn,
+                          name: _nameController.text,
+                          phone: _phoneController.text,
+                          imageUrls: imageUrls.isNotEmpty ? imageUrls : null,
+                          locationCoordinates: locationCoords,
+                          images360Urls: images360Urls != null && images360Urls.isNotEmpty
+                              ? images360Urls
+                              : null,
+                        );
+
+                        try {
+                          // Add ad with encrypted vehicle data and auto-approve (status = 'active')
+                          await GlobalAdStore().addAdWithVerification(newAd, encryptedVehicleData);
+
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text(
+                                  'Vehicle verified successfully! Your ad has been posted.'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+
+                          await Future.delayed(const Duration(seconds: 1));
+                          if (!mounted) return;
+                          Navigator.pushReplacementNamed(context, '/myads');
+                        } catch (e) {
+                          if (!mounted) return;
+                          final errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('Failed to add verified ad: ', '');
+                          final isDuplicateError = errorMessage.contains('already exists');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(errorMessage),
+                              backgroundColor: isDuplicateError ? Colors.orange : Colors.red,
+                              duration: const Duration(seconds: 5),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: (_isUploadingImages || _isUploading360)
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                _isUploading360 ? "Uploading 360° images..." : "Uploading...",
+                                style: const TextStyle(fontSize: 16, color: Colors.white),
                               ),
                       ),
                     )),
