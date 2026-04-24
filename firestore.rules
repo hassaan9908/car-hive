@@ -215,6 +215,14 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // ANNOUNCEMENT BANNERS collection
+    match /announcement_banners/{bannerId} {
+      // Everyone can read announcement banners used on the public home page
+      allow read: if true;
+      // Only admins can create, update, and delete banners
+      allow create, update, delete: if isAdmin();
+    }
+
     // CONVERSATIONS collection for chat
     match /conversations/{conversationId} {
       // Helper function to check if user is a participant

@@ -5,10 +5,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../components/custom_textfield.dart';
 import '../components/car_tabs.dart';
 import '../components/custom_bottom_nav.dart';
+import '../providers/admin_provider.dart';
 import '../providers/search_provider.dart';
 import '../widgets/car_brand_grid.dart';
+import '../widgets/announcement_banner_widgets.dart';
 import '../models/car_brand_model.dart';
+import '../models/announcement_banner_model.dart';
 import '../services/car_brand_service.dart';
+import '../services/announcement_banner_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'chat.dart';
 
@@ -23,8 +27,21 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   final TextEditingController _searchController = TextEditingController();
+  final AnnouncementBannerService _announcementBannerService =
+      AnnouncementBannerService();
   bool _isSearchActive = false;
   String? _selectedBrandId;
+
+  static const List<AnnouncementBannerModel> _fallbackAnnouncementBanners = [
+    AnnouncementBannerModel(
+      eyebrow: 'Fresh on CarHive',
+      headline: 'Verified listings, fresh arrivals, and better deals',
+      subtitle:
+          'This home-page banner area is live now. Replace it anytime from Admin > Announcements.',
+      ctaLabel: 'Browse cars',
+      isActive: true,
+    ),
+  ];
 
   @override
   void initState() {
@@ -86,6 +103,17 @@ class _HomepageState extends State<Homepage> {
     }
   }
 
+  List<AnnouncementBannerModel> _resolveHomepageBanners(
+    AsyncSnapshot<List<AnnouncementBannerModel>> snapshot,
+  ) {
+    final remoteBanners = snapshot.data ?? const <AnnouncementBannerModel>[];
+    if (remoteBanners.isNotEmpty) {
+      return remoteBanners;
+    }
+
+    return _fallbackAnnouncementBanners;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -115,7 +143,11 @@ class _HomepageState extends State<Homepage> {
               // Admin Panel button (web only)
               if (kIsWeb)
                 IconButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    if (FirebaseAuth.instance.currentUser != null) {
+                      await context.read<AdminProvider>().initialize();
+                    }
+                    if (!mounted) return;
                     Navigator.pushNamed(context, '/admin');
                   },
                   icon: const Icon(Icons.admin_panel_settings),
@@ -186,6 +218,21 @@ class _HomepageState extends State<Homepage> {
                     },
                   ),
                 ),
+
+                if (!_isSearchActive)
+                  StreamBuilder<List<AnnouncementBannerModel>>(
+                    stream: _announcementBannerService.watchActiveBanners(),
+                    builder: (context, snapshot) {
+                      final banners = _resolveHomepageBanners(snapshot);
+
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: AnnouncementBannerSection(
+                          banners: banners,
+                        ),
+                      );
+                    },
+                  ),
 
                 // Brand Filter Chip (if brand is selected)
                 if (_selectedBrandId != null && !_isSearchActive)

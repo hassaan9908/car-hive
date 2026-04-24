@@ -9,6 +9,7 @@ import 'admin_video_upload_page.dart';
 import 'admin_blog_management_page.dart';
 import 'admin_video_management_page.dart';
 import 'admin_insight_metrics_page.dart';
+import 'admin_announcement_banners_page.dart';
 
 class AdminLayout extends StatefulWidget {
   const AdminLayout({super.key});
@@ -41,6 +42,11 @@ class _AdminLayoutState extends State<AdminLayout> {
       title: 'User Management',
       icon: Icons.people,
       page: const AdminUsersPage(),
+    ),
+    AdminNavigationItem(
+      title: 'Announcements',
+      icon: Icons.campaign,
+      page: const AdminAnnouncementBannersPage(),
     ),
     AdminNavigationItem(
       title: 'Upload Blog',
