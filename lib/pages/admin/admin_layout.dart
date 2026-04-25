@@ -10,6 +10,7 @@ import 'admin_blog_management_page.dart';
 import 'admin_video_management_page.dart';
 import 'admin_insight_metrics_page.dart';
 import 'admin_announcement_banners_page.dart';
+import 'admin_fuel_prices_page.dart';
 
 class AdminLayout extends StatefulWidget {
   const AdminLayout({super.key});
@@ -47,6 +48,11 @@ class _AdminLayoutState extends State<AdminLayout> {
       title: 'Announcements',
       icon: Icons.campaign,
       page: const AdminAnnouncementBannersPage(),
+    ),
+    AdminNavigationItem(
+      title: 'Fuel Prices',
+      icon: Icons.local_gas_station,
+      page: const AdminFuelPricesPage(),
     ),
     AdminNavigationItem(
       title: 'Upload Blog',

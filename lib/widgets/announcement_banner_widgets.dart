@@ -18,13 +18,43 @@ class AnnouncementBannerSection extends StatefulWidget {
 }
 
 class _AnnouncementBannerSectionState extends State<AnnouncementBannerSection> {
-  late final PageController _pageController;
+  late PageController _pageController;
   int _currentIndex = 0;
+  double _viewportFraction = 1;
+
+  static const double _bannerGap = 12;
+  static const double _horizontalPeekInset = 20;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _pageController = PageController(viewportFraction: _viewportFraction);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final nextViewportFraction =
+        ((screenWidth - _horizontalPeekInset) / screenWidth)
+            .clamp(0.88, 1.0)
+            .toDouble();
+
+    if ((_viewportFraction - nextViewportFraction).abs() < 0.0001) {
+      return;
+    }
+
+    final previousIndex = _pageController.hasClients
+        ? (_pageController.page?.round() ?? _currentIndex)
+        : _currentIndex;
+
+    _pageController.dispose();
+    _viewportFraction = nextViewportFraction;
+    _pageController = PageController(
+      initialPage: previousIndex,
+      viewportFraction: _viewportFraction,
+    );
   }
 
   @override
@@ -65,6 +95,7 @@ class _AnnouncementBannerSectionState extends State<AnnouncementBannerSection> {
           child: hasMultiple
               ? PageView.builder(
                   controller: _pageController,
+                  clipBehavior: Clip.none,
                   itemCount: widget.banners.length,
                   onPageChanged: (index) {
                     setState(() {
@@ -72,13 +103,31 @@ class _AnnouncementBannerSectionState extends State<AnnouncementBannerSection> {
                     });
                   },
                   itemBuilder: (context, index) {
-                    return AnnouncementBannerCard(
-                      banner: widget.banners[index],
+                    final screenWidth = MediaQuery.sizeOf(context).width;
+
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        width: screenWidth - _horizontalPeekInset,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: AnnouncementBannerCard(
+                                banner: widget.banners[index],
+                              ),
+                            ),
+                            const SizedBox(width: _bannerGap),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 )
-              : AnnouncementBannerCard(
-                  banner: widget.banners.first,
+              : Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: AnnouncementBannerCard(
+                    banner: widget.banners.first,
+                  ),
                 ),
         ),
         if (hasMultiple) ...[
@@ -130,7 +179,7 @@ class AnnouncementBannerCard extends StatelessWidget {
         ? 'CarHive Update'
         : banner.eyebrow.trim();
     final ctaLabel = banner.ctaLabel?.trim();
-    final borderRadius = BorderRadius.circular(28);
+    final borderRadius = BorderRadius.circular(16);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -157,15 +206,13 @@ class AnnouncementBannerCard extends StatelessWidget {
 
         return Material(
           color: Colors.transparent,
-          child: Container(
+          child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: borderRadius,
               boxShadow: showShadow
                   ? [
                       BoxShadow(
-                        color: const Color(
-                          0xFFF48C25,
-                        ).withValues(alpha: 0.22),
+                        color: Colors.black.withValues(alpha: 0.22),
                         blurRadius: 22,
                         offset: const Offset(0, 14),
                       ),

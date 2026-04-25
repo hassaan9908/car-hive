@@ -7,11 +7,13 @@ import '../components/car_tabs.dart';
 import '../components/custom_bottom_nav.dart';
 import '../providers/admin_provider.dart';
 import '../providers/search_provider.dart';
+import '../models/home_quick_filter.dart';
 import '../widgets/car_brand_grid.dart';
+import '../widgets/home_filter_chip_row.dart';
 import '../widgets/announcement_banner_widgets.dart';
+import '../widgets/home_marketplace_sections.dart';
 import '../models/car_brand_model.dart';
 import '../models/announcement_banner_model.dart';
-import '../services/car_brand_service.dart';
 import '../services/announcement_banner_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'chat.dart';
@@ -31,6 +33,10 @@ class _HomepageState extends State<Homepage> {
       AnnouncementBannerService();
   bool _isSearchActive = false;
   String? _selectedBrandId;
+  String _selectedQuickFilterId = HomeQuickFilter.allId;
+  String? _selectedCity;
+  int? _selectedYear;
+  String? _selectedTrustLevelId;
 
   static const List<AnnouncementBannerModel> _fallbackAnnouncementBanners = [
     AnnouncementBannerModel(
@@ -65,12 +71,6 @@ class _HomepageState extends State<Homepage> {
     '/investment',
     '/profile'
   ];
-
-  String _getBrandName(String brandId) {
-    final brandService = CarBrandService();
-    final brand = brandService.getBrandById(brandId);
-    return brand?.displayName ?? brandId;
-  }
 
   String _getCarDisplayName(dynamic ad) {
     // Prefer title if available
@@ -114,6 +114,24 @@ class _HomepageState extends State<Homepage> {
     return _fallbackAnnouncementBanners;
   }
 
+  bool get _hasActiveHomeFilters {
+    return (_selectedBrandId != null && _selectedBrandId!.isNotEmpty) ||
+        _selectedQuickFilterId != HomeQuickFilter.allId ||
+        (_selectedCity != null && _selectedCity!.isNotEmpty) ||
+        _selectedYear != null ||
+        (_selectedTrustLevelId != null && _selectedTrustLevelId!.isNotEmpty);
+  }
+
+  void _clearAllHomeFilters() {
+    setState(() {
+      _selectedBrandId = null;
+      _selectedQuickFilterId = HomeQuickFilter.allId;
+      _selectedCity = null;
+      _selectedYear = null;
+      _selectedTrustLevelId = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -147,7 +165,7 @@ class _HomepageState extends State<Homepage> {
                     if (FirebaseAuth.instance.currentUser != null) {
                       await context.read<AdminProvider>().initialize();
                     }
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     Navigator.pushNamed(context, '/admin');
                   },
                   icon: const Icon(Icons.admin_panel_settings),
@@ -226,36 +244,12 @@ class _HomepageState extends State<Homepage> {
                       final banners = _resolveHomepageBanners(snapshot);
 
                       return Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        padding: const EdgeInsets.only(bottom: 8),
                         child: AnnouncementBannerSection(
                           banners: banners,
                         ),
                       );
                     },
-                  ),
-
-                // Brand Filter Chip (if brand is selected)
-                if (_selectedBrandId != null && !_isSearchActive)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Row(
-                      children: [
-                        Chip(
-                          label: Text(
-                              'Filtered by: ${_getBrandName(_selectedBrandId!)}'),
-                          onDeleted: () {
-                            setState(() {
-                              _selectedBrandId = null;
-                            });
-                          },
-                          deleteIcon: const Icon(Icons.close, size: 18),
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.1),
-                        ),
-                      ],
-                    ),
                   ),
 
                 // Car Brand Grid (only show when not searching)
@@ -264,17 +258,56 @@ class _HomepageState extends State<Homepage> {
                     selectedBrandId: _selectedBrandId,
                     onBrandSelected: (CarBrand brand) {
                       setState(() {
-                        _selectedBrandId = brand.id;
+                        _selectedBrandId =
+                            _selectedBrandId == brand.id ? null : brand.id;
                       });
                     },
                   ),
 
-                // Search Results or Car Tabs
+                if (!_isSearchActive) const SizedBox(height: 12),
+
+                if (!_isSearchActive)
+                  HomeFilterSection(
+                    selectedQuickFilterId: _selectedQuickFilterId,
+                    onQuickFilterSelected: (filterId) {
+                      setState(() {
+                        _selectedQuickFilterId = filterId;
+                      });
+                    },
+                    onClearAll: _clearAllHomeFilters,
+                    hasActiveFilters: _hasActiveHomeFilters,
+                    selectedCity: _selectedCity,
+                    onCitySelected: (city) {
+                      setState(() {
+                        _selectedCity = city;
+                      });
+                    },
+                    selectedYear: _selectedYear,
+                    onYearSelected: (year) {
+                      setState(() {
+                        _selectedYear = year;
+                      });
+                    },
+                    selectedTrustLevelId: _selectedTrustLevelId,
+                    onTrustLevelSelected: (trustLevelId) {
+                      setState(() {
+                        _selectedTrustLevelId = trustLevelId;
+                      });
+                    },
+                  ),
+
+                // Search Results or home marketplace sections
                 _isSearchActive
                     ? _buildSearchResults(searchProvider)
-                    : CarTabs(
-                        initialTab: widget.initialTab,
-                        selectedBrandId: _selectedBrandId,
+                    : HomeMarketplaceSections(
+                        listings: CarTabs(
+                          initialTab: widget.initialTab,
+                          selectedBrandId: _selectedBrandId,
+                          selectedQuickFilterId: _selectedQuickFilterId,
+                          selectedCity: _selectedCity,
+                          selectedYear: _selectedYear,
+                          selectedTrustLevelId: _selectedTrustLevelId,
+                        ),
                       ),
               ],
             ),
@@ -513,9 +546,11 @@ class _HomepageState extends State<Homepage> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: levelColor.withOpacity(0.12),
+                    color: levelColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: levelColor.withOpacity(0.3)),
+                    border: Border.all(
+                      color: levelColor.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Text(
                     level,

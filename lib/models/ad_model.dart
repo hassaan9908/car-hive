@@ -7,6 +7,8 @@ class AdModel {
   final String year;
   final String mileage;
   final String fuel;
+  final String? condition;
+  final String? transmission;
   late final String status;
   final String? userId;
   final String? id;
@@ -32,6 +34,8 @@ class AdModel {
     required this.year,
     required this.mileage,
     required this.fuel,
+    this.condition,
+    this.transmission,
     this.status = 'active',
     this.userId,
     this.id,
@@ -92,18 +96,29 @@ class AdModel {
     return value.toString();
   }
 
+  static String? _firstNonEmptyString(List<dynamic> values) {
+    for (final value in values) {
+      final parsed = _asString(value);
+      if (parsed.isNotEmpty) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }
+
   // -----------------------------
   // Helper: Extract car brand (with migration for old ads)
   // -----------------------------
   static String? _extractCarBrand(Map<String, dynamic> data) {
     final carBrand = _asString(data['carBrand']);
     final carName = _asString(data['carName']);
-    
+
     // If carName exists, carBrand should be just the brand
     if (carName.isNotEmpty && carBrand.isNotEmpty) {
       return carBrand;
     }
-    
+
     // Migration: If carName is empty but carBrand contains space, try to split
     if (carName.isEmpty && carBrand.isNotEmpty && carBrand.contains(' ')) {
       final parts = carBrand.trim().split(' ');
@@ -112,7 +127,7 @@ class AdModel {
         return parts[0];
       }
     }
-    
+
     return carBrand.isEmpty ? null : carBrand;
   }
 
@@ -122,12 +137,12 @@ class AdModel {
   static String? _extractCarName(Map<String, dynamic> data) {
     final carName = _asString(data['carName']);
     final carBrand = _asString(data['carBrand']);
-    
+
     // If carName exists, return it
     if (carName.isNotEmpty) {
       return carName;
     }
-    
+
     // Migration: If carName is empty but carBrand contains space, try to split
     if (carName.isEmpty && carBrand.isNotEmpty && carBrand.contains(' ')) {
       final parts = carBrand.trim().split(' ');
@@ -136,7 +151,7 @@ class AdModel {
         return parts.sublist(1).join(' ');
       }
     }
-    
+
     return carName.isEmpty ? null : null;
   }
 
@@ -194,16 +209,16 @@ class AdModel {
     Map<String, double>? locationCoords;
 
     // First, try to parse location coordinates from 'location' field
-      if (data['location'] != null && data['location'] is Map) {
-        final loc = data['location'] as Map<String, dynamic>;
-        if (loc['lat'] != null && loc['lng'] != null) {
+    if (data['location'] != null && data['location'] is Map) {
+      final loc = data['location'] as Map<String, dynamic>;
+      if (loc['lat'] != null && loc['lng'] != null) {
         try {
           final lat = (loc['lat'] as num).toDouble();
           final lng = (loc['lng'] as num).toDouble();
-          
+
           // Validate coordinates are within valid ranges
           if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-          locationCoords = {
+            locationCoords = {
               'lat': lat,
               'lng': lng,
             };
@@ -237,22 +252,37 @@ class AdModel {
       location: locationString,
       year: _asString(data['year']),
       mileage: _asString(data['mileage']),
-      fuel: _asString(data['fuel']),
-      status:
-          _asString(data['status']).isEmpty ? 'active' : _asString(data['status']),
+      fuel: _asString(data['fuel'] ?? data['fuelType']),
+      condition: _firstNonEmptyString([
+        data['condition'],
+        data['vehicleCondition'],
+        data['carCondition'],
+      ]),
+      transmission: _firstNonEmptyString([
+        data['transmission'],
+        data['gearbox'],
+        data['gearType'],
+      ]),
+      status: _asString(data['status']).isEmpty
+          ? 'active'
+          : _asString(data['status']),
       userId:
           _asString(data['userId']).isEmpty ? null : _asString(data['userId']),
       createdAt: _parseCreatedAt(data['createdAt'] ?? data['created_at']),
-      description:
-          _asString(data['description']).isEmpty ? null : _asString(data['description']),
+      description: _asString(data['description']).isEmpty
+          ? null
+          : _asString(data['description']),
       carBrand: _extractCarBrand(data),
       carName: _extractCarName(data),
-      bodyColor:
-          _asString(data['bodyColor']).isEmpty ? null : _asString(data['bodyColor']),
-      kmsDriven:
-          _asString(data['kmsDriven']).isEmpty ? null : _asString(data['kmsDriven']),
-      registeredIn:
-          _asString(data['registeredIn']).isEmpty ? null : _asString(data['registeredIn']),
+      bodyColor: _asString(data['bodyColor']).isEmpty
+          ? null
+          : _asString(data['bodyColor']),
+      kmsDriven: _asString(data['kmsDriven']).isEmpty
+          ? null
+          : _asString(data['kmsDriven']),
+      registeredIn: _asString(data['registeredIn']).isEmpty
+          ? null
+          : _asString(data['registeredIn']),
       name: _asString(data['name']).isEmpty ? null : _asString(data['name']),
       phone: _asString(data['phone']).isEmpty ? null : _asString(data['phone']),
       previousStatus: _asString(data['previousStatus']).isEmpty
@@ -276,6 +306,8 @@ class AdModel {
       'year': year,
       'mileage': mileage,
       'fuel': fuel,
+      'condition': condition,
+      'transmission': transmission,
       'status': status,
       'userId': userId,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
