@@ -15,10 +15,24 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(uid));
     }
 
+    function isAdminRole(role) {
+      return role in [
+        'admin',
+        'Admin',
+        'ADMIN',
+        'super_admin',
+        'superadmin',
+        'super admin',
+        'super-admin',
+        'Super Admin',
+        'SUPER ADMIN',
+        'SUPER_ADMIN',
+        'Super_Admin',
+      ];
+    }
+
     function isAdmin() {
-      return isSignedIn() &&
-        (userDoc(currentUid()).data.role == 'admin' ||
-         userDoc(currentUid()).data.role == 'super_admin');
+      return isSignedIn() && isAdminRole(userDoc(currentUid()).data.role);
     }
 
     // PHONE NUMBERS collection for uniqueness checking
@@ -212,6 +226,22 @@ service cloud.firestore {
       // Allow everyone to read blogs (public content)
       allow read: if true;
       // Only admins can create, update, and delete blogs
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ANNOUNCEMENT BANNERS collection
+    match /announcement_banners/{bannerId} {
+      // Everyone can read announcement banners used on the public home page
+      allow read: if true;
+      // Only admins can create, update, and delete banners
+      allow create, update, delete: if isAdmin();
+    }
+
+    // FUEL PRICES collection
+    match /fuel_prices/{fuelId} {
+      // Home screen reads are public
+      allow read: if true;
+      // Only admins can manage prices
       allow create, update, delete: if isAdmin();
     }
 
