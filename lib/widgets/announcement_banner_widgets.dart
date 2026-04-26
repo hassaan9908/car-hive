@@ -20,41 +20,11 @@ class AnnouncementBannerSection extends StatefulWidget {
 class _AnnouncementBannerSectionState extends State<AnnouncementBannerSection> {
   late PageController _pageController;
   int _currentIndex = 0;
-  double _viewportFraction = 1;
-
-  static const double _bannerGap = 12;
-  static const double _horizontalPeekInset = 20;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: _viewportFraction);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final nextViewportFraction =
-        ((screenWidth - _horizontalPeekInset) / screenWidth)
-            .clamp(0.88, 1.0)
-            .toDouble();
-
-    if ((_viewportFraction - nextViewportFraction).abs() < 0.0001) {
-      return;
-    }
-
-    final previousIndex = _pageController.hasClients
-        ? (_pageController.page?.round() ?? _currentIndex)
-        : _currentIndex;
-
-    _pageController.dispose();
-    _viewportFraction = nextViewportFraction;
-    _pageController = PageController(
-      initialPage: previousIndex,
-      viewportFraction: _viewportFraction,
-    );
+    _pageController = PageController();
   }
 
   @override
@@ -95,7 +65,6 @@ class _AnnouncementBannerSectionState extends State<AnnouncementBannerSection> {
           child: hasMultiple
               ? PageView.builder(
                   controller: _pageController,
-                  clipBehavior: Clip.none,
                   itemCount: widget.banners.length,
                   onPageChanged: (index) {
                     setState(() {
@@ -103,31 +72,13 @@ class _AnnouncementBannerSectionState extends State<AnnouncementBannerSection> {
                     });
                   },
                   itemBuilder: (context, index) {
-                    final screenWidth = MediaQuery.sizeOf(context).width;
-
-                    return Align(
-                      alignment: Alignment.centerLeft,
-                      child: SizedBox(
-                        width: screenWidth - _horizontalPeekInset,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: AnnouncementBannerCard(
-                                banner: widget.banners[index],
-                              ),
-                            ),
-                            const SizedBox(width: _bannerGap),
-                          ],
-                        ),
-                      ),
+                    return AnnouncementBannerCard(
+                      banner: widget.banners[index],
                     );
                   },
                 )
-              : Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: AnnouncementBannerCard(
-                    banner: widget.banners.first,
-                  ),
+              : AnnouncementBannerCard(
+                  banner: widget.banners.first,
                 ),
         ),
         if (hasMultiple) ...[
@@ -174,6 +125,10 @@ class AnnouncementBannerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (banner.isImageBanner) {
+      return _buildImageOnlyBanner(context);
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bannerEyebrow = banner.eyebrow.trim().isEmpty
         ? 'CarHive Update'
@@ -403,6 +358,47 @@ class AnnouncementBannerCard extends StatelessWidget {
       },
     );
   }
+
+  Widget _buildImageOnlyBanner(BuildContext context) {
+    final borderRadius = BorderRadius.circular(16);
+
+    return Material(
+      color: Colors.transparent,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: borderRadius,
+          boxShadow: showShadow
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 20,
+                    offset: const Offset(0, 12),
+                  ),
+                ]
+              : null,
+        ),
+        child: ClipRRect(
+          borderRadius: borderRadius,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: borderRadius,
+              onTap: onTap,
+              child: Ink(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF111827),
+                ),
+                child: _ImageOnlyBannerVisual(
+                  imageUrl: banner.imageUrl,
+                  imageOverride: imageOverride,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _BannerArt extends StatelessWidget {
@@ -491,6 +487,76 @@ class _NetworkOrAssetImage extends StatelessWidget {
     return Image.asset(
       'assets/images/orange_car.png',
       fit: BoxFit.contain,
+    );
+  }
+}
+
+class _ImageOnlyBannerVisual extends StatelessWidget {
+  const _ImageOnlyBannerVisual({
+    required this.imageUrl,
+    this.imageOverride,
+  });
+
+  final String? imageUrl;
+  final Widget? imageOverride;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedUrl = imageUrl?.trim() ?? '';
+
+    if (imageOverride != null) {
+      return SizedBox.expand(child: imageOverride!);
+    }
+
+    if (normalizedUrl.isNotEmpty) {
+      return Image.network(
+        normalizedUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return const _ImageBannerPlaceholder();
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) {
+            return child;
+          }
+          return const Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return const _ImageBannerPlaceholder();
+  }
+}
+
+class _ImageBannerPlaceholder extends StatelessWidget {
+  const _ImageBannerPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF263447), Color(0xFF1A2330)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.image_outlined,
+          size: 40,
+          color: Colors.white.withValues(alpha: 0.7),
+        ),
+      ),
     );
   }
 }

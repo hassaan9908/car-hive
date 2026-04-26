@@ -107,6 +107,16 @@ class AdModel {
     return null;
   }
 
+  static String? _extractCityNameFromLocation(String location) {
+    final trimmed = location.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    final city = trimmed.split(',').first.trim();
+    return city.isEmpty ? null : city;
+  }
+
   // -----------------------------
   // Helper: Extract car brand (with migration for old ads)
   // -----------------------------
@@ -235,6 +245,9 @@ class AdModel {
     if (data['locationString'] != null) {
       // New format - locationString exists
       locationString = data['locationString'] as String;
+    } else if (data['cityName'] is String &&
+        (data['cityName'] as String).trim().isNotEmpty) {
+      locationString = data['cityName'] as String;
     } else if (data['location'] != null) {
       // Old format - location might be a string
       if (data['location'] is String) {
@@ -331,6 +344,11 @@ class AdModel {
         'lng': locationCoordinates!['lng'],
       };
       data['locationString'] = location;
+    }
+
+    final cityName = _extractCityNameFromLocation(location);
+    if (cityName != null) {
+      data['cityName'] = cityName;
     }
 
     return data;

@@ -105,16 +105,36 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
       _isSubmitting = true;
     });
 
+    String? transactionId;
+    String? investmentId;
+    bool createdPendingInvestment = false;
+
     try {
-      // Create investment record
-      final investmentId = await _investmentService.createInvestment(
-        vehicleInvestmentId: widget.vehicle.id,
-        amount: amount,
-        totalInvestmentGoal: widget.vehicle.totalInvestmentGoal,
+      final existingInvestment =
+          await _investmentService.getUserInvestmentForVehicle(
+        user.uid,
+        widget.vehicle.id,
       );
+      final hasExistingInvestment = existingInvestment?.status == 'active';
+
+      if (hasExistingInvestment && existingInvestment != null) {
+        investmentId = existingInvestment.id;
+      } else {
+        if (existingInvestment != null &&
+            existingInvestment.status == 'pending') {
+          await _investmentService.deleteInvestment(existingInvestment.id);
+        }
+
+        investmentId = await _investmentService.createInvestment(
+          vehicleInvestmentId: widget.vehicle.id,
+          amount: amount,
+          totalInvestmentGoal: widget.vehicle.totalInvestmentGoal,
+        );
+        createdPendingInvestment = true;
+      }
 
       // Create transaction record
-      final transactionId = await _transactionService.createTransaction(
+      transactionId = await _transactionService.createTransaction(
         vehicleInvestmentId: widget.vehicle.id,
         investmentId: investmentId,
         userId: user.uid,
@@ -145,8 +165,12 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
           paymentResult['reference'] ?? '',
         );
 
-        // Activate investment
-        await _investmentService.activateInvestment(investmentId);
+        await _investmentService.finalizeInvestmentContribution(
+          investmentId: investmentId,
+          contributionAmount: amount,
+          totalInvestmentGoal: widget.vehicle.totalInvestmentGoal,
+          hasExistingInvestment: hasExistingInvestment,
+        );
 
         // Update vehicle current investment
         await _vehicleService.updateCurrentInvestment(
@@ -176,6 +200,10 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
           notes: paymentResult['error'] ?? 'Payment failed',
         );
 
+        if (createdPendingInvestment) {
+          await _investmentService.deleteInvestment(investmentId);
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -187,6 +215,17 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
         }
       }
     } catch (e) {
+      if (transactionId != null) {
+        await _transactionService.markTransactionFailed(
+          transactionId,
+          notes: e.toString(),
+        );
+      }
+
+      if (createdPendingInvestment && investmentId != null) {
+        await _investmentService.deleteInvestment(investmentId);
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

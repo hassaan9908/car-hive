@@ -244,7 +244,7 @@ class _HomepageState extends State<Homepage> {
                       final banners = _resolveHomepageBanners(snapshot);
 
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                         child: AnnouncementBannerSection(
                           banners: banners,
                         ),
@@ -264,42 +264,38 @@ class _HomepageState extends State<Homepage> {
                     },
                   ),
 
-                if (!_isSearchActive) const SizedBox(height: 12),
-
-                if (!_isSearchActive)
-                  HomeFilterSection(
-                    selectedQuickFilterId: _selectedQuickFilterId,
-                    onQuickFilterSelected: (filterId) {
-                      setState(() {
-                        _selectedQuickFilterId = filterId;
-                      });
-                    },
-                    onClearAll: _clearAllHomeFilters,
-                    hasActiveFilters: _hasActiveHomeFilters,
-                    selectedCity: _selectedCity,
-                    onCitySelected: (city) {
-                      setState(() {
-                        _selectedCity = city;
-                      });
-                    },
-                    selectedYear: _selectedYear,
-                    onYearSelected: (year) {
-                      setState(() {
-                        _selectedYear = year;
-                      });
-                    },
-                    selectedTrustLevelId: _selectedTrustLevelId,
-                    onTrustLevelSelected: (trustLevelId) {
-                      setState(() {
-                        _selectedTrustLevelId = trustLevelId;
-                      });
-                    },
-                  ),
-
                 // Search Results or home marketplace sections
                 _isSearchActive
                     ? _buildSearchResults(searchProvider)
                     : HomeMarketplaceSections(
+                        filterSection: HomeFilterSection(
+                          selectedQuickFilterId: _selectedQuickFilterId,
+                          onQuickFilterSelected: (filterId) {
+                            setState(() {
+                              _selectedQuickFilterId = filterId;
+                            });
+                          },
+                          onClearAll: _clearAllHomeFilters,
+                          hasActiveFilters: _hasActiveHomeFilters,
+                          selectedCity: _selectedCity,
+                          onCitySelected: (city) {
+                            setState(() {
+                              _selectedCity = city;
+                            });
+                          },
+                          selectedYear: _selectedYear,
+                          onYearSelected: (year) {
+                            setState(() {
+                              _selectedYear = year;
+                            });
+                          },
+                          selectedTrustLevelId: _selectedTrustLevelId,
+                          onTrustLevelSelected: (trustLevelId) {
+                            setState(() {
+                              _selectedTrustLevelId = trustLevelId;
+                            });
+                          },
+                        ),
                         listings: CarTabs(
                           initialTab: widget.initialTab,
                           selectedBrandId: _selectedBrandId,

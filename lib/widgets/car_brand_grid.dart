@@ -54,7 +54,8 @@ class CarBrandGrid extends StatelessWidget {
         fallbackText: config.fallbackText,
         fallbackBackground:
             config.fallbackBackground ?? const Color(0xFFF2F2F2),
-        fallbackForeground: config.fallbackForeground ?? const Color(0xFF5A5A5A),
+        fallbackForeground:
+            config.fallbackForeground ?? const Color(0xFF5A5A5A),
       );
     }).toList(growable: false);
   }
@@ -107,7 +108,7 @@ class CarBrandGrid extends StatelessWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: theme.cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -125,7 +126,7 @@ class CarBrandGrid extends StatelessWidget {
                       width: 42,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.16),
+                        color: theme.colorScheme.outlineVariant,
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
@@ -136,11 +137,10 @@ class CarBrandGrid extends StatelessWidget {
                       Text(
                         'All Brands',
                         style: theme.textTheme.titleLarge?.copyWith(
-                              color: Colors.white,
                               fontWeight: FontWeight.w700,
                             ) ??
-                            const TextStyle(
-                              color: Colors.white,
+                            TextStyle(
+                              color: theme.colorScheme.onSurface,
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
                             ),
@@ -148,9 +148,9 @@ class CarBrandGrid extends StatelessWidget {
                       const Spacer(),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.close_rounded,
-                          color: Colors.white70,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -195,11 +195,10 @@ class CarBrandGrid extends StatelessWidget {
               Text(
                 'All Brands',
                 style: theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
                       fontWeight: FontWeight.w700,
                     ) ??
-                    const TextStyle(
-                      color: Colors.white,
+                    TextStyle(
+                      color: theme.colorScheme.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                     ),
@@ -251,7 +250,8 @@ class CarBrandGrid extends StatelessWidget {
                     brand: featuredBrands[index],
                     isSelected:
                         selectedBrandId == featuredBrands[index].brand.id,
-                    onTap: () => onBrandSelected?.call(featuredBrands[index].brand),
+                    onTap: () =>
+                        onBrandSelected?.call(featuredBrands[index].brand),
                   ),
                 ),
             ],
@@ -277,7 +277,7 @@ class _BrandCircleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final circleBorderColor =
-        isSelected ? theme.colorScheme.primary : const Color(0xFFE4E4E4);
+        isSelected ? theme.colorScheme.primary : theme.colorScheme.outline;
 
     return SizedBox(
       width: 78,
@@ -297,7 +297,7 @@ class _BrandCircleCard extends StatelessWidget {
                   width: 70,
                   height: 70,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: theme.cardColor,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: circleBorderColor,
@@ -305,7 +305,7 @@ class _BrandCircleCard extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.22),
+                        color: theme.colorScheme.shadow.withValues(alpha: 0.12),
                         blurRadius: 14,
                         offset: const Offset(0, 6),
                       ),
@@ -331,12 +331,19 @@ class _BrandCircleCard extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    height: 1.15,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  ),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        height: 1.15,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                      ) ??
+                      TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 11,
+                        height: 1.15,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                      ),
                 ),
               ],
             ),
