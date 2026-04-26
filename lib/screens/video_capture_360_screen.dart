@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,7 @@ import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:carhive/services/backend_360_service.dart';
+import 'package:carhive/config/backend_config.dart';
 import 'package:carhive/360_viewer.dart';
 
 /// Screen for capturing video for 360° car rotation
@@ -242,10 +244,46 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
     setState(() {
       _isProcessing = true;
       _processingProgress = 0.0;
-      _processingMessage = 'Uploading video...';
+      _processingMessage = 'Checking backend connection...';
     });
 
     try {
+      // Check backend health first
+      final isHealthy = await _backendService.checkHealth();
+      if (!isHealthy) {
+        // On physical devices, show configuration dialog
+        if (!kIsWeb) {
+          final configured = await _showBackendConfigDialog();
+          if (!configured) {
+            throw Exception('Backend configuration cancelled');
+          }
+          // Retry health check after configuration
+          final retryHealthy = await _backendService.checkHealth();
+          if (!retryHealthy) {
+            throw Exception(
+              'Cannot connect to backend server.\n\n'
+              'Please ensure:\n'
+              '1. Backend server is running (python process.py)\n'
+              '2. Both devices are on the same network\n'
+              '3. Firewall allows connections on port 8000\n'
+              '4. The backend URL is correct'
+            );
+          }
+        } else {
+          throw Exception(
+            'Cannot connect to backend server.\n\n'
+            'Please ensure:\n'
+            '1. Backend server is running (python process.py)\n'
+            '2. Both devices are on the same network\n'
+            '3. Firewall allows connections on port 8000'
+          );
+        }
+      }
+
+      setState(() {
+      _processingMessage = 'Uploading video...';
+    });
+
       Process360Result result;
       
       if (kIsWeb && _webVideoBytes != null) {
@@ -281,9 +319,12 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
       }
 
       if (result.success) {
+        // Backend now uploads frames to Cloudinary directly
+        // Result.frameUrls already contains Cloudinary URLs
         setState(() {
           _processedFrameUrls = result.frameUrls;
           _isProcessing = false;
+          _processingProgress = 1.0;
         });
 
         // Show completion dialog
@@ -292,7 +333,32 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
         throw Exception('Processing failed');
       }
     } catch (e) {
-      _showError('Failed to process video: $e');
+      String errorMessage = 'Failed to process video: $e';
+      
+      // Provide helpful error message for connection issues
+      if (e.toString().contains('Connection refused') || 
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('SocketException') ||
+          e.toString().contains('Cannot connect to backend')) {
+        // On physical devices, show configuration dialog
+        if (!kIsWeb) {
+          final configured = await _showBackendConfigDialog();
+          if (configured) {
+            // Retry processing after configuration
+            await _processVideo();
+            return;
+          }
+        }
+        errorMessage = 
+          'Cannot connect to backend server.\n\n'
+          'Please configure the backend URL:\n'
+          '1. Find your computer\'s IP: Windows (ipconfig) or Mac/Linux (ifconfig)\n'
+          '2. Enter it in the configuration dialog (e.g., http://192.168.1.100:8000)\n'
+          '3. Ensure backend is running: python process.py\n'
+          '4. Both devices must be on the same network';
+      }
+      
+      _showError(errorMessage);
       setState(() {
         _isProcessing = false;
       });
@@ -355,6 +421,64 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
   }
 
   /// Show error message
+  /// Show backend configuration dialog
+  Future<bool> _showBackendConfigDialog() async {
+    final currentUrl = await BackendConfig.getStoredBackendUrl();
+    final controller = TextEditingController(text: currentUrl ?? 'http://192.168.1.100:8000');
+    
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Configure Backend Server'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter your computer\'s IP address where the backend server is running:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Backend URL',
+                hintText: 'http://192.168.1.100:8000',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.dns),
+              ),
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'To find your IP:\n'
+              '• Windows: Run "ipconfig"\n'
+              '• Mac/Linux: Run "ifconfig"',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final url = controller.text.trim();
+              if (url.isNotEmpty) {
+                await BackendConfig.setCustomBackendUrl(url);
+                Navigator.of(context).pop(true);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -534,22 +658,33 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
                     ),
                   ),
 
-                // Record button (mobile) or Upload button (web)
+                // Record/Upload buttons
                 Padding(
                   padding: const EdgeInsets.all(24),
-                  child: kIsWeb
-                      ? FilledButton.icon(
+                  child: Column(
+                    children: [
+                      // Upload button (available on both web and mobile)
+                      FilledButton.icon(
                           onPressed: _pickVideoFromFile,
                           icon: const Icon(Icons.upload_file),
-                          label: const Text('Upload Video'),
+                        label: const Text('Upload Video from Gallery'),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 32,
                               vertical: 16,
                             ),
-                          ),
-                        )
-                      : GestureDetector(
+                          backgroundColor: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Record button (mobile only, or show divider on web)
+                      if (!kIsWeb) ...[
+                        const Text(
+                          'OR',
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                        const SizedBox(height: 16),
+                        GestureDetector(
                           onTap: _isRecording
                               ? () => _stopRecording(null)
                               : _startRecording,
@@ -578,6 +713,14 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
                               ),
                             ),
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Record Video',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
+                    ],
                         ),
                 ),
 

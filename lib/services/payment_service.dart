@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../config/stripe_config.dart';
+import 'currency_converter_service.dart';
 
 /// Payment Service for handling payment gateway integrations
 /// 
@@ -187,6 +189,8 @@ class PaymentService {
   /// Process Stripe payment (Debit/Credit Card)
   /// 
   /// Creates a payment intent via Cloud Function and presents Stripe payment sheet
+  /// For web: Uses Stripe Checkout redirect
+  /// For mobile: Uses native payment sheet
   Future<Map<String, dynamic>> _processStripePayment({
     required double amount,
     required String transactionId,
@@ -202,17 +206,26 @@ class PaymentService {
         };
       }
 
-      // Call Cloud Function to create payment intent
+      // Convert PKR to USD for Stripe (Stripe doesn't support PKR)
+      // Amount is in PKR, but Stripe requires USD
+      final amountInUsd = CurrencyConverterService.convertPkrToUsd(amount);
+      
+      // Store original PKR amount in metadata for reference
+      final originalAmountPkr = amount;
+      
+      // Call Cloud Function to create payment intent with USD amount
       final callable = _functions.httpsCallable('stripeCreatePaymentIntent');
       final result = await callable.call({
-        'amount': amount,
-        'currency': StripeConfig.currency,
+        'amount': amountInUsd, // Send USD amount to Stripe
+        'currency': StripeConfig.currency, // 'usd'
         'userId': user.uid,
         'transactionId': transactionId,
         'vehicleInvestmentId': additionalData?['vehicleInvestmentId'],
         'investmentId': additionalData?['investmentId'],
         'type': additionalData?['type'] ?? 'investment',
         'description': description,
+        // Store original PKR amount in metadata
+        'originalAmountPkr': originalAmountPkr,
       });
 
       final data = result.data as Map<String, dynamic>;
@@ -225,7 +238,24 @@ class PaymentService {
       }
 
       final clientSecret = data['clientSecret'] as String;
+      final paymentIntentId = _extractPaymentIntentId(clientSecret);
 
+      // Web: Stripe payment sheet is not supported on web
+      // We need to use Stripe Checkout or Stripe Elements
+      if (kIsWeb) {
+        // For web, we'll return a helpful error message
+        // In production, you should implement one of:
+        // 1. Stripe Checkout Session (redirect-based, easiest)
+        // 2. Stripe Elements (embedded form, more complex)
+        return {
+          'success': false,
+          'error': 'Stripe card payments are currently only available on mobile devices. '
+              'Please use the mobile app, or choose another payment method (JazzCash, EasyPay, Bank Transfer).',
+          'paymentIntentId': paymentIntentId, // Return for reference
+        };
+      }
+
+      // Mobile: Use native payment sheet
       // Initialize payment sheet
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
@@ -240,7 +270,7 @@ class PaymentService {
       // Confirm payment with backend
       final confirmCallable = _functions.httpsCallable('stripeConfirmPayment');
       final confirmResult = await confirmCallable.call({
-        'paymentIntentId': _extractPaymentIntentId(clientSecret),
+        'paymentIntentId': paymentIntentId,
         'transactionId': transactionId,
         'userId': user.uid,
       });
@@ -250,7 +280,7 @@ class PaymentService {
       if (confirmData['success'] == true) {
         return {
           'success': true,
-          'reference': _extractPaymentIntentId(clientSecret),
+          'reference': paymentIntentId,
           'message': 'Payment processed successfully',
         };
       } else {
@@ -271,6 +301,7 @@ class PaymentService {
       };
     }
   }
+
 
   /// Extract payment intent ID from client secret
   String _extractPaymentIntentId(String clientSecret) {

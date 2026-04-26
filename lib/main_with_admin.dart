@@ -1,13 +1,10 @@
 import 'package:carhive/models/ad_model.dart' show AdModel;
 import 'package:carhive/store/global_ads.dart' show GlobalAdStore;
 import 'package:carhive/services/cloudinary_service.dart';
-import 'package:carhive/services/car_360_service.dart';
 import 'package:carhive/services/vehicle_service.dart';
 import 'package:carhive/utils/html_parser.dart';
 import 'package:carhive/utils/encryption_service.dart';
-import 'package:carhive/screens/capture_360_screen.dart';
 import 'package:carhive/screens/video_capture_360_screen.dart';
-import 'package:carhive/models/car_360_set.dart';
 import 'package:carhive/widgets/location_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -122,9 +119,8 @@ class _PostAdCarState extends State<PostAdCar> {
   final CloudinaryService _cloudinaryService = CloudinaryService();
   
   // 360° capture state (16 angles)
-  final Car360Service _car360Service = Car360Service();
-  Car360Set? _captured360Set;
-  List<Uint8List?> _360PreviewImages = [];
+  // 360° video capture state
+  List<String>? _video360FrameUrls;
   bool _isUploading360 = false;
 
 
@@ -684,29 +680,6 @@ class _PostAdCarState extends State<PostAdCar> {
     }
   }
 
-  // Open 360° capture screen (16 angles)
-  Future<void> _open360CaptureScreen() async {
-    final result = await Navigator.push<Car360Set>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Capture360Screen(
-          existingSet: _captured360Set,
-          onCaptureComplete: (set) {
-            // Called when capture is complete
-          },
-        ),
-      ),
-    );
-
-    if (result != null && result.capturedCount > 0) {
-      setState(() {
-        _captured360Set = result;
-        _car360Service.setCurrentSet(result);
-        _360PreviewImages = result.imageBytes;
-      });
-    }
-  }
-
   // Open video-based 360 capture
   Future<void> _openVideo360CaptureScreen() async {
     final result = await Navigator.push<List<String>>(
@@ -715,16 +688,16 @@ class _PostAdCarState extends State<PostAdCar> {
         builder: (context) => VideoCapture360Screen(
           onComplete: (frameUrls) {
             // Video processing complete
-            // Note: Video capture returns frame URLs, not Car360Set
-            // You may need to handle this differently based on your needs
           },
         ),
       ),
     );
 
     if (result != null && result.isNotEmpty) {
-      // Handle video-based 360 frames
-      // For now, just show a message
+      setState(() {
+        _video360FrameUrls = result;
+      });
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -733,16 +706,13 @@ class _PostAdCarState extends State<PostAdCar> {
           ),
         );
       }
-      // TODO: Integrate video frames with your upload flow
     }
   }
 
-  // Clear 360° images
+  // Clear 360° video frames
   void _clear360Images() {
     setState(() {
-      _car360Service.clearAll();
-      _captured360Set = null;
-      _360PreviewImages = [];
+      _video360FrameUrls = null;
     });
   }
 
@@ -928,7 +898,7 @@ class _PostAdCarState extends State<PostAdCar> {
                             ),
                           ],
                         ),
-                        if (_360PreviewImages.isNotEmpty)
+                        if (_video360FrameUrls != null && _video360FrameUrls!.isNotEmpty)
                           TextButton.icon(
                             onPressed: _clear360Images,
                             icon: const Icon(Icons.clear, size: 18),
@@ -941,304 +911,116 @@ class _PostAdCarState extends State<PostAdCar> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Capture 16 angles of your car for a smooth 360° drag-to-rotate experience',
+                      'Record a 15-20 second video walking around your car for a smooth 360° view with zoom functionality',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 12,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (_360PreviewImages.isEmpty || _360PreviewImages.every((img) => img == null))
-                      // Capture options: Photo or Video
-                      Column(
-                        children: [
-                          // Photo-based capture (existing)
+                    if (_video360FrameUrls == null || _video360FrameUrls!.isEmpty)
+                      // Video-based capture
                       GestureDetector(
-                        onTap: _open360CaptureScreen,
+                        onTap: _openVideo360CaptureScreen,
                         child: Container(
                           width: double.infinity,
-                              height: 100,
+                          height: 100,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                const Color(0xFFf48c25).withOpacity(0.1),
-                                const Color(0xFFf48c25).withOpacity(0.2),
+                                Colors.blue.withOpacity(0.1),
+                                Colors.blue.withOpacity(0.2),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: const Color(0xFFf48c25).withOpacity(0.5),
+                              color: Colors.blue.withOpacity(0.5),
                               width: 2,
                               style: BorderStyle.solid,
                             ),
                           ),
-                              child: Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFFf48c25),
+                                  color: Colors.blue,
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
-                                  Icons.camera_alt,
+                                  Icons.videocam,
                                   color: Colors.white,
-                                      size: 24,
+                                  size: 24,
                                 ),
                               ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                              const Text(
-                                        'Photo Capture (16 angles)',
-                                style: TextStyle(
-                                  color: Color(0xFFf48c25),
-                                  fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                ),
-                              ),
-                              Text(
-                                        'Take 16 photos around car',
-                                style: TextStyle(
-                                  color: const Color(0xFFf48c25).withOpacity(0.8),
-                                          fontSize: 11,
-                                ),
+                              const SizedBox(width: 12),
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Video Capture (${_video360FrameUrls?.length ?? 0} frames)',
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Record 15-20 sec video',
+                                    style: TextStyle(
+                                      color: Colors.blue.withOpacity(0.8),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                                ],
                         ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Video-based capture (new)
-                          GestureDetector(
-                            onTap: _openVideo360CaptureScreen,
-                            child: Container(
-                              width: double.infinity,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.blue.withOpacity(0.1),
-                                    Colors.blue.withOpacity(0.2),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.blue.withOpacity(0.5),
-                                  width: 2,
-                                  style: BorderStyle.solid,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.blue,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.videocam,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Video Capture (90 frames)',
-                                            style: TextStyle(
-                                              color: Colors.blue,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.green,
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: const Text(
-                                              'NEW',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Text(
-                                        'Record 15-20 sec video',
-                                        style: TextStyle(
-                                          color: Colors.blue.withOpacity(0.8),
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
                       )
                     else
-                      // Preview captured images (16 angles)
-                      Builder(
-                        builder: (context) {
-                          final capturedImages = _360PreviewImages.where((img) => img != null).toList();
-                          final capturedCount = capturedImages.length;
-                          
-                          return Column(
-                            children: [
-                              Container(
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.grey.shade100,
-                                ),
-                                child: ListView.separated(
-                                  scrollDirection: Axis.horizontal,
-                                  padding: const EdgeInsets.all(8),
-                                  itemCount: capturedCount + 1,
-                                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                                  itemBuilder: (context, index) {
-                                    if (index == capturedCount) {
-                                      // Add more button
-                                      return GestureDetector(
-                                        onTap: _open360CaptureScreen,
-                                        child: Container(
-                                          width: 80,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFf48c25).withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: const Color(0xFFf48c25).withOpacity(0.5)),
-                                          ),
-                                          child: const Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(Icons.edit, color: Color(0xFFf48c25)),
-                                              SizedBox(height: 4),
-                                              Text(
-                                                'Edit',
-                                                style: TextStyle(
-                                                  color: Color(0xFFf48c25),
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                    return ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Stack(
-                                        children: [
-                                          Image.memory(
-                                            capturedImages[index]!,
-                                            width: 80,
-                                            height: 84,
-                                            fit: BoxFit.cover,
-                                          ),
-                                          Positioned(
-                                            top: 4,
-                                            left: 4,
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 6,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black54,
-                                                borderRadius: BorderRadius.circular(10),
-                                              ),
-                                              child: Text(
-                                                '${index + 1}',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.green.shade300),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle,
-                                      color: Colors.green.shade700,
-                                      size: 20,
+                      // Preview video frames
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.green.withOpacity(0.1),
+                          border: Border.all(color: Colors.green.withOpacity(0.5)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle, color: Colors.green, size: 24),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '360° Video Captured',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '$capturedCount/16 angles captured',
-                                      style: TextStyle(
-                                        color: Colors.green.shade700,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                  ),
+                                  Text(
+                                    '${_video360FrameUrls!.length} frames generated',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 12,
                                     ),
-                                    const Spacer(),
-                                    if (capturedCount == 16)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green.shade700,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: const Text(
-                                          '360° Ready',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          );
-                        },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: _openVideo360CaptureScreen,
+                              tooltip: 'Re-capture',
+                            ),
+                          ],
+                        ),
                       ),
                   ],
                 ),
@@ -1661,26 +1443,11 @@ class _PostAdCarState extends State<PostAdCar> {
                           }
                         }
 
-                        // Upload 360° images if captured (16 angles)
+                        // Use video-generated 360° frame URLs
                         List<String>? images360Urls;
-                        if (_captured360Set != null && _captured360Set!.capturedCount > 0) {
-                          try {
-                            setState(() => _isUploading360 = true);
-                            images360Urls = await _car360Service.uploadCar360Set(
-                              _captured360Set!,
-                              onProgress: (current, total) {
-                                // Optional: show progress
-                              },
-                            );
-                          } catch (e) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Failed to upload 360° images: $e')),
-                            );
-                            // Continue without 360 images
-                          } finally {
-                            if (mounted) setState(() => _isUploading360 = false);
-                          }
+                        if (_video360FrameUrls != null && _video360FrameUrls!.isNotEmpty) {
+                          // Video frames are already processed and available as URLs
+                          images360Urls = _video360FrameUrls;
                         }
 
                         // Use selected location coordinates or get current location
