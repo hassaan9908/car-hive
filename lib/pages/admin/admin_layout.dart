@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../providers/admin_provider.dart';
-import 'admin_dashboard_page.dart';
 import 'admin_ads_page.dart';
-import 'admin_users_page.dart';
-import 'admin_blog_upload_page.dart';
-import 'admin_video_upload_page.dart';
-import 'admin_blog_management_page.dart';
-import 'admin_video_management_page.dart';
-import 'admin_insight_metrics_page.dart';
 import 'admin_announcement_banners_page.dart';
+import 'admin_blog_management_page.dart';
+import 'admin_blog_upload_page.dart';
+import 'admin_dashboard_page.dart';
 import 'admin_fuel_prices_page.dart';
+import 'admin_insight_metrics_page.dart';
+import 'admin_reschedule_requests_page.dart';
+import 'admin_theme.dart';
+import 'admin_users_page.dart';
+import 'admin_video_management_page.dart';
+import 'admin_video_upload_page.dart';
+import 'admin_visit_schedule_page.dart';
 
 class AdminLayout extends StatefulWidget {
   const AdminLayout({super.key});
@@ -25,124 +29,130 @@ class _AdminLayoutState extends State<AdminLayout> {
 
   final List<AdminNavigationItem> _navigationItems = [
     AdminNavigationItem(
+      id: 'dashboard',
       title: 'Dashboard',
       icon: Icons.dashboard,
-      page: const AdminDashboardPage(),
+      builder: (_) => const AdminDashboardPage(),
     ),
     AdminNavigationItem(
+      id: 'insight_metrics',
       title: 'Insight Metrics',
       icon: Icons.insights,
-      page: const AdminInsightMetricsPage(),
+      builder: (_) => const AdminInsightMetricsPage(),
     ),
     AdminNavigationItem(
+      id: 'ad_moderation',
       title: 'Ad Moderation',
       icon: Icons.rate_review,
-      page: const AdminAdsPage(),
+      builder: (_) => const AdminAdsPage(),
     ),
     AdminNavigationItem(
+      id: 'user_management',
       title: 'User Management',
       icon: Icons.people,
-      page: const AdminUsersPage(),
+      builder: (_) => const AdminUsersPage(),
     ),
     AdminNavigationItem(
+      id: 'announcements',
       title: 'Announcements',
       icon: Icons.campaign,
-      page: const AdminAnnouncementBannersPage(),
+      builder: (_) => const AdminAnnouncementBannersPage(),
     ),
     AdminNavigationItem(
+      id: 'fuel_prices',
       title: 'Fuel Prices',
       icon: Icons.local_gas_station,
-      page: const AdminFuelPricesPage(),
+      builder: (_) => const AdminFuelPricesPage(),
     ),
     AdminNavigationItem(
+      id: 'visit_schedules',
+      title: 'Visit Schedules',
+      icon: Icons.edit_calendar_outlined,
+      builder: (_) => const AdminVisitSchedulePage(),
+    ),
+    AdminNavigationItem(
+      id: 'visit_requests',
+      title: 'Visit Requests',
+      icon: Icons.swap_horiz_outlined,
+      builder: (_) => const AdminRescheduleRequestsPage(),
+    ),
+    AdminNavigationItem(
+      id: 'upload_blog',
       title: 'Upload Blog',
       icon: Icons.article,
-      page: const AdminBlogUploadPage(),
+      builder: (_) => const AdminBlogUploadPage(),
     ),
     AdminNavigationItem(
+      id: 'upload_video',
       title: 'Upload Video',
       icon: Icons.video_library,
-      page: const AdminVideoUploadPage(),
+      builder: (_) => const AdminVideoUploadPage(),
     ),
     AdminNavigationItem(
+      id: 'manage_blogs',
       title: 'Manage Blogs',
       icon: Icons.manage_accounts,
-      page: const AdminBlogManagementPage(),
+      builder: (_) => const AdminBlogManagementPage(),
     ),
     AdminNavigationItem(
+      id: 'manage_videos',
       title: 'Manage Videos',
       icon: Icons.slideshow,
-      page: const AdminVideoManagementPage(),
+      builder: (_) => const AdminVideoManagementPage(),
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final accent = const Color(0xFFF48C25);
-    final canvasStart =
-        isDark ? const Color(0xFF0B1220) : const Color(0xFFF6F8FB);
-    final canvasEnd = isDark ? const Color(0xFF111827) : Colors.white;
-    final screenWidth = MediaQuery.of(context).size.width;
+    final accent = theme.colorScheme.primary;
+    final pageBackground = AdminThemeTokens.pageBackground(context);
+    final pageSurface = AdminThemeTokens.pageSurface(context);
+    final pageBorder = AdminThemeTokens.pageBorder(context);
+    final selectedItem = _navigationItems[_selectedIndex];
 
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
         return Scaffold(
-          backgroundColor: canvasStart,
+          backgroundColor: pageBackground,
           body: SafeArea(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [canvasStart, canvasEnd],
-                ),
-              ),
-              child: Row(
-                children: [
-                  _buildSidebar(context, adminProvider, isDark, accent),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 250),
-                              switchInCurve: Curves.easeOutCubic,
-                              switchOutCurve: Curves.easeInCubic,
-                              child: Container(
-                                key: ValueKey(_selectedIndex),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? Colors.white.withOpacity(0.02)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isDark
-                                        ? Colors.white.withOpacity(0.08)
-                                        : Colors.grey.shade200,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.06),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 12),
-                                    ),
-                                  ],
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: _navigationItems[_selectedIndex].page,
-                              ),
+            child: Row(
+              children: [
+                _buildSidebar(context, adminProvider, accent),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      child: Container(
+                        key: ValueKey(selectedItem.id),
+                        decoration: BoxDecoration(
+                          color: pageSurface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: pageBorder),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 18,
+                              offset: const Offset(0, 12),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                        clipBehavior: Clip.antiAlias,
+                        child: Theme(
+                          data: theme.copyWith(
+                            scaffoldBackgroundColor: pageBackground,
+                            canvasColor: pageBackground,
+                          ),
+                          child: selectedItem.builder(context),
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
@@ -150,34 +160,28 @@ class _AdminLayoutState extends State<AdminLayout> {
     );
   }
 
-  Widget _buildSidebar(BuildContext context, AdminProvider adminProvider,
-      bool isDark, Color accent) {
+  Widget _buildSidebar(
+    BuildContext context,
+    AdminProvider adminProvider,
+    Color accent,
+  ) {
+    final sidebarBackground = AdminThemeTokens.sidebarBackground(context);
+    final sidebarBorder = AdminThemeTokens.sidebarBorder(context);
+    final sidebarText = AdminThemeTokens.sidebarPrimaryText(context);
+    final sidebarSecondaryText = AdminThemeTokens.sidebarSecondaryText(context);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 240),
       width: _isSidebarCollapsed ? 76 : 260,
       margin: const EdgeInsets.fromLTRB(16, 16, 8, 16),
       padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
+        color: sidebarBackground,
         borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? [
-                  const Color(0xFF1F2937),
-                  const Color(0xFF111827),
-                ]
-              : [
-                  const Color(0xFF152032),
-                  const Color(0xFF0E1624),
-                ],
-        ),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.06),
-        ),
+        border: Border.all(color: sidebarBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.22),
+            color: AdminThemeTokens.sidebarShadow(context),
             blurRadius: 20,
             offset: const Offset(0, 14),
           ),
@@ -194,13 +198,13 @@ class _AdminLayoutState extends State<AdminLayout> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: accent.withOpacity(0.15),
+                      color: accent.withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                      border: Border.all(color: sidebarBorder),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.admin_panel_settings,
-                      color: Colors.white,
+                      color: accent,
                       size: 22,
                     ),
                   ),
@@ -208,21 +212,21 @@ class _AdminLayoutState extends State<AdminLayout> {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
                           'CarHive',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: sidebarText,
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
                             letterSpacing: 0.2,
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
                           'Admin Console',
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: sidebarSecondaryText,
                             fontSize: 12,
                           ),
                         ),
@@ -233,7 +237,7 @@ class _AdminLayoutState extends State<AdminLayout> {
                 IconButton(
                   icon: Icon(
                     _isSidebarCollapsed ? Icons.menu_open : Icons.menu,
-                    color: Colors.white,
+                    color: sidebarText,
                   ),
                   onPressed: () => setState(() {
                     _isSidebarCollapsed = !_isSidebarCollapsed;
@@ -244,7 +248,7 @@ class _AdminLayoutState extends State<AdminLayout> {
             ),
           ),
           const SizedBox(height: 12),
-          Divider(color: Colors.white.withOpacity(0.08), height: 1),
+          Divider(color: sidebarBorder, height: 1),
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
@@ -255,14 +259,15 @@ class _AdminLayoutState extends State<AdminLayout> {
               itemCount: _navigationItems.length,
               itemBuilder: (context, index) {
                 final item = _navigationItems[index];
-                final isSelected = _selectedIndex == index;
 
                 return _NavItem(
                   title: item.title,
                   icon: item.icon,
                   isCollapsed: _isSidebarCollapsed,
-                  isSelected: isSelected,
+                  isSelected: _selectedIndex == index,
                   accent: accent,
+                  textColor: sidebarText,
+                  mutedTextColor: sidebarSecondaryText,
                   onTap: () => setState(() => _selectedIndex = index),
                 );
               },
@@ -282,14 +287,6 @@ class _AdminLayoutState extends State<AdminLayout> {
     );
   }
 
-  Widget _buildTopBar(
-    BuildContext context,
-    AdminProvider adminProvider,
-    Color accent,
-  ) {
-    return const SizedBox.shrink();
-  }
-
   Widget _buildUserCard(
     BuildContext context,
     AdminProvider adminProvider,
@@ -305,20 +302,20 @@ class _AdminLayoutState extends State<AdminLayout> {
       duration: const Duration(milliseconds: 200),
       padding: EdgeInsets.all(_isSidebarCollapsed ? 10 : 14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: AdminThemeTokens.sidebarHover(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: AdminThemeTokens.sidebarBorder(context)),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: accent.withOpacity(0.18),
+            backgroundColor: accent.withValues(alpha: 0.18),
             child: Text(
               initials,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
           ),
@@ -330,8 +327,8 @@ class _AdminLayoutState extends State<AdminLayout> {
                 children: [
                   Text(
                     admin?.displayName ?? 'Admin',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: AdminThemeTokens.sidebarPrimaryText(context),
                       fontWeight: FontWeight.w700,
                     ),
                     maxLines: 1,
@@ -339,8 +336,8 @@ class _AdminLayoutState extends State<AdminLayout> {
                   ),
                   Text(
                     (admin?.role ?? 'ADMIN').replaceAll('_', ' ').toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: AdminThemeTokens.sidebarSecondaryText(context),
                       fontSize: 12,
                     ),
                     maxLines: 1,
@@ -350,16 +347,19 @@ class _AdminLayoutState extends State<AdminLayout> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white70, size: 20),
+              icon: Icon(
+                Icons.logout,
+                color: AdminThemeTokens.sidebarSecondaryText(context),
+                size: 20,
+              ),
               tooltip: 'Logout',
               onPressed: () async {
                 await adminProvider.adminLogout();
-                if (mounted) {
-                  Navigator.pushReplacementNamed(context, '/');
-                }
+                if (!context.mounted) return;
+                Navigator.pushReplacementNamed(context, '/');
               },
             ),
-          ]
+          ],
         ],
       ),
     );
@@ -367,14 +367,16 @@ class _AdminLayoutState extends State<AdminLayout> {
 }
 
 class AdminNavigationItem {
+  final String id;
   final String title;
   final IconData icon;
-  final Widget page;
+  final WidgetBuilder builder;
 
-  AdminNavigationItem({
+  const AdminNavigationItem({
+    required this.id,
     required this.title,
     required this.icon,
-    required this.page,
+    required this.builder,
   });
 }
 
@@ -385,6 +387,8 @@ class _NavItem extends StatefulWidget {
     required this.isCollapsed,
     required this.isSelected,
     required this.accent,
+    required this.textColor,
+    required this.mutedTextColor,
     required this.onTap,
   });
 
@@ -393,6 +397,8 @@ class _NavItem extends StatefulWidget {
   final bool isCollapsed;
   final bool isSelected;
   final Color accent;
+  final Color textColor;
+  final Color mutedTextColor;
   final VoidCallback onTap;
 
   @override
@@ -404,9 +410,12 @@ class _NavItemState extends State<_NavItem> {
 
   @override
   Widget build(BuildContext context) {
+    final hoverColor = AdminThemeTokens.sidebarHover(context);
+    final activeBackground = AdminThemeTokens.sidebarActiveBackground(context);
+    final activeBorder = AdminThemeTokens.sidebarActiveBorder(context);
     final baseColor = widget.isSelected
         ? widget.accent
-        : Colors.white.withOpacity(_hovering ? 0.9 : 0.68);
+        : (_hovering ? widget.textColor : widget.mutedTextColor);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovering = true),
@@ -420,18 +429,16 @@ class _NavItemState extends State<_NavItem> {
         ),
         decoration: BoxDecoration(
           color: widget.isSelected
-              ? Colors.white.withOpacity(0.08)
+              ? activeBackground
               : _hovering
-                  ? Colors.white.withOpacity(0.04)
+                  ? hoverColor
                   : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
-          border: widget.isSelected
-              ? Border.all(color: Colors.white.withOpacity(0.12))
-              : null,
+          border: widget.isSelected ? Border.all(color: activeBorder) : null,
         ),
         child: InkWell(
           onTap: widget.onTap,
-          splashColor: Colors.white.withOpacity(0.06),
+          splashColor: hoverColor,
           highlightColor: Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           child: Row(
@@ -450,8 +457,8 @@ class _NavItemState extends State<_NavItem> {
                     ),
                   ),
                 ),
-                const Icon(Icons.chevron_right,
-                    size: 18, color: Colors.white54),
+                Icon(Icons.chevron_right,
+                    size: 18, color: widget.mutedTextColor),
               ],
             ],
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/ad_model.dart';
 import '../models/share_marketplace_model.dart';
 import '../models/investment_vehicle_model.dart';
 import '../services/share_marketplace_service.dart';
@@ -31,6 +32,52 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   String _sortBy = 'default'; // default, price_asc, price_desc, name, fuel
+
+  Future<_MarketplaceVehicleCardData> _loadMarketplaceVehicleCardData(
+    ShareMarketplaceModel listing,
+  ) async {
+    final vehicle = await _vehicleService
+        .getInvestmentVehicleById(listing.vehicleInvestmentId);
+    AdModel? ad;
+
+    if (vehicle != null && vehicle.adId.isNotEmpty) {
+      ad = await _vehicleService.getAdById(vehicle.adId);
+    }
+
+    return _MarketplaceVehicleCardData(vehicle: vehicle, ad: ad);
+  }
+
+  String _buildMarketplaceVehicleTitle(_MarketplaceVehicleCardData data) {
+    final brand = (data.ad?.carBrand ?? '').trim();
+    final model = (data.ad?.carName ?? '').trim();
+    final composed = [brand, model].where((part) => part.isNotEmpty).join(' ');
+    if (composed.isNotEmpty) {
+      return composed;
+    }
+
+    final adTitle = (data.ad?.title ?? '').trim();
+    if (adTitle.isNotEmpty) {
+      return adTitle;
+    }
+
+    final vehicleTitle = (data.vehicle?.title ?? '').trim();
+    if (vehicleTitle.isNotEmpty) {
+      return vehicleTitle;
+    }
+
+    return 'Vehicle';
+  }
+
+  String _buildMarketplaceVehicleMeta(_MarketplaceVehicleCardData data) {
+    final year = (data.ad?.year ?? data.vehicle?.year ?? '').trim();
+    final fuel = (data.ad?.fuel ?? data.vehicle?.fuel ?? '').trim();
+    final parts = <String>[
+      if (year.isNotEmpty) year,
+      if (fuel.isNotEmpty) fuel,
+    ];
+
+    return parts.isEmpty ? 'Details unavailable' : parts.join(' - ');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -221,11 +268,16 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
   }
 
   Widget _buildShareListingCard(ShareMarketplaceModel listing) {
-    return FutureBuilder<InvestmentVehicleModel?>(
-      future:
-          _vehicleService.getInvestmentVehicleById(listing.vehicleInvestmentId),
+    return FutureBuilder<_MarketplaceVehicleCardData>(
+      future: _loadMarketplaceVehicleCardData(listing),
       builder: (context, snapshot) {
-        final vehicle = snapshot.data;
+        final vehicle = snapshot.data?.vehicle;
+        final title = snapshot.hasData
+            ? _buildMarketplaceVehicleTitle(snapshot.data!)
+            : 'Loading vehicle...';
+        final meta = snapshot.hasData
+            ? _buildMarketplaceVehicleMeta(snapshot.data!)
+            : 'Loading details...';
         final theme = Theme.of(context);
         final isDark = theme.brightness == Brightness.dark;
 
@@ -296,7 +348,7 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  vehicle.title,
+                                  title,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -305,7 +357,7 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${vehicle.year} • ${vehicle.fuel}',
+                                  meta,
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: theme.colorScheme.onSurfaceVariant,
@@ -573,14 +625,6 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
     // Process purchase
     try {
       // Get the investment being sold
-      final investments = await _investmentService
-          .getInvestmentsForVehicle(listing.vehicleInvestmentId)
-          .first;
-      final sellerInvestment = investments.firstWhere(
-        (inv) => inv.id == listing.investmentId,
-      );
-
-      // Create transaction
       final transactionId = await _transactionService.createTransaction(
         vehicleInvestmentId: listing.vehicleInvestmentId,
         investmentId: listing.investmentId,
@@ -700,4 +744,14 @@ class _ShareMarketplacePageState extends State<ShareMarketplacePage> {
       ),
     );
   }
+}
+
+class _MarketplaceVehicleCardData {
+  final InvestmentVehicleModel? vehicle;
+  final AdModel? ad;
+
+  const _MarketplaceVehicleCardData({
+    required this.vehicle,
+    required this.ad,
+  });
 }

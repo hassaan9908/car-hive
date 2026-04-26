@@ -1,7 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:carhive/ads/visit_booking_confirmation.dart';
 import 'package:carhive/services/payment_service.dart';
+import 'package:carhive/services/visit_service.dart';
+import 'package:carhive/theme/app_colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart' hide Card;
+import 'package:intl/intl.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final String carModel;
@@ -9,6 +13,12 @@ class CheckoutScreen extends StatefulWidget {
   final String engine;
   final String registeredCity;
   final String assembly;
+  final String selectedCity;
+  final String selectedArea;
+  final DateTime selectedDate;
+  final String selectedTimeSlot;
+  final String? carAdId;
+  final String? carImageUrl;
 
   const CheckoutScreen({
     super.key,
@@ -17,6 +27,12 @@ class CheckoutScreen extends StatefulWidget {
     required this.engine,
     required this.registeredCity,
     required this.assembly,
+    required this.selectedCity,
+    required this.selectedArea,
+    required this.selectedDate,
+    required this.selectedTimeSlot,
+    this.carAdId,
+    this.carImageUrl,
   });
 
   @override
@@ -24,17 +40,15 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  String? selectedMethod = 'Debit/Credit Card';
-  bool showDetails = false;
-  bool showVoucher = false;
+  String selectedMethod = 'Debit/Credit Card';
   final TextEditingController _voucherController = TextEditingController();
   bool voucherApplied = false;
-  int total = 5000; // displayed total
-  int discount = 500; // sample discount shown when applied
   bool _isProcessing = false;
-  final PaymentService _paymentService = PaymentService();
 
-  final List<String> paymentMethods = [
+  final PaymentService _paymentService = PaymentService();
+  final VisitService _visitService = VisitService();
+
+  final List<String> paymentMethods = const [
     'Debit/Credit Card',
     'JazzCash Mobile Account',
     'EasyPay Mobile Account',
@@ -42,7 +56,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     'JazzCash Shop',
   ];
 
-  final Map<String, IconData> methodIcons = {
+  final Map<String, IconData> methodIcons = const {
     'Debit/Credit Card': Icons.credit_card,
     'JazzCash Mobile Account': Icons.mobile_friendly,
     'EasyPay Mobile Account': Icons.payment,
@@ -50,14 +64,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     'JazzCash Shop': Icons.storefront,
   };
 
-  Future<void> _handlePayment() async {
-    if (selectedMethod == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a payment method')),
-      );
-      return;
-    }
+  static const double _totalAmount = 5000;
+  static const double _discountAmount = 500;
 
+  @override
+  void dispose() {
+    _voucherController.dispose();
+    super.dispose();
+  }
+
+  String get _carTitle {
+    final title = '${widget.carModel} ${widget.carYear}'.trim();
+    return title.isEmpty ? 'CarHive Assisted Visit' : title;
+  }
+
+  double get _finalAmount {
+    return voucherApplied ? _totalAmount - _discountAmount : _totalAmount;
+  }
+
+  Future<void> _handlePayment() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -71,39 +96,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
 
     try {
-      final finalAmount =
-          voucherApplied ? (total - discount).toDouble() : total.toDouble();
-
-      // Generate a transaction ID for tracking
       final transactionId = 'visit_${DateTime.now().millisecondsSinceEpoch}';
+      var paymentMethodKey = selectedMethod.toLowerCase();
 
-      // Map selected method to payment service format
-      String paymentMethod = selectedMethod!.toLowerCase();
-      if (paymentMethod.contains('jazzcash')) {
-        paymentMethod = 'jazzcash';
-      } else if (paymentMethod.contains('easypay')) {
-        paymentMethod = 'easypay';
-      } else if (paymentMethod == 'debit/credit card') {
-        paymentMethod = 'stripe';
-      } else if (paymentMethod == 'stripe') {
-        paymentMethod = 'stripe';
+      if (paymentMethodKey.contains('jazzcash')) {
+        paymentMethodKey = 'jazzcash';
+      } else if (paymentMethodKey.contains('easypay')) {
+        paymentMethodKey = 'easypay';
+      } else if (paymentMethodKey == 'debit/credit card') {
+        paymentMethodKey = 'stripe';
+      } else if (paymentMethodKey == 'stripe') {
+        paymentMethodKey = 'stripe';
       }
 
       Map<String, dynamic> paymentResult;
 
-      // For Stripe, create payment intent directly without transaction doc
-      if (paymentMethod == 'stripe') {
+      if (paymentMethodKey == 'stripe') {
         paymentResult = await _paymentService.createStripePaymentIntent(
-          amount: finalAmount,
+          amount: _finalAmount,
           userId: user.uid,
           type: 'visit_booking',
-          description:
-              'Car Visit Booking - ${widget.carModel} ${widget.carYear}',
+          description: 'Car Visit Booking - $_carTitle',
         );
 
         if (paymentResult['success'] == true &&
             paymentResult['clientSecret'] != null) {
-          // Initialize and present Stripe payment sheet
           try {
             await Stripe.instance.initPaymentSheet(
               paymentSheetParameters: SetupPaymentSheetParameters(
@@ -113,58 +130,71 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             );
 
             await Stripe.instance.presentPaymentSheet();
-
-            paymentResult = {
+            paymentResult = <String, dynamic>{
               'success': true,
               'reference': transactionId,
             };
-          } catch (e) {
-            paymentResult = {
+          } catch (error) {
+            paymentResult = <String, dynamic>{
               'success': false,
-              'error': 'Payment cancelled or failed: $e',
+              'error': 'Payment cancelled or failed: $error',
             };
           }
         }
       } else {
-        // For other payment methods
-        paymentResult = {
+        paymentResult = <String, dynamic>{
           'success': true,
           'message': 'Payment method selected. Processing...',
         };
       }
 
-      if (!mounted) return;
-
-      if (paymentResult['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Payment successful! Your visit has been booked.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Navigate back or to success page
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(paymentResult['error'] ?? 'Payment failed'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      if (paymentResult['success'] != true) {
+        throw Exception(paymentResult['error'] ?? 'Payment failed.');
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error processing payment: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+
+      await _visitService.createVisitBooking(
+        city: widget.selectedCity,
+        area: widget.selectedArea,
+        date: widget.selectedDate,
+        timeSlot: widget.selectedTimeSlot,
+        paymentMethod: selectedMethod,
+        amount: _finalAmount,
+        carAdId: widget.carAdId,
+        carTitle: _carTitle,
+        carYear: widget.carYear,
+        engine: widget.engine,
+        registeredCity: widget.registeredCity,
+        assembly: widget.assembly,
+        carImageUrl: widget.carImageUrl,
+      );
+
+      if (!mounted) {
+        return;
       }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VisitBookingConfirmationPage(
+            carTitle: _carTitle,
+            city: widget.selectedCity,
+            area: widget.selectedArea,
+            visitDate: widget.selectedDate,
+            timeSlot: widget.selectedTimeSlot,
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString()),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -176,448 +206,218 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color brand = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Checkout"),
+        title: const Text('Checkout'),
         backgroundColor: Colors.transparent,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: isDark ? Colors.grey[800] : Colors.grey[400],
-            height: 1,
-          ),
+          child: Divider(height: 1, color: theme.dividerColor),
         ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 🔢 Step Indicator
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _step("1", true, "Info"),
-                _stepLine(),
-                _step("2", true, "Visit"),
-                _stepLine(),
-                _step("3", true, "Checkout", highlight: true),
+                _step(context, '1', completed: true, label: 'Info'),
+                _stepLine(context),
+                _step(context, '2', completed: true, label: 'Visit'),
+                _stepLine(context),
+                _step(context, '3',
+                    completed: true, label: 'Checkout', active: true),
               ],
             ),
-            const SizedBox(height: 16),
-
-            /// 🔒 Secure Payment Notice
-            Container(
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.lock, color: Colors.green),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "All payment methods are encrypted and secure",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.green.shade800,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            /// 🧾 Checkout Details (Card)
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: isDark ? Colors.white12 : Colors.black12),
-                boxShadow: isDark
-                    ? []
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-              ),
-              child: Column(
-                children: [
-                  InkWell(
-                    onTap: () => setState(() => showDetails = !showDetails),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
-                      child: Row(
-                        children: [
-                          Icon(Icons.directions_car,
-                              color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text("Checkout details",
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark
-                                        ? Colors.white
-                                        : Colors.black87)),
-                          ),
-                          Icon(
-                              showDetails
-                                  ? Icons.expand_less
-                                  : Icons.expand_more,
-                              color: Colors.black54),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (showDetails) const Divider(height: 1),
-                  if (showDetails)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      child: Column(
-                        children: [
-                          _DetailRow(
-                              label: 'Car Model', value: widget.carModel),
-                          _DetailRow(label: 'Year', value: widget.carYear),
-                          _DetailRow(label: 'Engine', value: widget.engine),
-                          _DetailRow(
-                              label: 'Registered City',
-                              value: widget.registeredCity),
-                          _DetailRow(label: 'Assembly', value: widget.assembly),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            /// 🎟️ Discount Voucher
-            /// 🎟️ Discount Voucher (Card like details)
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: isDark ? Colors.white12 : Colors.black12),
-                boxShadow: isDark
-                    ? []
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-              ),
-              child: Column(
-                children: [
-                  InkWell(
-                    onTap: () => setState(() => showVoucher = !showVoucher),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
-                      child: Row(
-                        children: [
-                          Icon(Icons.card_giftcard,
-                              color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text("Have a discount voucher? Add it here",
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark
-                                        ? Colors.white
-                                        : Colors.black87)),
-                          ),
-                          Icon(
-                              showVoucher
-                                  ? Icons.expand_less
-                                  : Icons.expand_more,
-                              color: Colors.black54),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (showVoucher) const Divider(height: 1),
-                  if (showVoucher)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _voucherController,
-                              enabled: !voucherApplied,
-                              textCapitalization: TextCapitalization.characters,
-                              decoration: InputDecoration(
-                                labelText: "Enter discount code",
-                                prefixIcon: const Icon(Icons.card_giftcard),
-                                border: const OutlineInputBorder(),
-                                suffixIcon: voucherApplied
-                                    ? Icon(Icons.check_circle,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary)
-                                    : null,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (!voucherApplied)
-                            SizedBox(
-                              height: 48,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  if (_voucherController.text
-                                      .trim()
-                                      .isNotEmpty) {
-                                    setState(() {
-                                      voucherApplied = true;
-                                    });
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: brand,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16),
-                                ),
-                                child: const Text("Apply"),
-                              ),
-                            )
-                          else
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  voucherApplied = false;
-                                  _voucherController.clear();
-                                });
-                              },
-                              child: const Text("Remove"),
-                            ),
-                        ],
-                      ),
-                    ),
-                  if (showVoucher && voucherApplied)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: brand.withOpacity(0.1),
-                            border: Border.all(color: brand),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.local_offer,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  size: 16),
-                              SizedBox(width: 6),
-                              Text("Voucher applied",
-                                  style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            /// 💳 Payment Methods
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Select Payment Method",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Column(
-              children: paymentMethods.map((method) {
-                final bool isSelected = selectedMethod == method;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        selectedMethod = method;
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? brand.withOpacity(0.1)
-                            : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: isSelected
-                                ? brand
-                                : (isDark ? Colors.white12 : Colors.black12),
-                            width: isSelected ? 2 : 1),
-                        boxShadow: isDark
-                            ? []
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(methodIcons[method],
-                              size: 24,
-                              color: isSelected
-                                  ? brand
-                                  : (isDark ? Colors.white70 : Colors.black54)),
-                          const SizedBox(width: 12),
-                          Expanded(
-                              child: Text(method,
-                                  style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black87))),
-                          if (isSelected)
-                            Icon(Icons.check_circle,
-                                color: Theme.of(context).colorScheme.primary),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 30),
-
-            /// 💰 Total and Continue Button
-            Column(
-              children: [
-                const Divider(thickness: 1),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            const SizedBox(height: 24),
+            Card(
+              color: theme.cardColor,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Subtotal:",
-                        style: TextStyle(
-                            fontSize: 16,
-                            color: isDark ? Colors.white : Colors.black87)),
                     Text(
-                      "PKR ${total.toStringAsFixed(0)}",
-                      style: TextStyle(
-                          fontSize: 16,
-                          color: isDark ? Colors.white : Colors.black87),
+                      'Booking Summary',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _DetailRow(label: 'Car', value: _carTitle),
+                    _DetailRow(label: 'Engine', value: widget.engine),
+                    _DetailRow(
+                        label: 'Registered City', value: widget.registeredCity),
+                    _DetailRow(label: 'Assembly', value: widget.assembly),
+                    _DetailRow(
+                      label: 'Visit Date',
+                      value:
+                          DateFormat('dd MMM yyyy').format(widget.selectedDate),
+                    ),
+                    _DetailRow(
+                        label: 'Time Slot', value: widget.selectedTimeSlot),
+                    _DetailRow(
+                      label: 'Location',
+                      value: '${widget.selectedArea}, ${widget.selectedCity}',
                     ),
                   ],
                 ),
-                if (voucherApplied) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("Discount:",
-                          style: TextStyle(
-                              fontSize: 16,
-                              color: isDark ? Colors.white : Colors.black87)),
-                      Text(
-                        "- PKR ${discount.toStringAsFixed(0)}",
-                        style: TextStyle(
-                            fontSize: 16,
-                            color: brand,
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              color: theme.cardColor,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Total (incl. VAT):",
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : Colors.black87)),
+                    Text(
+                      'Discount Voucher',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
-                        if (voucherApplied)
-                          Text(
-                            "PKR ${total.toStringAsFixed(0)}",
-                            style: const TextStyle(
-                              decoration: TextDecoration.lineThrough,
-                              color: Colors.grey,
+                        Expanded(
+                          child: TextField(
+                            controller: _voucherController,
+                            enabled: !voucherApplied,
+                            decoration: InputDecoration(
+                              labelText: 'Enter code',
+                              prefixIcon:
+                                  const Icon(Icons.local_offer_outlined),
+                              suffixIcon: voucherApplied
+                                  ? Icon(
+                                      Icons.check_circle,
+                                      color: colorScheme.primary,
+                                    )
+                                  : null,
                             ),
                           ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "PKR ${(voucherApplied ? (total - discount) : total).toStringAsFixed(0)}",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: isDark ? Colors.white : Colors.black87),
                         ),
+                        const SizedBox(width: 10),
+                        if (!voucherApplied)
+                          FilledButton.tonal(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.greenAction,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor:
+                                  colorScheme.surfaceContainerHighest,
+                              disabledForegroundColor: theme
+                                  .textTheme.bodyMedium?.color
+                                  ?.withValues(alpha: 0.6),
+                            ),
+                            onPressed: () {
+                              if (_voucherController.text.trim().isEmpty) {
+                                return;
+                              }
+                              setState(() {
+                                voucherApplied = true;
+                              });
+                            },
+                            child: const Text('Apply'),
+                          )
+                        else
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                voucherApplied = false;
+                                _voucherController.clear();
+                              });
+                            },
+                            child: const Text('Remove'),
+                          ),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isProcessing ? null : _handlePayment,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: brand,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: _isProcessing
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text("Continue",
-                            style:
-                                TextStyle(fontSize: 16, color: Colors.white)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Select Payment Method',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...paymentMethods.map(
+              (method) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: RadioListTile<String>(
+                  value: method,
+                  groupValue: selectedMethod,
+                  onChanged: (value) {
+                    if (value == null) {
+                      return;
+                    }
+                    setState(() {
+                      selectedMethod = value;
+                    });
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
+                  tileColor: theme.cardColor,
+                  secondary:
+                      Icon(methodIcons[method], color: colorScheme.primary),
+                  title: Text(method),
                 ),
-              ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              color: theme.cardColor,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _PriceRow(
+                      label: 'Subtotal',
+                      value: 'PKR ${_totalAmount.toStringAsFixed(0)}',
+                    ),
+                    if (voucherApplied) ...[
+                      const SizedBox(height: 8),
+                      _PriceRow(
+                        label: 'Discount',
+                        value: '- PKR ${_discountAmount.toStringAsFixed(0)}',
+                      ),
+                    ],
+                    const Divider(height: 24),
+                    _PriceRow(
+                      label: 'Total',
+                      value: 'PKR ${_finalAmount.toStringAsFixed(0)}',
+                      emphasize: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _isProcessing ? null : _handlePayment,
+                child: _isProcessing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Continue'),
+              ),
             ),
           ],
         ),
@@ -625,55 +425,50 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  /// 🔘 Step Circle Widget
-  Widget _step(String number, bool completed, String label,
-      {bool highlight = false}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _step(
+    BuildContext context,
+    String number, {
+    required bool completed,
+    required String label,
+    bool active = false,
+  }) {
+    final theme = Theme.of(context);
+    final color =
+        completed || active ? theme.colorScheme.primary : theme.dividerColor;
+
     return Column(
       children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: highlight
-                ? Theme.of(context).colorScheme.primary
-                : (completed
-                    ? Theme.of(context).colorScheme.primary
-                    : (isDark ? Colors.white24 : Colors.grey.shade300)),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: completed
-                ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-                : Text(
-                    number,
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+        CircleAvatar(
+          radius: 16,
+          backgroundColor: color,
+          child: completed
+              ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+              : Text(
+                  number,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
                   ),
-          ),
+                ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: highlight
-                ? Theme.of(context).colorScheme.primary
-                : (completed
-                    ? Theme.of(context).colorScheme.primary
-                    : (isDark ? Colors.white54 : Colors.grey)),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],
     );
   }
 
-  Widget _stepLine() {
+  Widget _stepLine(BuildContext context) {
     return Container(
-      width: 20,
+      width: 40,
       height: 2,
-      color: Colors.grey.shade400,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      color: Theme.of(context).dividerColor,
     );
   }
 }
@@ -681,26 +476,65 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
-  const _DetailRow({required this.label, required this.value});
+
+  const _DetailRow({
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style:
-                  TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
-          Text(value,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : Colors.black87,
-              )),
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                  ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _PriceRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool emphasize;
+
+  const _PriceRow({
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final style = emphasize
+        ? Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            )
+        : Theme.of(context).textTheme.bodyLarge;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: style),
+        Text(value, style: style),
+      ],
     );
   }
 }

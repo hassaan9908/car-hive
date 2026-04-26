@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../providers/admin_provider.dart';
 import '../../models/user_model.dart';
+import 'admin_theme.dart';
 
 class AdminUsersPage extends StatefulWidget {
   const AdminUsersPage({super.key});
@@ -206,6 +207,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final pageBackground = AdminThemeTokens.pageBackground(context);
     final cardGradient = LinearGradient(
       colors: isDark
           ? [const Color(0xFF111827), const Color(0xFF0B1220)]
@@ -215,18 +217,6 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     );
     final borderColor =
         isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400;
-
-    final pageBackground = isDark
-        ? const LinearGradient(
-            colors: [Color(0xFF0B1220), Color(0xFF0F172A)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          )
-        : LinearGradient(
-            colors: [Colors.grey.shade100, Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          );
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -239,8 +229,8 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
-      body: Container(
-        decoration: BoxDecoration(gradient: pageBackground),
+      body: ColoredBox(
+        color: pageBackground,
         child: Consumer<AdminProvider>(
           builder: (context, adminProvider, child) {
             final allUsers = adminProvider.users;

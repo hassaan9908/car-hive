@@ -8,6 +8,7 @@ import 'homepage.dart';
 import 'edit_profile_page.dart';
 import 'blog_list_page.dart'; // Add this import
 import 'video_list_page.dart'; // Add this import
+import 'my_visits_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -171,6 +172,11 @@ class Profilepage extends StatelessWidget {
                     _settingsTile(context, Icons.bookmark, 'Saved Ads',
                         subtitle: 'View your saved ads',
                         onTap: () => _navigateToSavedAds(context)),
+                    _dividerInset(context),
+                    _settingsTile(
+                        context, Icons.event_note_outlined, 'My Visits',
+                        subtitle: 'Track booked and completed visits',
+                        onTap: () => _navigateToMyVisits(context)),
                     _dividerInset(context),
                   ],
                   _settingsTile(
@@ -1072,5 +1078,14 @@ class Profilepage extends StatelessWidget {
 
   void _navigateToSavedAds(BuildContext context) {
     Navigator.pushNamed(context, '/saved-ads');
+  }
+
+  void _navigateToMyVisits(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MyVisitsPage(),
+      ),
+    );
   }
 }

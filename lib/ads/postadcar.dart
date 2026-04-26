@@ -28,6 +28,12 @@ class PostAdCar extends StatefulWidget {
 class _PostAdCarState extends State<PostAdCar> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  bool _isEditing = false;
+  String? _editingAdId;
+  bool _routeArgsProcessed = false;
+  List<String> _existingImageUrls = [];
+  List<String> _existing360ImageUrls = [];
+
   String? selectedLocation;
   String? selectedCarModel;
   String? selectedRegisteredIn;
@@ -38,6 +44,378 @@ class _PostAdCarState extends State<PostAdCar> {
   void initState() {
     super.initState();
     _loadUserProfile();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_routeArgsProcessed) return;
+    _routeArgsProcessed = true;
+    _loadEditDataFromRoute();
+  }
+
+  String _stringValue(dynamic value) {
+    if (value == null) return '';
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  List<String> _stringList(dynamic value) {
+    if (value is List) {
+      return value
+          .map((item) => _stringValue(item).trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+    return const [];
+  }
+
+  Future<void> _loadEditDataFromRoute() async {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is! Map<String, dynamic>) {
+      return;
+    }
+
+    final adId = _stringValue(args['adId']).trim();
+    if (adId.isEmpty) {
+      return;
+    }
+
+    final adDataRaw = args['adData'];
+    if (adDataRaw is Map) {
+      _applyAdData(Map<String, dynamic>.from(adDataRaw));
+    }
+
+    if (mounted) {
+      setState(() {
+        _isEditing = true;
+        _editingAdId = adId;
+      });
+    }
+
+    try {
+      final adDoc =
+          await FirebaseFirestore.instance.collection('ads').doc(adId).get();
+      if (!adDoc.exists || !mounted) return;
+      final liveData = adDoc.data();
+      if (liveData != null) {
+        _applyAdData(liveData);
+      }
+    } catch (_) {
+      // If live fetch fails, form still uses route payload fallback.
+    }
+  }
+
+  void _applyAdData(Map<String, dynamic> adData) {
+    final carBrandName = _stringValue(adData['carBrand']).trim().toLowerCase();
+    CarBrand? matchedBrand;
+    if (carBrandName.isNotEmpty) {
+      for (final brand in CarBrandService().getAllBrands()) {
+        if (brand.displayName.toLowerCase() == carBrandName) {
+          matchedBrand = brand;
+          break;
+        }
+      }
+    }
+
+    final imageUrls = _stringList(adData['imageUrls']);
+    final images360Urls = _stringList(adData['images360Urls']);
+
+    final locationRaw = adData['location'];
+    final locationCoordinatesRaw = adData['locationCoordinates'];
+    LatLng? routeLocationCoords;
+    if (locationRaw is Map) {
+      final lat = locationRaw['lat'];
+      final lng = locationRaw['lng'];
+      if (lat is num && lng is num) {
+        routeLocationCoords = LatLng(lat.toDouble(), lng.toDouble());
+      }
+    } else if (locationCoordinatesRaw is Map) {
+      final lat = locationCoordinatesRaw['lat'];
+      final lng = locationCoordinatesRaw['lng'];
+      if (lat is num && lng is num) {
+        routeLocationCoords = LatLng(lat.toDouble(), lng.toDouble());
+      }
+    }
+
+    final encryptedVehicleRaw = adData['vehicleVerification'];
+    Map<String, dynamic> vehicleVerification = {};
+    if (encryptedVehicleRaw is Map) {
+      vehicleVerification = EncryptionService.decryptFields(
+        Map<String, dynamic>.from(encryptedVehicleRaw),
+      );
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _titleController.text = _stringValue(adData['title']);
+      _priceController.text = _stringValue(adData['price']);
+      _mileageController.text = _stringValue(adData['mileage']);
+      _fuelController.text = _stringValue(adData['fuel']);
+      _descriptionController.text = _stringValue(adData['description']);
+      _carNameController.text = _stringValue(adData['carName']);
+      _bodyColorController.text = _stringValue(adData['bodyColor']);
+      _nameController.text = _stringValue(adData['name']);
+      _phoneController.text = _stringValue(adData['phone']);
+
+      selectedCarModel = _stringValue(adData['year']).isNotEmpty
+          ? _stringValue(adData['year'])
+          : selectedCarModel;
+      selectedRegisteredIn = _stringValue(adData['registeredIn']).isNotEmpty
+          ? _stringValue(adData['registeredIn'])
+          : selectedRegisteredIn;
+
+      final locationString = _stringValue(
+        adData['locationString'] ?? adData['location'],
+      );
+      if (locationString.isNotEmpty) {
+        selectedLocation = locationString.split(',').first.trim();
+        selectedLocationAddress = locationString;
+      }
+      if (routeLocationCoords != null) {
+        selectedLocationCoords = routeLocationCoords;
+      }
+
+      if (matchedBrand != null) {
+        _selectedBrand = matchedBrand;
+      }
+
+      if (imageUrls.isNotEmpty) {
+        _existingImageUrls = imageUrls;
+      }
+      if (images360Urls.isNotEmpty) {
+        _existing360ImageUrls = images360Urls;
+      }
+
+      _registrationNoController.text =
+          _stringValue(vehicleVerification['registrationNo']);
+      _registrationDateController.text =
+          _stringValue(vehicleVerification['registrationDate']);
+      _chassisNoController.text =
+          _stringValue(vehicleVerification['chassisNo']);
+      _ownerNameController.text =
+          _stringValue(vehicleVerification['ownerName']);
+    });
+  }
+
+  Future<void> _handleAdSubmit() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Verifying vehicle details...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    final isVerified = await _verifyVehicleDetails();
+
+    if (!isVerified) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Vehicle verification failed. Please ensure all details match the official records.'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    List<String> uploadedImageUrls = [];
+    if (_images.isNotEmpty || _webImages.isNotEmpty) {
+      try {
+        uploadedImageUrls = await _uploadImages();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload images: $e')),
+        );
+        return;
+      }
+    }
+
+    List<String>? uploaded360Urls;
+    if (_captured360Set != null && _captured360Set!.capturedCount > 0) {
+      try {
+        setState(() => _isUploading360 = true);
+        uploaded360Urls =
+            await _car360Service.uploadCar360Set(_captured360Set!);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload 360° images: $e')),
+        );
+      } finally {
+        if (mounted) {
+          setState(() => _isUploading360 = false);
+        }
+      }
+    }
+
+    Map<String, double>? locationCoords;
+    if (selectedLocationCoords != null) {
+      locationCoords = {
+        'lat': selectedLocationCoords!.latitude,
+        'lng': selectedLocationCoords!.longitude,
+      };
+    } else {
+      try {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+
+        if (permission == LocationPermission.whileInUse ||
+            permission == LocationPermission.always) {
+          final position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+          );
+          locationCoords = {
+            'lat': position.latitude,
+            'lng': position.longitude,
+          };
+        }
+      } catch (_) {
+        // Keep location null if unavailable.
+      }
+    }
+
+    final plainRegistrationNo = _registrationNoController.text
+        .trim()
+        .toUpperCase()
+        .replaceAll('*', '')
+        .replaceAll(' ', '')
+        .replaceAll(RegExp(r'[^\w\-]'), '');
+
+    final vehicleData = {
+      'registrationNo': plainRegistrationNo,
+      'registrationDate': _registrationDateController.text.trim(),
+      'chassisNo': _chassisNoController.text.trim(),
+      'ownerName': _ownerNameController.text.trim(),
+    };
+
+    final encryptedVehicleData = EncryptionService.encryptFields(vehicleData);
+    encryptedVehicleData['_plainRegistrationNo'] = plainRegistrationNo;
+
+    final mergedImageUrls = [
+      ..._existingImageUrls,
+      ...uploadedImageUrls,
+    ];
+    final merged360Urls = [
+      ..._existing360ImageUrls,
+      ...?uploaded360Urls,
+    ];
+
+    final adPayload = <String, dynamic>{
+      'title': _titleController.text,
+      'price': _priceController.text,
+      'year': selectedCarModel ?? '',
+      'mileage': _mileageController.text,
+      'fuel': _fuelController.text,
+      'description': _descriptionController.text,
+      'carBrand': _selectedBrand?.displayName ?? '',
+      'carName': _carNameController.text.trim(),
+      'bodyColor': _bodyColorController.text,
+      'kmsDriven': _mileageController.text,
+      'registeredIn': selectedRegisteredIn,
+      'name': _nameController.text,
+      'phone': _phoneController.text,
+      'imageUrls': mergedImageUrls,
+      'images360Urls': merged360Urls,
+      'vehicleVerification': Map<String, dynamic>.from(encryptedVehicleData)
+        ..remove('_plainRegistrationNo'),
+      'registrationNoHash':
+          EncryptionService.hashRegistrationNo(plainRegistrationNo),
+      'isVerified': true,
+      'verifiedAt': Timestamp.now(),
+      'updatedAt': Timestamp.now(),
+    };
+
+    final resolvedLocation = selectedLocationAddress.isNotEmpty
+        ? selectedLocationAddress
+        : (selectedLocation ?? _locationController.text);
+    final resolvedCityName = resolvedLocation.split(',').first.trim();
+    if (locationCoords != null) {
+      adPayload['location'] = {
+        'lat': locationCoords['lat'],
+        'lng': locationCoords['lng'],
+      };
+      adPayload['locationString'] = resolvedLocation;
+    } else {
+      adPayload['location'] = resolvedLocation;
+      adPayload['locationString'] = resolvedLocation;
+    }
+    if (resolvedCityName.isNotEmpty) {
+      adPayload['cityName'] = resolvedCityName;
+    }
+
+    try {
+      if (_isEditing && _editingAdId != null && _editingAdId!.isNotEmpty) {
+        await GlobalAdStore().updateAd(_editingAdId!, adPayload);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ad updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        final newAd = AdModel(
+          title: _titleController.text,
+          price: _priceController.text,
+          location: resolvedLocation,
+          year: selectedCarModel ?? '',
+          mileage: _mileageController.text,
+          fuel: _fuelController.text,
+          description: _descriptionController.text,
+          carBrand: _selectedBrand?.displayName ?? '',
+          carName: _carNameController.text.trim(),
+          bodyColor: _bodyColorController.text,
+          kmsDriven: _mileageController.text,
+          registeredIn: selectedRegisteredIn,
+          name: _nameController.text,
+          phone: _phoneController.text,
+          imageUrls: mergedImageUrls.isNotEmpty ? mergedImageUrls : null,
+          locationCoordinates: locationCoords,
+          images360Urls: merged360Urls.isNotEmpty ? merged360Urls : null,
+        );
+
+        await GlobalAdStore()
+            .addAdWithVerification(newAd, encryptedVehicleData);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Vehicle verified successfully! Your ad has been posted.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/myads');
+    } catch (e) {
+      if (!mounted) return;
+      final errorMessage = e
+          .toString()
+          .replaceAll('Exception: ', '')
+          .replaceAll('Failed to add verified ad: ', '');
+      final isDuplicateError = errorMessage.contains('already exists');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: isDuplicateError ? Colors.orange : Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -766,7 +1144,7 @@ class _PostAdCarState extends State<PostAdCar> {
     if (currentUser == null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("Sell Your Car"),
+          title: Text(_isEditing ? 'Edit Ad' : 'Sell Your Car'),
           leading: const BackButton(),
           backgroundColor: Colors.transparent,
           bottom: PreferredSize(
@@ -803,7 +1181,7 @@ class _PostAdCarState extends State<PostAdCar> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Sell Your Car",
+          _isEditing ? 'Edit Ad' : 'Sell Your Car',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             color: Theme.of(context).colorScheme.primary,
@@ -948,7 +1326,9 @@ class _PostAdCarState extends State<PostAdCar> {
                           //             const SizedBox(width: 8),
                           //       ),
 
-                          child: _images.isEmpty && _webImages.isEmpty
+                          child: _images.isEmpty &&
+                                  _webImages.isEmpty &&
+                                  _existingImageUrls.isEmpty
                               ? Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -981,11 +1361,14 @@ class _PostAdCarState extends State<PostAdCar> {
                               : ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   padding: const EdgeInsets.all(12),
-                                  itemCount:
-                                      (_images.length + _webImages.length) + 1,
+                                  itemCount: (_existingImageUrls.length +
+                                          _images.length +
+                                          _webImages.length) +
+                                      1,
                                   itemBuilder: (context, index) {
-                                    final total =
-                                        _images.length + _webImages.length;
+                                    final total = _existingImageUrls.length +
+                                        _images.length +
+                                        _webImages.length;
                                     if (index == total && total < 20) {
                                       return GestureDetector(
                                         onTap: _pickImage,
@@ -1025,13 +1408,69 @@ class _PostAdCarState extends State<PostAdCar> {
                                         ),
                                       );
                                     }
-                                    if (index < _webImages.length) {
+                                    if (index < _existingImageUrls.length) {
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Stack(
+                                          children: [
+                                            Image.network(
+                                              _existingImageUrls[index],
+                                              width: 110,
+                                              height: double.infinity,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                return Container(
+                                                  width: 110,
+                                                  color: Colors.grey.shade300,
+                                                  child: const Icon(
+                                                      Icons.broken_image),
+                                                );
+                                              },
+                                            ),
+                                            Positioned(
+                                              top: 4,
+                                              right: 4,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black54,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: IconButton(
+                                                  icon: const Icon(
+                                                    Icons.close,
+                                                    color: Colors.white,
+                                                    size: 18,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    minWidth: 32,
+                                                    minHeight: 32,
+                                                  ),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _existingImageUrls
+                                                          .removeAt(index);
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+
+                                    final webStart = _existingImageUrls.length;
+                                    if (index < webStart + _webImages.length) {
+                                      final webIndex = index - webStart;
                                       return ClipRRect(
                                         borderRadius: BorderRadius.circular(12),
                                         child: Stack(
                                           children: [
                                             Image.memory(
-                                              _webImages[index],
+                                              _webImages[webIndex],
                                               width: 110,
                                               height: double.infinity,
                                               fit: BoxFit.cover,
@@ -1059,7 +1498,7 @@ class _PostAdCarState extends State<PostAdCar> {
                                                   onPressed: () {
                                                     setState(() {
                                                       _webImages
-                                                          .removeAt(index);
+                                                          .removeAt(webIndex);
                                                     });
                                                   },
                                                 ),
@@ -1070,7 +1509,7 @@ class _PostAdCarState extends State<PostAdCar> {
                                       );
                                     } else {
                                       final imgIndex =
-                                          index - _webImages.length;
+                                          index - webStart - _webImages.length;
                                       return ClipRRect(
                                         borderRadius: BorderRadius.circular(12),
                                         child: Stack(
@@ -2918,8 +3357,7 @@ class _FullScreenPopup extends StatelessWidget {
   }
 }
 
-
-// i added these code twice 
+// i added these code twice
 
 // import 'package:flutter/material.dart';
 

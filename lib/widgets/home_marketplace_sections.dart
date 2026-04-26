@@ -11,10 +11,12 @@ import '../models/ad_model.dart';
 import '../services/fuel_price_service.dart';
 
 class HomeMarketplaceSections extends StatefulWidget {
+  final Widget? filterSection;
   final Widget listings;
 
   const HomeMarketplaceSections({
     super.key,
+    this.filterSection,
     required this.listings,
   });
 
@@ -250,6 +252,10 @@ class _HomeMarketplaceSectionsState extends State<HomeMarketplaceSections> {
             message: 'No new listings today. Check back soon!',
           ),
         ),
+        if (widget.filterSection != null) ...[
+          const SizedBox(height: 12),
+          widget.filterSection!,
+        ],
         widget.listings,
         _FuelPricesSection(
           prices: _fuelPrices,
@@ -360,6 +366,7 @@ class _FuelPricesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final formattedDate = lastUpdated == null
         ? 'Last updated: --'
         : 'Last updated: ${DateFormat('dd MMM yyyy').format(lastUpdated!)}';
@@ -373,16 +380,15 @@ class _FuelPricesSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.local_gas_station,
                   size: 18,
-                  color: Color(0xFFF48C25),
+                  color: theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Fuel Prices',
-                  style: TextStyle(
-                    color: Colors.white,
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                   ),
@@ -390,9 +396,8 @@ class _FuelPricesSection extends StatelessWidget {
                 const Spacer(),
                 Text(
                   formattedDate,
-                  style: const TextStyle(
-                    color: Color(0xFF8E8E8E),
-                    fontSize: 12,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -404,9 +409,9 @@ class _FuelPricesSection extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2A2A2A)),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
             child: isLoading
                 ? const _FuelListSkeleton()
@@ -415,9 +420,9 @@ class _FuelPricesSection extends StatelessWidget {
                       for (int index = 0; index < prices.length; index++) ...[
                         _FuelPriceRow(item: prices[index]),
                         if (index < prices.length - 1)
-                          const Divider(
+                          Divider(
                             height: 1,
-                            color: Color(0xFF2A2A2A),
+                            color: theme.colorScheme.outlineVariant,
                           ),
                       ],
                     ],
@@ -436,6 +441,7 @@ class _FuelPriceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final Color indicatorColor;
     if (item.change < 0) {
       indicatorColor = const Color(0xFF4CAF50);
@@ -455,18 +461,14 @@ class _FuelPriceRow extends StatelessWidget {
           Expanded(
             child: Text(
               item.type,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
           Text(
             priceLabel,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -490,6 +492,7 @@ class _FuelListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         for (int index = 0; index < 4; index++) ...[
@@ -506,9 +509,9 @@ class _FuelListSkeleton extends StatelessWidget {
             ),
           ),
           if (index < 3)
-            const Divider(
+            Divider(
               height: 1,
-              color: Color(0xFF2A2A2A),
+              color: theme.colorScheme.outlineVariant,
             ),
         ],
       ],
@@ -533,6 +536,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -541,8 +545,7 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: theme.textTheme.titleMedium?.copyWith(
               fontSize: 17,
               fontWeight: FontWeight.w700,
             ),
@@ -551,7 +554,7 @@ class _SectionHeader extends StatelessWidget {
           TextButton(
             onPressed: onActionPress,
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFF48C25),
+              foregroundColor: theme.colorScheme.primary,
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               minimumSize: const Size(0, 0),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -560,8 +563,8 @@ class _SectionHeader extends StatelessWidget {
               onActionPress == null ? actionLabel : '$actionLabel  >',
               style: TextStyle(
                 color: onActionPress == null
-                    ? const Color(0xFF9E9E9E)
-                    : const Color(0xFFF48C25),
+                    ? theme.colorScheme.onSurfaceVariant
+                    : theme.colorScheme.primary,
                 fontSize: 12,
                 fontWeight:
                     onActionPress == null ? FontWeight.w500 : FontWeight.w600,
@@ -604,6 +607,7 @@ class HomeCarCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final badgeText = badge?.trim().toUpperCase();
     final hasBadge = badgeText != null && badgeText.isNotEmpty;
 
@@ -622,9 +626,9 @@ class HomeCarCard extends StatelessWidget {
         width: 200,
         height: 220,
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1A),
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -656,8 +660,8 @@ class HomeCarCard extends StatelessWidget {
                         ),
                         child: Text(
                           badgeText,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: theme.colorScheme.onPrimary,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
@@ -676,8 +680,7 @@ class HomeCarCard extends StatelessWidget {
                     '$title $year',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -687,8 +690,8 @@ class HomeCarCard extends StatelessWidget {
                     price,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFF48C25),
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
@@ -698,8 +701,8 @@ class HomeCarCard extends StatelessWidget {
                     location,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF9B9B9B),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
                       fontSize: 11,
                     ),
                   ),
@@ -708,8 +711,8 @@ class HomeCarCard extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 3),
                       child: Text(
                         '${distanceKm!.toStringAsFixed(0)} km away',
-                        style: const TextStyle(
-                          color: Color(0xFF9B9B9B),
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontSize: 11,
                         ),
                       ),
@@ -724,8 +727,8 @@ class HomeCarCard extends StatelessWidget {
                           const SizedBox(width: 3),
                           Text(
                             rating!.toStringAsFixed(1),
-                            style: const TextStyle(
-                              color: Color(0xFFD6D6D6),
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -762,7 +765,7 @@ class _CardImage extends StatelessWidget {
       fit: BoxFit.cover,
       fadeInDuration: const Duration(milliseconds: 150),
       placeholder: (context, _) => Container(
-        color: const Color(0xFF202020),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       errorWidget: (_, __, ___) => Image.asset(
         'assets/images/Retro.gif',
@@ -783,25 +786,26 @@ class _SectionEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
         decoration: BoxDecoration(
-          color: const Color(0xFF141414),
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Row(
           children: [
-            Icon(icon, color: const Color(0xFF888888), size: 18),
+            Icon(icon, color: theme.colorScheme.onSurfaceVariant, size: 18),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(
-                  color: Color(0xFF9B9B9B),
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
                   fontSize: 12,
                 ),
               ),
@@ -824,6 +828,7 @@ class _NearYouPermissionBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final needsPermission = status == _NearYouStatus.permissionDenied ||
         status == _NearYouStatus.permissionDeniedForever ||
         status == _NearYouStatus.serviceDisabled;
@@ -837,19 +842,19 @@ class _NearYouPermissionBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF141414),
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Row(
           children: [
-            const Icon(Icons.location_on_outlined, color: Color(0xFFF48C25)),
+            Icon(Icons.location_on_outlined, color: theme.colorScheme.primary),
             const SizedBox(width: 10),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Enable location to see cars near you',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: theme.colorScheme.onSurface,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -858,7 +863,7 @@ class _NearYouPermissionBanner extends StatelessWidget {
             TextButton(
               onPressed: onEnablePressed,
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFF48C25),
+                foregroundColor: theme.colorScheme.primary,
               ),
               child: const Text('Enable'),
             ),
@@ -892,11 +897,12 @@ class _CarSkeletonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: 200,
       height: 220,
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -904,7 +910,7 @@ class _CarSkeletonCard extends StatelessWidget {
         children: [
           Container(
             height: 122,
-            color: const Color(0xFF242424),
+            color: theme.colorScheme.surfaceContainerHighest,
           ),
           const Padding(
             padding: EdgeInsets.all(10),
@@ -932,11 +938,12 @@ class _SkeletonLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: width,
       height: 10,
       decoration: BoxDecoration(
-        color: const Color(0xFF2E2E2E),
+        color: theme.colorScheme.outlineVariant,
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -954,15 +961,16 @@ class _HomeSeeAllPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
       ),
       body: items.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
                 'No listings available right now',
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
               ),
             )
           : ListView.separated(
@@ -981,10 +989,10 @@ class _HomeSeeAllPage extends StatelessWidget {
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF171717),
+                      color: theme.cardColor,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
+                        color: theme.colorScheme.outlineVariant,
                       ),
                     ),
                     child: Row(
@@ -1010,8 +1018,8 @@ class _HomeSeeAllPage extends StatelessWidget {
                                   item.title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -1019,8 +1027,8 @@ class _HomeSeeAllPage extends StatelessWidget {
                                 const SizedBox(height: 4),
                                 Text(
                                   item.price,
-                                  style: const TextStyle(
-                                    color: Color(0xFFF48C25),
+                                  style: TextStyle(
+                                    color: theme.colorScheme.primary,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -1029,8 +1037,8 @@ class _HomeSeeAllPage extends StatelessWidget {
                                   item.location,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Color(0xFF9B9B9B),
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurfaceVariant,
                                     fontSize: 12,
                                   ),
                                 ),

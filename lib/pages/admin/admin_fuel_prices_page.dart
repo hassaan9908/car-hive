@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../services/fuel_price_service.dart';
+import 'admin_theme.dart';
 
 class AdminFuelPricesPage extends StatefulWidget {
   const AdminFuelPricesPage({super.key});
@@ -155,15 +156,37 @@ class _AdminFuelPricesPageState extends State<AdminFuelPricesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final pageBackground = AdminThemeTokens.pageBackground(context);
+    final tableBackground = theme.cardColor;
+    final borderColor = colorScheme.outlineVariant.withValues(alpha: 0.55);
+    final primaryTextColor =
+        textTheme.bodyLarge?.color ?? colorScheme.onSurface;
+    final secondaryTextColor =
+        textTheme.bodyMedium?.color ?? colorScheme.onSurfaceVariant;
+    final mutedTextColor = colorScheme.onSurfaceVariant;
+    final inputFillColor = theme.inputDecorationTheme.fillColor ??
+        (theme.brightness == Brightness.dark
+            ? colorScheme.surfaceContainerHighest
+            : colorScheme.surface);
+
     final updatedLabel = _lastUpdated == null
         ? 'Last updated: --'
         : 'Last updated: ${DateFormat('dd MMM yyyy, hh:mm a').format(_lastUpdated!)}';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: pageBackground,
       appBar: AppBar(
-        title: const Text('Manage Fuel Prices'),
         backgroundColor: Colors.transparent,
+        title: Text(
+          'Manage Fuel Prices',
+          style: textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: textTheme.titleLarge?.color ?? colorScheme.onSurface,
+          ),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -172,28 +195,36 @@ class _AdminFuelPricesPageState extends State<AdminFuelPricesPage> {
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  const Text(
+                  Text(
                     'Changes reflect immediately on the home screen',
-                    style: TextStyle(
-                      color: Color(0xFF9A9A9A),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: mutedTextColor,
                       fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 18),
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF151515),
+                      color: tableBackground,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                      border: Border.all(color: borderColor),
                     ),
                     child: Column(
                       children: [
-                        _buildHeaderRow(),
-                        const Divider(height: 1, color: Color(0xFF2A2A2A)),
+                        _buildHeaderRow(
+                          textColor: mutedTextColor,
+                        ),
+                        Divider(height: 1, color: borderColor),
                         for (int i = 0; i < _rows.length; i++) ...[
-                          _buildFuelRow(_rows[i]),
+                          _buildFuelRow(
+                            _rows[i],
+                            textColor: primaryTextColor,
+                            mutedTextColor: secondaryTextColor,
+                            borderColor: borderColor,
+                            inputFillColor: inputFillColor,
+                          ),
                           if (i < _rows.length - 1)
-                            const Divider(height: 1, color: Color(0xFF2A2A2A)),
+                            Divider(height: 1, color: borderColor),
                         ],
                       ],
                     ),
@@ -230,8 +261,8 @@ class _AdminFuelPricesPageState extends State<AdminFuelPricesPage> {
                   Text(
                     updatedLabel,
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      color: Color(0xFF9A9A9A),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: mutedTextColor,
                       fontSize: 12,
                     ),
                   ),
@@ -241,9 +272,11 @@ class _AdminFuelPricesPageState extends State<AdminFuelPricesPage> {
     );
   }
 
-  Widget _buildHeaderRow() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+  Widget _buildHeaderRow({
+    required Color textColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         children: [
           Expanded(
@@ -251,7 +284,7 @@ class _AdminFuelPricesPageState extends State<AdminFuelPricesPage> {
             child: Text(
               'Fuel Type',
               style: TextStyle(
-                color: Color(0xFFBEBEBE),
+                color: textColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -262,7 +295,7 @@ class _AdminFuelPricesPageState extends State<AdminFuelPricesPage> {
             child: Text(
               'Price/L',
               style: TextStyle(
-                color: Color(0xFFBEBEBE),
+                color: textColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -273,28 +306,35 @@ class _AdminFuelPricesPageState extends State<AdminFuelPricesPage> {
             child: Text(
               'Change',
               style: TextStyle(
-                color: Color(0xFFBEBEBE),
+                color: textColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
           SizedBox(
-              width: 90,
-              child: Text(
-                'Action',
-                style: TextStyle(
-                  color: Color(0xFFBEBEBE),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              )),
+            width: 90,
+            child: Text(
+              'Action',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildFuelRow(_EditableFuelRow row) {
+  Widget _buildFuelRow(
+    _EditableFuelRow row, {
+    required Color textColor,
+    required Color mutedTextColor,
+    required Color borderColor,
+    required Color inputFillColor,
+  }) {
     final isRowSaving = _savingRowId == row.id;
 
     return Padding(
@@ -305,8 +345,8 @@ class _AdminFuelPricesPageState extends State<AdminFuelPricesPage> {
             flex: 3,
             child: Text(
               row.type,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textColor,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -317,6 +357,10 @@ class _AdminFuelPricesPageState extends State<AdminFuelPricesPage> {
             child: _buildInput(
               controller: row.priceController,
               hintText: '0.00',
+              borderColor: borderColor,
+              fillColor: inputFillColor,
+              textColor: textColor,
+              hintColor: mutedTextColor,
             ),
           ),
           const SizedBox(width: 10),
@@ -325,6 +369,10 @@ class _AdminFuelPricesPageState extends State<AdminFuelPricesPage> {
             child: _buildInput(
               controller: row.changeController,
               hintText: '0.00',
+              borderColor: borderColor,
+              fillColor: inputFillColor,
+              textColor: textColor,
+              hintColor: mutedTextColor,
             ),
           ),
           const SizedBox(width: 10),
@@ -360,27 +408,31 @@ class _AdminFuelPricesPageState extends State<AdminFuelPricesPage> {
   Widget _buildInput({
     required TextEditingController controller,
     required String hintText,
+    required Color borderColor,
+    required Color fillColor,
+    required Color textColor,
+    required Color hintColor,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType:
           const TextInputType.numberWithOptions(decimal: true, signed: true),
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: textColor),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: Color(0xFF757575)),
+        hintStyle: TextStyle(color: hintColor),
         isDense: true,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         filled: true,
-        fillColor: const Color(0xFF1E1E1E),
+        fillColor: fillColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+          borderSide: BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+          borderSide: BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),

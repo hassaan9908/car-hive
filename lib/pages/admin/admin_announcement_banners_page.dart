@@ -21,6 +21,8 @@ class AdminAnnouncementBannersPage extends StatefulWidget {
 
 class _AdminAnnouncementBannersPageState
     extends State<AdminAnnouncementBannersPage> {
+  static const int _maxBannerImageBytes = 5 * 1024 * 1024;
+
   final _formKey = GlobalKey<FormState>();
   final _eyebrowController = TextEditingController(text: 'Fresh on CarHive');
   final _headlineController = TextEditingController();
@@ -32,6 +34,7 @@ class _AdminAnnouncementBannersPageState
 
   File? _selectedImageFile;
   Uint8List? _selectedImageBytes;
+  String _bannerType = AnnouncementBannerModel.typeText;
   bool _publishImmediately = true;
   bool _isSubmitting = false;
 
@@ -55,8 +58,22 @@ class _AdminAnnouncementBannersPageState
         return;
       }
 
+      final fileName = pickedFile.name.toLowerCase();
+      final isSupportedType = fileName.endsWith('.jpg') ||
+          fileName.endsWith('.jpeg') ||
+          fileName.endsWith('.png');
+
+      if (!isSupportedType) {
+        _showBannerError('Please upload a JPG or PNG image.');
+        return;
+      }
+
       if (kIsWeb) {
         final bytes = await pickedFile.readAsBytes();
+        if (bytes.lengthInBytes > _maxBannerImageBytes) {
+          _showBannerError('Image must be 5MB or smaller.');
+          return;
+        }
         setState(() {
           _selectedImageBytes = bytes;
           _selectedImageFile = null;
@@ -64,28 +81,36 @@ class _AdminAnnouncementBannersPageState
         return;
       }
 
-      setState(() {
-        _selectedImageFile = File(pickedFile.path);
-        _selectedImageBytes = null;
-      });
-    } catch (e) {
-      if (!mounted) {
+      final file = File(pickedFile.path);
+      final fileSize = await file.length();
+      if (fileSize > _maxBannerImageBytes) {
+        _showBannerError('Image must be 5MB or smaller.');
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Unable to pick image: $e'),
-          backgroundColor: Colors.red.shade600,
-        ),
-      );
+      setState(() {
+        _selectedImageFile = file;
+        _selectedImageBytes = null;
+      });
+    } catch (e) {
+      _showBannerError('Unable to pick image: $e');
     }
   }
 
   Future<void> _submitBanner() async {
     FocusScope.of(context).unfocus();
 
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (_bannerType == AnnouncementBannerModel.typeText &&
+        !(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    if (_bannerType == AnnouncementBannerModel.typeImage &&
+        _selectedImageBytes == null &&
+        _selectedImageFile == null) {
+      _showBannerError(
+        'Please upload a banner image before saving an image-only banner.',
+      );
       return;
     }
 
@@ -112,10 +137,19 @@ class _AdminAnnouncementBannersPageState
           : currentUser?.email;
 
       final banner = AnnouncementBannerModel(
-        eyebrow: _eyebrowController.text.trim(),
-        headline: _headlineController.text.trim(),
-        subtitle: _subtitleController.text.trim(),
-        ctaLabel: _normalizeOptionalText(_ctaController.text),
+        type: _bannerType,
+        eyebrow: _bannerType == AnnouncementBannerModel.typeText
+            ? _eyebrowController.text.trim()
+            : '',
+        headline: _bannerType == AnnouncementBannerModel.typeText
+            ? _headlineController.text.trim()
+            : '',
+        subtitle: _bannerType == AnnouncementBannerModel.typeText
+            ? _subtitleController.text.trim()
+            : '',
+        ctaLabel: _bannerType == AnnouncementBannerModel.typeText
+            ? _normalizeOptionalText(_ctaController.text)
+            : null,
         imageUrl: imageUrl,
         isActive: _publishImmediately,
         createdByName: createdByName,
@@ -214,7 +248,7 @@ class _AdminAnnouncementBannersPageState
             return AlertDialog(
               title: const Text('Delete Banner'),
               content: Text(
-                'Delete "${banner.headline}"? This will remove it from the admin panel and home page.',
+                'Delete "${banner.displayTitle}"? This will remove it from the admin panel and home page.',
               ),
               actions: [
                 TextButton(
@@ -269,6 +303,7 @@ class _AdminAnnouncementBannersPageState
   }
 
   void _resetComposer() {
+    _bannerType = AnnouncementBannerModel.typeText;
     _headlineController.clear();
     _subtitleController.clear();
     _selectedImageFile = null;
@@ -278,6 +313,19 @@ class _AdminAnnouncementBannersPageState
     setState(() {});
   }
 
+  void _showBannerError(String message) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade600,
+      ),
+    );
+  }
+
   String? _normalizeOptionalText(String value) {
     final normalized = value.trim();
     return normalized.isEmpty ? null : normalized;
@@ -285,32 +333,41 @@ class _AdminAnnouncementBannersPageState
 
   AnnouncementBannerModel _buildPreviewBanner() {
     return AnnouncementBannerModel(
-      eyebrow: _eyebrowController.text.trim().isEmpty
-          ? 'CarHive Update'
-          : _eyebrowController.text.trim(),
-      headline: _headlineController.text.trim().isEmpty
-          ? 'Put your next launch, event, or special offer here'
-          : _headlineController.text.trim(),
-      subtitle: _subtitleController.text.trim().isEmpty
-          ? 'This banner appears right under the home-page search bar and above Browse by Brand.'
-          : _subtitleController.text.trim(),
-      ctaLabel: _normalizeOptionalText(_ctaController.text) ?? 'Explore now',
+      type: _bannerType,
+      eyebrow: _bannerType == AnnouncementBannerModel.typeText
+          ? (_eyebrowController.text.trim().isEmpty
+              ? 'CarHive Update'
+              : _eyebrowController.text.trim())
+          : '',
+      headline: _bannerType == AnnouncementBannerModel.typeText
+          ? (_headlineController.text.trim().isEmpty
+              ? 'Put your next launch, event, or special offer here'
+              : _headlineController.text.trim())
+          : '',
+      subtitle: _bannerType == AnnouncementBannerModel.typeText
+          ? (_subtitleController.text.trim().isEmpty
+              ? 'This banner appears right under the home-page search bar and above Browse by Brand.'
+              : _subtitleController.text.trim())
+          : '',
+      ctaLabel: _bannerType == AnnouncementBannerModel.typeText
+          ? (_normalizeOptionalText(_ctaController.text) ?? 'Explore now')
+          : null,
       isActive: _publishImmediately,
     );
   }
 
-  Widget? _buildSelectedImagePreview() {
+  Widget? _buildSelectedImagePreview({required bool cover}) {
     if (_selectedImageBytes != null) {
       return Image.memory(
         _selectedImageBytes!,
-        fit: BoxFit.contain,
+        fit: cover ? BoxFit.cover : BoxFit.contain,
       );
     }
 
     if (_selectedImageFile != null) {
       return Image.file(
         _selectedImageFile!,
-        fit: BoxFit.contain,
+        fit: cover ? BoxFit.cover : BoxFit.contain,
       );
     }
 
@@ -577,6 +634,29 @@ class _AdminAnnouncementBannersPageState
               ],
             ),
             const SizedBox(height: 20),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment<String>(
+                  value: AnnouncementBannerModel.typeText,
+                  label: Text('Text Banner'),
+                  icon: Icon(Icons.text_fields_rounded),
+                ),
+                ButtonSegment<String>(
+                  value: AnnouncementBannerModel.typeImage,
+                  label: Text('Image Banner'),
+                  icon: Icon(Icons.image_outlined),
+                ),
+              ],
+              selected: {_bannerType},
+              onSelectionChanged: _isSubmitting
+                  ? null
+                  : (selection) {
+                      setState(() {
+                        _bannerType = selection.first;
+                      });
+                    },
+            ),
+            const SizedBox(height: 18),
             Text(
               'Live preview',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -588,121 +668,66 @@ class _AdminAnnouncementBannersPageState
               height: 190,
               child: AnnouncementBannerCard(
                 banner: previewBanner,
-                imageOverride: _buildSelectedImagePreview(),
+                imageOverride: _buildSelectedImagePreview(
+                  cover: _bannerType == AnnouncementBannerModel.typeImage,
+                ),
               ),
             ),
             const SizedBox(height: 20),
-            _buildTextField(
-              controller: _eyebrowController,
-              label: 'Eyebrow label',
-              hint: 'Ex: This week only',
-              icon: Icons.campaign_outlined,
-              maxLength: 32,
-            ),
-            const SizedBox(height: 14),
-            _buildTextField(
-              controller: _headlineController,
-              label: 'Headline',
-              hint: 'Ex: Zero markup deals on certified SUVs',
-              icon: Icons.title,
-              maxLength: 72,
-              validator: (value) {
-                if ((value ?? '').trim().isEmpty) {
-                  return 'Headline is required';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 14),
-            _buildTextField(
-              controller: _subtitleController,
-              label: 'Supporting text',
-              hint:
-                  'Ex: Let buyers know what changed, what is new, or what action to take.',
-              icon: Icons.notes_rounded,
-              maxLength: 120,
-              minLines: 2,
-              maxLines: 3,
-              validator: (value) {
-                if ((value ?? '').trim().isEmpty) {
-                  return 'Supporting text is required';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 14),
-            _buildTextField(
-              controller: _ctaController,
-              label: 'CTA label',
-              hint: 'Ex: Explore now',
-              icon: Icons.ads_click_outlined,
-              maxLength: 24,
-            ),
-            const SizedBox(height: 18),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.03)
-                    : Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: borderColor),
+            if (_bannerType == AnnouncementBannerModel.typeText) ...[
+              _buildTextField(
+                controller: _eyebrowController,
+                label: 'Eyebrow label',
+                hint: 'Ex: This week only',
+                icon: Icons.campaign_outlined,
+                maxLength: 32,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Banner image',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Optional. If you skip it, CarHive will use a default car illustration in the banner.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          height: 1.4,
-                        ),
-                  ),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      FilledButton.icon(
-                        onPressed: _isSubmitting ? null : _pickImage,
-                        icon: const Icon(Icons.upload_outlined),
-                        label: Text(
-                          _selectedImageBytes != null ||
-                                  _selectedImageFile != null
-                              ? 'Replace image'
-                              : 'Upload image',
-                        ),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: accent,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                      if (_selectedImageBytes != null ||
-                          _selectedImageFile != null)
-                        OutlinedButton.icon(
-                          onPressed: _isSubmitting
-                              ? null
-                              : () {
-                                  setState(() {
-                                    _selectedImageBytes = null;
-                                    _selectedImageFile = null;
-                                  });
-                                },
-                          icon: const Icon(Icons.close),
-                          label: const Text('Remove image'),
-                        ),
-                    ],
-                  ),
-                ],
+              const SizedBox(height: 14),
+              _buildTextField(
+                controller: _headlineController,
+                label: 'Headline',
+                hint: 'Ex: Zero markup deals on certified SUVs',
+                icon: Icons.title,
+                maxLength: 72,
+                validator: (value) {
+                  if ((value ?? '').trim().isEmpty) {
+                    return 'Headline is required';
+                  }
+                  return null;
+                },
               ),
+              const SizedBox(height: 14),
+              _buildTextField(
+                controller: _subtitleController,
+                label: 'Supporting text',
+                hint:
+                    'Ex: Let buyers know what changed, what is new, or what action to take.',
+                icon: Icons.notes_rounded,
+                maxLength: 120,
+                minLines: 2,
+                maxLines: 3,
+                validator: (value) {
+                  if ((value ?? '').trim().isEmpty) {
+                    return 'Supporting text is required';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 14),
+              _buildTextField(
+                controller: _ctaController,
+                label: 'CTA label',
+                hint: 'Ex: Explore now',
+                icon: Icons.ads_click_outlined,
+                maxLength: 24,
+              ),
+              const SizedBox(height: 18),
+            ],
+            _buildImagePickerPanel(
+              borderColor: borderColor,
+              isDark: isDark,
+              accent: accent,
+              isImageBanner: _bannerType == AnnouncementBannerModel.typeImage,
             ),
             const SizedBox(height: 18),
             SwitchListTile.adaptive(
@@ -941,6 +966,13 @@ class _AdminAnnouncementBannersPageState
             runSpacing: 10,
             children: [
               _buildInfoChip(
+                label: banner.typeLabel,
+                icon: banner.isImageBanner
+                    ? Icons.image_outlined
+                    : Icons.text_fields_rounded,
+                color: accent,
+              ),
+              _buildInfoChip(
                 label: banner.isActive ? 'Active on home page' : 'Inactive',
                 icon: banner.isActive ? Icons.visibility : Icons.visibility_off,
                 color: statusColor,
@@ -1093,6 +1125,78 @@ class _AdminAnnouncementBannersPageState
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFFF48C25), width: 1.4),
         ),
+      ),
+    );
+  }
+
+  Widget _buildImagePickerPanel({
+    required Color borderColor,
+    required bool isDark,
+    required Color accent,
+    required bool isImageBanner,
+  }) {
+    final hasImage = _selectedImageBytes != null || _selectedImageFile != null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color:
+            isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isImageBanner
+                ? 'Upload banner image (recommended size: 16:5 ratio)'
+                : 'Banner image',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isImageBanner
+                ? 'Required for image-only banners. JPG or PNG, up to 5MB.'
+                : 'Optional for text banners. JPG or PNG, up to 5MB. If you skip it, CarHive will use the default car illustration.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              FilledButton.icon(
+                onPressed: _isSubmitting ? null : _pickImage,
+                icon: const Icon(Icons.upload_outlined),
+                label: Text(hasImage ? 'Replace image' : 'Upload image'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              if (hasImage)
+                OutlinedButton.icon(
+                  onPressed: _isSubmitting
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedImageBytes = null;
+                            _selectedImageFile = null;
+                          });
+                        },
+                  icon: const Icon(Icons.close),
+                  label: const Text('Remove image'),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

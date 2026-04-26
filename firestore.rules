@@ -440,6 +440,116 @@ service cloud.firestore {
       );
     }
 
+    // VISIT SCHEDULES collection
+    match /visitSchedules/{scheduleId} {
+      // Book Visit screen reads city/area/date/slot data from here
+      allow read: if true;
+
+      // Only admins can manage schedules
+      allow create, update, delete: if isAdmin();
+    }
+
+    // VISITS collection
+    match /visits/{visitId} {
+      // Users can read their own visits, admins can read all
+      allow read: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+
+      // Users can create their own visit booking records
+      allow create: if isSignedIn()
+        && request.resource.data.userId == currentUid()
+        && request.resource.data.city is string
+        && request.resource.data.area is string
+        && request.resource.data.date is timestamp
+        && request.resource.data.dateKey is string
+        && request.resource.data.timeSlot is string
+        && request.resource.data.paymentMethod is string
+        && request.resource.data.amount is number
+        && request.resource.data.status == 'booked';
+
+      // Owners can only update reschedule-request metadata on their own visits.
+      // Admins can update anything (accept/reject requests, move booking, mark complete).
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (
+          resource.data.userId == currentUid()
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.city == resource.data.city
+          && request.resource.data.area == resource.data.area
+          && request.resource.data.date == resource.data.date
+          && request.resource.data.dateKey == resource.data.dateKey
+          && request.resource.data.timeSlot == resource.data.timeSlot
+          && request.resource.data.paymentMethod == resource.data.paymentMethod
+          && request.resource.data.amount == resource.data.amount
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+            'rescheduleStatus',
+            'pendingRescheduleRequestId',
+            'requestedRescheduleDate',
+            'requestedRescheduleDateKey',
+            'requestedRescheduleTimeSlot',
+            'updatedAt'
+          ])
+        )
+      );
+
+      // Only admins can delete visit records
+      allow delete: if isAdmin();
+    }
+
+    // RESCHEDULE REQUESTS collection
+    match /rescheduleRequests/{requestId} {
+      // Users can read their own requests, admins can read all
+      allow read: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+
+      // Users can create reschedule requests for themselves
+      allow create: if isSignedIn()
+        && request.resource.data.userId == currentUid()
+        && request.resource.data.visitId is string
+        && request.resource.data.requestedDate is timestamp
+        && request.resource.data.requestedDateKey is string
+        && request.resource.data.requestedTimeSlot is string
+        && request.resource.data.status == 'pending';
+
+      // Admin reviews requests by changing status to accepted/rejected
+      allow update: if isAdmin();
+
+      // Admin can remove requests if needed
+      allow delete: if isAdmin();
+    }
+
+    // VISIT NOTIFICATIONS collection
+    match /visitNotifications/{notificationId} {
+      // Users can read their own notifications, admins can read all
+      allow read: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+
+      // Admin actions create notifications for users
+      allow create: if isAdmin()
+        && request.resource.data.userId is string
+        && request.resource.data.type is string
+        && request.resource.data.title is string
+        && request.resource.data.message is string;
+
+      // Users can update only lightweight notification state on their own docs
+      allow update: if isSignedIn()
+        && resource.data.userId == currentUid()
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'status',
+          'readAt'
+        ]);
+
+      // Users can delete their own notifications, admins can delete any
+      allow delete: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+    }
+
     // Deny everything else - KEEP THIS AT THE END
     match /{document=**} {
       allow read, write: if false;

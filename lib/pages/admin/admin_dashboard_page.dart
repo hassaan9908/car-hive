@@ -1,13 +1,12 @@
 import 'package:carhive/models/ad_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import '../../providers/admin_provider.dart';
 
-import 'admin_manage_users_page.dart';
-import 'admin_system_analytics_page.dart';
-import 'admin_view_all_ads_page.dart';
+import '../../providers/admin_provider.dart';
 import 'admin_insight_metrics_page.dart';
+import 'admin_system_analytics_page.dart';
+import 'admin_users_page.dart';
+import 'admin_view_all_ads_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -17,6 +16,8 @@ class AdminDashboardPage extends StatefulWidget {
 }
 
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
+  static const Color _accent = Color(0xFFf48c25);
+
   @override
   void initState() {
     super.initState();
@@ -27,47 +28,39 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Future<void> _loadAllData() async {
     final adminProvider = context.read<AdminProvider>();
-    print('AdminDashboard: Loading all data.. .');
-
-    // Load all data in parallel
     await Future.wait([
       adminProvider.loadDashboardStats(),
       adminProvider.loadRecentActivities(),
       adminProvider.loadPendingAds(),
     ]);
-
-    print('AdminDashboard: All data loaded');
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'CarHive Admin Dashboard',
-          style: TextStyle(
-            color: isDark ? const Color(0xFFf48c25) : Colors.black,
-            fontWeight: FontWeight.w600,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: theme.brightness == Brightness.dark
+                ? _accent
+                : colorScheme.onSurface,
           ),
         ),
         backgroundColor: Colors.transparent,
-        iconTheme: IconThemeData(
-          color: isDark ? const Color(0xFFf48c25) : Colors.black,
-        ),
-        actionsIconTheme: IconThemeData(
-          color: isDark ? const Color(0xFFf48c25) : Colors.black,
-        ),
         actions: [
           Consumer<AdminProvider>(
             builder: (context, adminProvider, child) {
               return PopupMenuButton<String>(
                 icon: const Icon(Icons.account_circle),
-                onSelected: (value) {
+                onSelected: (value) async {
                   if (value == 'logout') {
-                    adminProvider.adminLogout();
+                    await adminProvider.adminLogout();
+                    if (!context.mounted) return;
                     Navigator.pushReplacementNamed(context, '/admin/login');
                   }
                 },
@@ -79,7 +72,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         const Icon(Icons.person),
                         const SizedBox(width: 8),
                         Text(
-                            adminProvider.currentAdmin?.displayName ?? 'Admin'),
+                          adminProvider.currentAdmin?.displayName ?? 'Admin',
+                        ),
                       ],
                     ),
                   ),
@@ -101,7 +95,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ),
       body: Consumer<AdminProvider>(
         builder: (context, adminProvider, child) {
-          if (adminProvider.isLoading) {
+          if (adminProvider.isLoading && adminProvider.dashboardStats == null) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -113,198 +107,35 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           return RefreshIndicator(
             onRefresh: _loadAllData,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Welcome Section
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF6B35).withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome back, ${adminProvider.currentAdmin?.displayName ?? 'Admin'}!',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Here\'s what\'s happening with CarHive today',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                      ],
-                    ),
+                  _buildWelcomeBanner(context, adminProvider),
+                  const SizedBox(height: 20),
+                  _buildStatsGrid(
+                    context,
+                    stats: stats,
                   ),
                   const SizedBox(height: 24),
-
-                  // Statistics Cards
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final width = constraints.maxWidth;
-                      final crossAxisCount = width >= 1400
-                          ? 4
-                          : width >= 1100
-                              ? 3
-                              : width >= 700
-                                  ? 2
-                                  : 1;
-                      final aspectRatio = width >= 1400
-                          ? 1.35
-                          : width >= 1100
-                              ? 1.25
-                              : width >= 700
-                                  ? 1.2
-                                  : 1.6;
-
-                      return GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: aspectRatio,
-                        children: [
-                          _buildStatCard(
-                            'Total Users',
-                            stats.totalUsers.toString(),
-                            Icons.people,
-                            const Color(0xFFf48c25),
-                          ),
-                          _buildStatCard(
-                            'Total Ads',
-                            stats.totalAds.toString(),
-                            Icons.car_rental,
-                            const Color(0xFFf48c25),
-                          ),
-                          _buildStatCard(
-                            'Pending Ads',
-                            stats.pendingAds.toString(),
-                            Icons.pending_actions,
-                            const Color(0xFFFF6B35),
-                          ),
-                          _buildStatCard(
-                            'Active Ads',
-                            stats.activeAds.toString(),
-                            Icons.check_circle,
-                            const Color(0xFFf48c25),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Quick Actions
-                  const Text(
+                  Text(
                     'Quick Actions',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Pending Ads Section
-                  _buildPendingAdsSection(),
-
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionCard(
-                          'Manage Users',
-                          Icons.people_outline,
-                          const Color(0xFFf48c25),
-                          () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AdminManageUsersPage(),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildActionCard(
-                          'System Analytics',
-                          Icons.analytics,
-                          const Color(0xFFFF6B35),
-                          () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AdminSystemAnalyticsPage(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildActionCard(
-                          'View All Ads',
-                          Icons.list_alt,
-                          const Color(0xFFFF8C42),
-                          () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AdminViewAllAdsPage(),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildActionCard(
-                          'Insight Metrics',
-                          Icons.insights,
-                          const Color(0xFF9C27B0),
-                          () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AdminInsightMetricsPage(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  const SizedBox(height: 14),
+                  _buildQuickActionsGrid(context),
                   const SizedBox(height: 24),
-
-                  // Recent Activity
-                  const Text(
+                  _buildPendingAdsSection(),
+                  const SizedBox(height: 24),
+                  Text(
                     'Recent Activity',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   _buildRecentActivityCard(),
                 ],
               ),
@@ -315,54 +146,189 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildWelcomeBanner(
+    BuildContext context,
+    AdminProvider adminProvider,
+  ) {
     return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-              : [Colors.grey.shade100, Colors.grey.shade200],
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
-        ),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 18,
+            color: const Color(0xFFFF6B35).withValues(alpha: 0.28),
+            blurRadius: 14,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Welcome back, ${adminProvider.currentAdmin?.displayName ?? 'Admin'}!',
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Here\'s what needs your attention across CarHive today.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.92),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsGrid(
+    BuildContext context, {
+    required dynamic stats,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = width >= 1400
+            ? 4
+            : width >= 900
+                ? 2
+                : 1;
+        final aspectRatio = width >= 1400
+            ? 2.3
+            : width >= 900
+                ? 2.0
+                : 2.2;
+
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+          childAspectRatio: aspectRatio,
           children: [
-            Icon(icon, size: 42, color: color),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: color,
+            _buildStatCard(
+              'Total Users',
+              stats.totalUsers.toString(),
+              Icons.people_outline,
+              trendLabel: 'Healthy growth',
+              isPositive: true,
+            ),
+            _buildStatCard(
+              'Total Ads',
+              stats.totalAds.toString(),
+              Icons.directions_car_outlined,
+              trendLabel: 'Inventory count',
+              isPositive: true,
+            ),
+            _buildStatCard(
+              'Pending Ads',
+              stats.pendingAds.toString(),
+              Icons.pending_actions_outlined,
+              trendLabel: 'Needs review',
+              isPositive: false,
+            ),
+            _buildStatCard(
+              'Active Ads',
+              stats.activeAds.toString(),
+              Icons.check_circle_outline,
+              trendLabel: 'Currently live',
+              isPositive: true,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon, {
+    required String trendLabel,
+    required bool isPositive,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      decoration: _dashboardCardDecoration(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                color: _accent,
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 15,
-                color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
-                letterSpacing: 0.1,
+            const SizedBox(width: 12),
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: _accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
               ),
-              textAlign: TextAlign.center,
+              child: Icon(icon, color: _accent),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    value,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: _accent,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Icon(
+                  isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                  size: 16,
+                  color: isPositive ? Colors.green : const Color(0xFFFF6B35),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  trendLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.right,
+                ),
+              ],
             ),
           ],
         ),
@@ -370,50 +336,152 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildActionCard(
-      String title, IconData icon, Color color, VoidCallback onTap) {
-    final gradient = LinearGradient(
-      colors: [
-        color.withOpacity(0.9),
-        color.withOpacity(0.6),
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
+  Widget _buildQuickActionsGrid(BuildContext context) {
+    const actions = [
+      _DashboardQuickAction(
+        title: 'Manage Users',
+        description: 'Review user accounts, roles, and access.',
+        icon: Icons.people_outline,
+      ),
+      _DashboardQuickAction(
+        title: 'System Analytics',
+        description: 'Check platform health and operational signals.',
+        icon: Icons.analytics_outlined,
+      ),
+      _DashboardQuickAction(
+        title: 'View All Ads',
+        description: 'Browse approved, pending, and archived ads.',
+        icon: Icons.list_alt_outlined,
+      ),
+      _DashboardQuickAction(
+        title: 'Insight Metrics',
+        description: 'Monitor views, messages, and market trends.',
+        icon: Icons.insights_outlined,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = width >= 1100
+            ? 4
+            : width >= 700
+                ? 2
+                : 1;
+        final aspectRatio = width >= 1100
+            ? 1.7
+            : width >= 700
+                ? 2.0
+                : 2.45;
+
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+          childAspectRatio: aspectRatio,
+          children: actions.map((action) {
+            return _buildActionCard(
+              title: action.title,
+              description: action.description,
+              icon: action.icon,
+              onTap: () => _openQuickAction(action.title),
+            );
+          }).toList(),
+        );
+      },
     );
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          splashColor: color.withOpacity(0.2),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: gradient,
-            ),
-            padding: const EdgeInsets.all(20),
+  }
+
+  void _openQuickAction(String title) {
+    switch (title) {
+      case 'Manage Users':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminUsersPage()),
+        );
+        return;
+      case 'System Analytics':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminSystemAnalyticsPage()),
+        );
+        return;
+      case 'View All Ads':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminViewAllAdsPage()),
+        );
+        return;
+      case 'Insight Metrics':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminInsightMetricsPage()),
+        );
+        return;
+    }
+  }
+
+  Widget _buildActionCard({
+    required String title,
+    required String description,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          decoration: _dashboardCardDecoration(context),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    shape: BoxShape.circle,
+                    color: _accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, size: 30, color: Colors.white),
+                  child: Icon(icon, color: _accent),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Expanded(
+                  child: Text(
+                    description,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Text(
+                      'Open',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: _accent,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right, color: _accent),
+                  ],
                 ),
               ],
             ),
@@ -427,362 +495,198 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
         final pendingAds = adminProvider.pendingAds;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
 
         return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isDark
-                  ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-                  : [Colors.grey.shade100, Colors.grey.shade200],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withOpacity(0.06)
-                  : Colors.grey.shade400,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isDark
-                    ? [
-                        Colors.orange.shade900.withOpacity(0.2),
-                        Colors.orange.shade800.withOpacity(0.1),
-                      ]
-                    : [
-                        Colors.orange.shade50,
-                        Colors.orange.shade100,
-                      ],
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade600,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.pending_actions,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Pending Ads Review',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange.shade800,
-                              ),
-                            ),
-                            Text(
-                              '${pendingAds.length} ads waiting for approval',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.orange.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Refresh Button
-                      IconButton(
-                        onPressed: () {
-                          print('AdminDashboard: Refreshing pending ads...');
-                          adminProvider.loadPendingAds();
-                        },
-                        icon: Icon(
-                          Icons.refresh,
-                          color: Colors.orange.shade600,
-                        ),
-                        tooltip: 'Refresh pending ads',
-                      ),
-                      // Debug Button
-                      IconButton(
-                        onPressed: () {
-                          print('AdminDashboard:  Debugging ad statuses...');
-                          adminProvider.debugAndFixAdStatuses();
-                        },
-                        icon: Icon(
-                          Icons.bug_report,
-                          color: Colors.red.shade600,
-                        ),
-                        tooltip: 'Debug ad statuses',
-                      ),
-                      if (pendingAds.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade600,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${pendingAds.length}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Debug Info (temporary)
-                  if (kDebugMode)
+          decoration: _dashboardCardDecoration(context),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
                     Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(12),
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
+                        color: _accent.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: const Icon(
+                        Icons.pending_actions_outlined,
+                        color: _accent,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Debug Info: ',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue.shade700,
-                            ),
-                          ),
-                          Text('Loading: ${adminProvider.isLoading}'),
-                          Text('Pending Ads Count: ${pendingAds.length}'),
-                          Text(
-                              'Error:  ${adminProvider.errorMessage ?? 'None'}'),
-                        ],
-                      ),
-                    ),
-
-                  // Pending Ads List
-                  if (adminProvider.isLoading)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: CircularProgressIndicator(),
-                      ),
-                    )
-                  else if (pendingAds.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            size: 48,
-                            color: Colors.green.shade600,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No Pending Ads',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green.shade700,
+                            'Pending Ads Review',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'All ads have been reviewed! ',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
+                            '${pendingAds.length} ads waiting for approval',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
                       ),
-                    )
-                  else
-                    Column(
-                      children: pendingAds.take(3).map((ad) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.orange.shade200,
-                              width: 1,
-                            ),
+                    ),
+                    IconButton(
+                      onPressed: adminProvider.loadPendingAds,
+                      icon: const Icon(Icons.refresh, color: _accent),
+                      tooltip: 'Refresh pending ads',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (adminProvider.isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (pendingAds.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 44,
+                          color: Colors.green.shade600,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'No Pending Ads',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
-                          child: Row(
-                            children: [
-                              // Car Icon
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  Icons.directions_car,
-                                  color: Colors.blue.shade700,
-                                  size: 20,
-                                ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'All ads have been reviewed.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Column(
+                    children: pendingAds.take(3).map((ad) {
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: colorScheme.outlineVariant
+                                .withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: _accent.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-
-                              const SizedBox(width: 12),
-
-                              // Ad Details
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      ad.title,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${ad.price} • ${ad.location}',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${ad.year} • ${ad.mileage} km',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              child: const Icon(
+                                Icons.directions_car_outlined,
+                                color: _accent,
                               ),
-
-                              // Action Buttons
-                              Column(
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Approve Button
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: Colors.green.shade500,
-                                      borderRadius: BorderRadius.circular(8),
+                                  Text(
+                                    ad.title,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
                                     ),
-                                    child: IconButton(
-                                      padding: EdgeInsets.zero,
-                                      icon: const Icon(
-                                        Icons.check,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                      onPressed: () => _approveAd(ad),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${ad.price} • ${ad.location}',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  // Reject Button
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.shade500,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: IconButton(
-                                      padding: EdgeInsets.zero,
-                                      icon: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                      onPressed: () => _rejectAd(ad),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${ad.year} • ${ad.mileage} km',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-
-                  // View All Button
-                  if (pendingAds.length > 3)
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(top: 12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFFF6B35).withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              children: [
+                                _decisionButton(
+                                  icon: Icons.check,
+                                  color: Colors.green,
+                                  onTap: () => _approveAd(ad),
+                                ),
+                                const SizedBox(height: 8),
+                                _decisionButton(
+                                  icon: Icons.close,
+                                  color: Colors.red,
+                                  onTap: () => _rejectAd(ad),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        child: ElevatedButton.icon(
-                          onPressed: () =>
-                              Navigator.pushNamed(context, '/admin/ads'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
-                          ),
-                          icon: const Icon(Icons.visibility, size: 18),
-                          label:
-                              Text('View All ${pendingAds.length} Pending Ads'),
+                      );
+                    }).toList(),
+                  ),
+                if (pendingAds.length > 3) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () =>
+                          Navigator.pushNamed(context, '/admin/ads'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
+                      icon: const Icon(Icons.visibility_outlined, size: 18),
+                      label: Text('View All ${pendingAds.length} Pending Ads'),
                     ),
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
         );
@@ -790,27 +694,43 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  Widget _decisionButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        onPressed: onTap,
+        icon: Icon(icon, size: 18, color: Colors.white),
+      ),
+    );
+  }
+
   Future<void> _approveAd(AdModel ad) async {
     final adminProvider = context.read<AdminProvider>();
     final success = await adminProvider.approveAd(ad.id!);
 
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Ad "${ad.title}" approved successfully'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Ad "${ad.title}" approved successfully'
+              : 'Failed to approve ad',
         ),
-      );
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to approve ad'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+        backgroundColor: success ? Colors.green : Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _rejectAd(AdModel ad) async {
@@ -849,105 +769,130 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ),
     );
 
-    if (result != null && mounted) {
-      final adminProvider = context.read<AdminProvider>();
-      final success = await adminProvider.rejectAd(ad.id!, result);
-
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ad "${ad.title}" rejected'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to reject ad'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+    if (result == null || !mounted) {
+      return;
     }
+
+    final adminProvider = context.read<AdminProvider>();
+    final success = await adminProvider.rejectAd(ad.id!, result);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success ? 'Ad "${ad.title}" rejected' : 'Failed to reject ad',
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Widget _buildRecentActivityCard() {
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+
         if (adminProvider.isLoading) {
-          return Card(
-            elevation: 2,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
+          return Container(
+            decoration: _dashboardCardDecoration(context),
+            padding: const EdgeInsets.all(20),
+            child: const Center(child: CircularProgressIndicator()),
           );
         }
 
         final activities = adminProvider.recentActivities;
-
         if (activities.isEmpty) {
-          return Card(
-            elevation: 2,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(
-                child: Text(
-                  'No recent activities',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+          return Container(
+            decoration: _dashboardCardDecoration(context),
+            padding: const EdgeInsets.all(20),
+            child: Center(
+              child: Text(
+                'No recent activities',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
           );
         }
 
-        return Card(
-          elevation: 2,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: activities.map((activity) {
-                return Column(
-                  children: [
-                    ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: activity.color,
-                        child: Icon(activity.icon, color: Colors.white),
-                      ),
-                      title: Text(activity.title),
-                      subtitle: Text(activity.description),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        // Handle activity tap - could show details or navigate
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Activity: ${activity.title}'),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      },
+        return Container(
+          decoration: _dashboardCardDecoration(context),
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            children: activities.map((activity) {
+              final isLast = activity == activities.last;
+              return Column(
+                children: [
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: activity.color,
+                      child: Icon(activity.icon, color: Colors.white),
                     ),
-                    if (activity != activities.last) const Divider(),
-                  ],
-                );
-              }).toList(),
-            ),
+                    title: Text(
+                      activity.title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    subtitle: Text(
+                      activity.description,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Activity: ${activity.title}'),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                  ),
+                  if (!isLast) const Divider(height: 1),
+                ],
+              );
+            }).toList(),
           ),
         );
       },
     );
   }
+
+  BoxDecoration _dashboardCardDecoration(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return BoxDecoration(
+      color: theme.cardColor,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 18,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    );
+  }
+}
+
+class _DashboardQuickAction {
+  const _DashboardQuickAction({
+    required this.title,
+    required this.description,
+    required this.icon,
+  });
+
+  final String title;
+  final String description;
+  final IconData icon;
 }
