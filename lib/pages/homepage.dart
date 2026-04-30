@@ -15,13 +15,19 @@ import '../widgets/home_marketplace_sections.dart';
 import '../models/car_brand_model.dart';
 import '../models/announcement_banner_model.dart';
 import '../services/announcement_banner_service.dart';
+import '../services/market_pulse_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'chat.dart';
 
 class Homepage extends StatefulWidget {
   final int initialTab;
+  final String? initialSearchQuery;
 
-  const Homepage({super.key, this.initialTab = 0});
+  const Homepage({
+    super.key,
+    this.initialTab = 0,
+    this.initialSearchQuery,
+  });
 
   @override
   State<Homepage> createState() => _HomepageState();
@@ -31,6 +37,7 @@ class _HomepageState extends State<Homepage> {
   final TextEditingController _searchController = TextEditingController();
   final AnnouncementBannerService _announcementBannerService =
       AnnouncementBannerService();
+  final MarketPulseService _marketPulseService = MarketPulseService();
   bool _isSearchActive = false;
   String? _selectedBrandId;
   String _selectedQuickFilterId = HomeQuickFilter.allId;
@@ -53,7 +60,17 @@ class _HomepageState extends State<Homepage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SearchProvider>().initializeAds();
+      final provider = context.read<SearchProvider>();
+      provider.initializeAds().then((_) {
+        final initialQuery = widget.initialSearchQuery?.trim();
+        if (initialQuery != null && initialQuery.isNotEmpty && mounted) {
+          _searchController.text = initialQuery;
+          provider.updateSearchQuery(initialQuery);
+          setState(() {
+            _isSearchActive = true;
+          });
+        }
+      });
     });
   }
 
@@ -130,6 +147,13 @@ class _HomepageState extends State<Homepage> {
       _selectedYear = null;
       _selectedTrustLevelId = null;
     });
+  }
+
+  void _trackFilter(String filterType, String value) {
+    _marketPulseService.trackFilterUsed(
+      filterType: filterType,
+      value: value,
+    );
   }
 
   @override
@@ -233,6 +257,9 @@ class _HomepageState extends State<Homepage> {
                         _isSearchActive = value.isNotEmpty;
                       });
                       searchProvider.updateSearchQuery(value);
+                      if (value.trim().length >= 2) {
+                        _marketPulseService.trackSearchQuery(query: value);
+                      }
                     },
                   ),
                 ),
@@ -261,6 +288,7 @@ class _HomepageState extends State<Homepage> {
                         _selectedBrandId =
                             _selectedBrandId == brand.id ? null : brand.id;
                       });
+                      _trackFilter('brand', brand.displayName);
                     },
                   ),
 
@@ -274,6 +302,7 @@ class _HomepageState extends State<Homepage> {
                             setState(() {
                               _selectedQuickFilterId = filterId;
                             });
+                            _trackFilter('quick_filter', filterId);
                           },
                           onClearAll: _clearAllHomeFilters,
                           hasActiveFilters: _hasActiveHomeFilters,
@@ -282,18 +311,27 @@ class _HomepageState extends State<Homepage> {
                             setState(() {
                               _selectedCity = city;
                             });
+                            if (city != null) {
+                              _trackFilter('city', city);
+                            }
                           },
                           selectedYear: _selectedYear,
                           onYearSelected: (year) {
                             setState(() {
                               _selectedYear = year;
                             });
+                            if (year != null) {
+                              _trackFilter('year', year.toString());
+                            }
                           },
                           selectedTrustLevelId: _selectedTrustLevelId,
                           onTrustLevelSelected: (trustLevelId) {
                             setState(() {
                               _selectedTrustLevelId = trustLevelId;
                             });
+                            if (trustLevelId != null) {
+                              _trackFilter('trust_level', trustLevelId);
+                            }
                           },
                         ),
                         listings: CarTabs(
@@ -398,6 +436,12 @@ class _HomepageState extends State<Homepage> {
 
     return GestureDetector(
       onTap: () {
+        if (ad.id != null && ad.id.toString().isNotEmpty) {
+          _marketPulseService.trackAdClick(
+            adId: ad.id.toString(),
+            city: ad.location?.toString(),
+          );
+        }
         Navigator.pushNamed(
           context,
           '/car-details',

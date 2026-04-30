@@ -9,6 +9,8 @@ import 'package:intl/intl.dart';
 
 import '../models/ad_model.dart';
 import '../services/fuel_price_service.dart';
+import '../services/market_pulse_service.dart';
+import 'market_pulse_teaser_card.dart';
 
 class HomeMarketplaceSections extends StatefulWidget {
   final Widget? filterSection;
@@ -257,6 +259,7 @@ class _HomeMarketplaceSectionsState extends State<HomeMarketplaceSections> {
           widget.filterSection!,
         ],
         widget.listings,
+        const MarketPulseTeaserCard(),
         _FuelPricesSection(
           prices: _fuelPrices,
           lastUpdated: _fuelLastUpdated,
@@ -335,6 +338,12 @@ class _HorizontalCarSection extends StatelessWidget {
                     badgeAlignment: badgeAlignment ?? _BadgeAlignment.topLeft,
                     rating: item.rating,
                     onTap: () {
+                      if (item.ad.id != null && item.ad.id!.isNotEmpty) {
+                        MarketPulseService().trackAdClick(
+                          adId: item.ad.id!,
+                          city: item.location,
+                        );
+                      }
                       Navigator.pushNamed(
                         context,
                         '/car-details',
@@ -981,6 +990,12 @@ class _HomeSeeAllPage extends StatelessWidget {
                 final item = items[index];
                 return GestureDetector(
                   onTap: () {
+                    if (item.ad.id != null && item.ad.id!.isNotEmpty) {
+                      MarketPulseService().trackAdClick(
+                        adId: item.ad.id!,
+                        city: item.location,
+                      );
+                    }
                     Navigator.pushNamed(
                       context,
                       '/car-details',

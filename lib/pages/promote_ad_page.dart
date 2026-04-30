@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/services/payment_service.dart';
+import 'package:carhive/services/market_pulse_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
@@ -18,6 +20,7 @@ class _PromoteAdPageState extends State<PromoteAdPage>
   String? selectedPackage;
   bool _isProcessing = false;
   final PaymentService _paymentService = PaymentService();
+  final MarketPulseService _marketPulseService = MarketPulseService();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -160,7 +163,23 @@ class _PromoteAdPageState extends State<PromoteAdPage>
             ),
           );
 
-          // TODO: Update ad status in Firestore to mark as promoted
+          if (widget.ad.id != null && widget.ad.id!.isNotEmpty) {
+            await FirebaseFirestore.instance
+                .collection('ads')
+                .doc(widget.ad.id)
+                .set({
+              'isPromoted': true,
+              'promotionPackage': package['id'],
+              'promotionAmount': amount,
+              'promotionPurchasedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+
+            await _marketPulseService.trackPromotionPurchase(
+              adId: widget.ad.id!,
+              amount: amount,
+              packageId: package['id'].toString(),
+            );
+          }
 
           await Future.delayed(const Duration(seconds: 2));
           if (mounted) {

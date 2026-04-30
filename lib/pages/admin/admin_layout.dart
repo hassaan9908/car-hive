@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/admin_provider.dart';
+import '../../services/support_chat_service.dart';
 import 'admin_ads_page.dart';
 import 'admin_announcement_banners_page.dart';
 import 'admin_blog_management_page.dart';
@@ -9,7 +10,9 @@ import 'admin_blog_upload_page.dart';
 import 'admin_dashboard_page.dart';
 import 'admin_fuel_prices_page.dart';
 import 'admin_insight_metrics_page.dart';
+import 'admin_market_pulse_page.dart';
 import 'admin_reschedule_requests_page.dart';
+import 'admin_support_chats_page.dart';
 import 'admin_theme.dart';
 import 'admin_users_page.dart';
 import 'admin_video_management_page.dart';
@@ -23,7 +26,8 @@ class AdminLayout extends StatefulWidget {
   State<AdminLayout> createState() => _AdminLayoutState();
 }
 
-class _AdminLayoutState extends State<AdminLayout> {
+class _AdminLayoutState extends State<AdminLayout> with WidgetsBindingObserver {
+  final SupportChatService _supportChatService = SupportChatService();
   int _selectedIndex = 0;
   bool _isSidebarCollapsed = false;
 
@@ -39,6 +43,18 @@ class _AdminLayoutState extends State<AdminLayout> {
       title: 'Insight Metrics',
       icon: Icons.insights,
       builder: (_) => const AdminInsightMetricsPage(),
+    ),
+    AdminNavigationItem(
+      id: 'market_pulse',
+      title: 'MarketPulse',
+      icon: Icons.bar_chart_rounded,
+      builder: (_) => const AdminMarketPulsePage(),
+    ),
+    AdminNavigationItem(
+      id: 'support_chats',
+      title: 'Support Chats',
+      icon: Icons.support_agent_outlined,
+      builder: (_) => const AdminSupportChatsPage(),
     ),
     AdminNavigationItem(
       id: 'ad_moderation',
@@ -101,6 +117,26 @@ class _AdminLayoutState extends State<AdminLayout> {
       builder: (_) => const AdminVideoManagementPage(),
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _supportChatService.setAdminOnline(true);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final online = state == AppLifecycleState.resumed;
+    _supportChatService.setAdminOnline(online);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _supportChatService.setAdminOnline(false);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
