@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/support_chat_model.dart';
+import '../services/support_chat_service.dart';
+
 class HelpPage extends StatefulWidget {
   const HelpPage({super.key});
 
@@ -10,6 +13,7 @@ class HelpPage extends StatefulWidget {
 
 class _HelpPageState extends State<HelpPage> {
   final TextEditingController _searchController = TextEditingController();
+  final SupportChatService _supportService = SupportChatService();
   String _query = '';
 
   late final List<_HelpTopic> _topics = _buildTopics();
@@ -105,8 +109,9 @@ class _HelpPageState extends State<HelpPage> {
                 ),
               const SizedBox(height: 22),
               _SupportCard(
+                statusStream: _supportService.supportStatusStream(),
                 onEmailTap: _emailSupport,
-                onLiveChatTap: _showLiveChatPlaceholder,
+                onLiveChatTap: _openLiveChat,
               ),
             ],
           ),
@@ -130,12 +135,8 @@ class _HelpPageState extends State<HelpPage> {
     }
   }
 
-  void _showLiveChatPlaceholder() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Live chat is coming soon.'),
-      ),
-    );
+  void _openLiveChat() {
+    Navigator.pushNamed(context, '/support-chat');
   }
 
   void _openTopic(_HelpTopic topic) {
@@ -573,10 +574,12 @@ class _HelpDetailItem extends StatelessWidget {
 
 class _SupportCard extends StatelessWidget {
   const _SupportCard({
+    required this.statusStream,
     required this.onEmailTap,
     required this.onLiveChatTap,
   });
 
+  final Stream<SupportOnlineStatus> statusStream;
   final Future<void> Function() onEmailTap;
   final VoidCallback onLiveChatTap;
 
@@ -641,6 +644,50 @@ class _SupportCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          StreamBuilder<SupportOnlineStatus>(
+            stream: statusStream,
+            builder: (context, snapshot) {
+              final status = snapshot.data ??
+                  const SupportOnlineStatus(online: false, lastSeen: null);
+              final dotColor =
+                  status.online ? const Color(0xFF22C55E) : Colors.grey;
+
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: theme.brightness == Brightness.dark ? 0.45 : 0.70),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: dotColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        status.online
+                            ? 'Support is online now'
+                            : 'Typically replies within a few hours',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
           Row(

@@ -752,7 +752,6 @@ class _MyadsState extends State<Myads> {
                     ),
                   ],
                 ],
-              ],
               ),
             ),
           ],

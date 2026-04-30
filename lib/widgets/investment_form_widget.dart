@@ -37,14 +37,15 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
 
   bool _isSubmitting = false;
   String? _selectedPaymentMethod;
-  
+
   // Payment methods - exclude Stripe on web since payment sheet doesn't work on web
   List<String> get _paymentMethods => [
-    'jazzcash',
-    'easypay',
-    'bank_transfer',
-    if (!kIsWeb) 'stripe', // Stripe only on mobile (payment sheet not supported on web)
-  ];
+        'jazzcash',
+        'easypay',
+        'bank_transfer',
+        if (!kIsWeb)
+          'stripe', // Stripe only on mobile (payment sheet not supported on web)
+      ];
 
   @override
   void dispose() {
@@ -73,9 +74,10 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
 
     // Get the effective minimum: if remaining amount is less than minimum,
     // allow investing the exact remaining amount
-    final effectiveMinimum = widget.vehicle.remainingAmount < widget.vehicle.minimumContribution
-        ? widget.vehicle.remainingAmount
-        : widget.vehicle.minimumContribution;
+    final effectiveMinimum =
+        widget.vehicle.remainingAmount < widget.vehicle.minimumContribution
+            ? widget.vehicle.remainingAmount
+            : widget.vehicle.minimumContribution;
 
     if (amount < effectiveMinimum) {
       if (widget.vehicle.remainingAmount < widget.vehicle.minimumContribution) {
@@ -397,40 +399,6 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
                     width: _selectedPaymentMethod == method ? 2 : 1,
                   ),
                 ),
-                child: Column(
-                  children: [
-                    // Show effective minimum (remaining if less than minimum)
-                    _buildInfoRow(
-                      'Minimum',
-                      widget.vehicle.remainingAmount < widget.vehicle.minimumContribution
-                          ? '${widget.vehicle.remainingAmount.toStringAsFixed(0)} PKR (remaining)'
-                          : '${widget.vehicle.minimumContribution.toStringAsFixed(0)} PKR',
-                    ),
-                    const SizedBox(height: 4),
-                    _buildInfoRow(
-                      'Remaining',
-                      '${widget.vehicle.remainingAmount.toStringAsFixed(0)} PKR',
-                    ),
-                    const SizedBox(height: 4),
-                    // Show USD equivalent if Stripe is selected
-                    if (_selectedPaymentMethod == 'stripe' && 
-                        _amountController.text.isNotEmpty &&
-                        _getInvestmentAmount() != null) ...[
-                      _buildInfoRow(
-                        'Amount (USD)',
-                        CurrencyConverterService.formatCurrency(
-                          CurrencyConverterService.convertPkrToUsd(_getInvestmentAmount()!),
-                          currency: 'USD',
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                    ],
-                    _buildInfoRow(
-                      'Your Share',
-                      _amountController.text.isNotEmpty &&
-                              _getInvestmentAmount() != null
-                          ? '${((_getInvestmentAmount()! / widget.vehicle.totalInvestmentGoal) * 100).toStringAsFixed(2)}%'
-                          : '0%',
                 child: RadioListTile<String>(
                   title: Text(
                     _getPaymentMethodName(method),
@@ -441,6 +409,16 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
                           : FontWeight.normal,
                     ),
                   ),
+                  subtitle: method == 'stripe' &&
+                          _amountController.text.isNotEmpty &&
+                          _getInvestmentAmount() != null
+                      ? Text(
+                          'Charged as ${CurrencyConverterService.formatCurrency(CurrencyConverterService.convertPkrToUsd(_getInvestmentAmount()!), currency: 'USD')}',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                      : null,
                   value: method,
                   groupValue: _selectedPaymentMethod,
                   activeColor: const Color(0xFF4CAF50),
@@ -452,6 +430,7 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                 ),
               );
             }),

@@ -24,6 +24,7 @@ import 'package:carhive/models/ad_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/trust_rank_service.dart';
+import '../services/market_pulse_service.dart';
 
 class GlobalAdStore {
   static final GlobalAdStore _instance = GlobalAdStore._internal();
@@ -32,6 +33,7 @@ class GlobalAdStore {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final MarketPulseService _marketPulseService = MarketPulseService();
 
   // Get all active ads for the used cars tab (simplified query to avoid index issues)
   Stream<List<AdModel>> getAllActiveAds() {
@@ -465,6 +467,16 @@ class GlobalAdStore {
         'soldAt': FieldValue.serverTimestamp(),
       });
 
+      final price = _parseNumericPrice((adData?['price'] ?? '').toString());
+      await _marketPulseService.trackDealCompleted(
+        adId: adId,
+        price: price,
+        city: (adData?['cityName'] ??
+                adData?['locationString'] ??
+                adData?['location'])
+            ?.toString(),
+      );
+
       // Update user's sales count and trigger trust rank recompute
       await _updateUserSalesCount(ownerId);
     } catch (e) {
@@ -580,6 +592,14 @@ class GlobalAdStore {
     final bytes = utf8.encode(normalized);
     final hash = sha256.convert(bytes);
     return hash.toString();
+  }
+
+  double _parseNumericPrice(String raw) {
+    final cleaned = raw.replaceAll(RegExp(r'[^0-9.]'), '');
+    if (cleaned.isEmpty) {
+      return 0;
+    }
+    return double.tryParse(cleaned) ?? 0;
   }
 
   /// Marks an ad as expired (removed) if it has passed its expiration date
