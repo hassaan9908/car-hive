@@ -683,6 +683,8 @@ class _MyInvestmentDetailPageState extends State<MyInvestmentDetailPage> {
               final investmentTransactions = transactions
                   .where((t) => t.investmentId == widget.investmentId)
                   .toList();
+              investmentTransactions
+                  .sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
               if (investmentTransactions.isEmpty) {
                 return Padding(
@@ -847,6 +849,11 @@ class _MyInvestmentDetailPageState extends State<MyInvestmentDetailPage> {
               final investmentProfits = profitTransactions
                   .where((t) => t.investmentId == widget.investmentId)
                   .toList();
+              investmentProfits.sort((a, b) {
+                final aDate = a.distributionDate ?? a.createdAt;
+                final bDate = b.distributionDate ?? b.createdAt;
+                return bDate.compareTo(aDate);
+              });
 
               if (investmentProfits.isEmpty) {
                 return Padding(
