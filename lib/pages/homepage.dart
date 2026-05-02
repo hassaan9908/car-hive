@@ -279,23 +279,21 @@ class _HomepageState extends State<Homepage> {
                     },
                   ),
 
-                // Car Brand Grid (only show when not searching)
-                if (!_isSearchActive)
-                  CarBrandGrid(
-                    selectedBrandId: _selectedBrandId,
-                    onBrandSelected: (CarBrand brand) {
-                      setState(() {
-                        _selectedBrandId =
-                            _selectedBrandId == brand.id ? null : brand.id;
-                      });
-                      _trackFilter('brand', brand.displayName);
-                    },
-                  ),
-
                 // Search Results or home marketplace sections
                 _isSearchActive
                     ? _buildSearchResults(searchProvider)
                     : HomeMarketplaceSections(
+                        brandsSection: CarBrandGrid(
+                          selectedBrandId: _selectedBrandId,
+                          onBrandSelected: (CarBrand brand) {
+                            setState(() {
+                              _selectedBrandId = _selectedBrandId == brand.id
+                                  ? null
+                                  : brand.id;
+                            });
+                            _trackFilter('brand', brand.displayName);
+                          },
+                        ),
                         filterSection: HomeFilterSection(
                           selectedQuickFilterId: _selectedQuickFilterId,
                           onQuickFilterSelected: (filterId) {
