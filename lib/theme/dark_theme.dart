@@ -14,12 +14,14 @@ final ThemeData darkTheme = ThemeData(
     onPrimaryContainer: AppColors.primaryOrange,
     secondary: AppColors.secondaryGreen,
     onSecondary: Colors.white,
-    secondaryContainer: AppColors.secondaryGreen,
-    onSecondaryContainer: AppColors.secondaryGreen,
+    secondaryContainer: Color(0xFF1F5137),
+    onSecondaryContainer: Colors.white,
     tertiary: AppColors.secondaryOrange,
     onTertiary: Colors.white,
-    tertiaryContainer: AppColors.secondaryOrange,
-    onTertiaryContainer: AppColors.secondaryOrange,
+    tertiaryContainer: Color(0xFF5C3A10),
+    onTertiaryContainer: Colors.white,
+    background: AppColors.darkBackground,
+    onBackground: AppColors.darkOnSurface,
     surface: AppColors.darkSurface,
     onSurface: AppColors.darkOnSurface,
     surfaceContainerHighest: AppColors.darkSurfaceVariant,
@@ -39,19 +41,19 @@ final ThemeData darkTheme = ThemeData(
 
   // App Bar Theme - Automotive Dark Style
   appBarTheme: const AppBarTheme(
-    backgroundColor: Color(0xFF221910), // Same as app background (#221910)
-    foregroundColor: Color(0xFFf48c25), // Orange for title and actions
+    backgroundColor: AppColors.darkBackground,
+    foregroundColor: AppColors.primaryOrange,
     elevation: 0,
     centerTitle: true,
     titleTextStyle: TextStyle(
-      color: Color(0xFFf48c25), // Orange #f48c25
+      color: AppColors.primaryOrange,
       fontSize: 20,
       fontWeight: FontWeight.w600,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
-    iconTheme: IconThemeData(color: Color(0xFFf48c25)), // Orange #f48c25
-    actionsIconTheme: IconThemeData(color: Color(0xFFf48c25)), // Orange #f48c25 for action buttons
+    iconTheme: IconThemeData(color: AppColors.primaryOrange),
+    actionsIconTheme: IconThemeData(color: AppColors.primaryOrange),
     surfaceTintColor: Colors.transparent,
   ),
 
@@ -77,8 +79,7 @@ final ThemeData darkTheme = ThemeData(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide:
-          const BorderSide(color: AppColors.primaryOrange, width: 2),
+      borderSide: const BorderSide(color: AppColors.primaryOrange, width: 2),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
@@ -159,7 +160,7 @@ final ThemeData darkTheme = ThemeData(
 
   // Bottom Navigation Bar Theme - Automotive Dark Style
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-    backgroundColor: Colors.black, // Black in dark mode
+    backgroundColor: AppColors.darkSurface,
     selectedItemColor: AppColors.primaryOrange,
     unselectedItemColor: AppColors.darkOnSurfaceVariant,
     type: BottomNavigationBarType.fixed,
@@ -325,8 +326,9 @@ final ThemeData darkTheme = ThemeData(
     ),
   ),
 
-  // Scaffold Background - Transparent to allow gradient wrapper to show through
-  scaffoldBackgroundColor: Colors.transparent,
+  scaffoldBackgroundColor: AppColors.darkBackground,
+  cardColor: AppColors.darkSurface,
+  canvasColor: AppColors.darkBackground,
 
   // List Tile Theme - Automotive Dark Style
   listTileTheme: const ListTileThemeData(

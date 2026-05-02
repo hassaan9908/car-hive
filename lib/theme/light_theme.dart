@@ -19,6 +19,8 @@ final ThemeData lightTheme = ThemeData(
     onTertiary: Colors.white,
     tertiaryContainer: Color(0xFFFFF3E0),
     onTertiaryContainer: AppColors.secondaryOrange,
+    background: AppColors.lightBackground,
+    onBackground: AppColors.lightOnSurface,
     surface: AppColors.lightSurface,
     onSurface: AppColors.lightOnSurface,
     surfaceContainerHighest: AppColors.lightSurfaceVariant,
@@ -39,17 +41,17 @@ final ThemeData lightTheme = ThemeData(
   // App Bar Theme - Automotive Style
   appBarTheme: const AppBarTheme(
     backgroundColor: Colors.transparent, // Same as app background
-    foregroundColor: Colors.black, // Black title and actions
+    foregroundColor: AppColors.lightOnSurface,
     elevation: 0,
     centerTitle: true,
     titleTextStyle: TextStyle(
-      color: Colors.black,
+      color: AppColors.lightOnSurface,
       fontSize: 20,
       fontWeight: FontWeight.w600,
       textBaseline: TextBaseline.alphabetic,
       inherit: false,
     ),
-    iconTheme: IconThemeData(color: Colors.black), // Black icons
+    iconTheme: IconThemeData(color: AppColors.lightOnSurface),
     surfaceTintColor: Colors.transparent,
   ),
 
@@ -322,8 +324,8 @@ final ThemeData lightTheme = ThemeData(
     ),
   ),
 
-  // Scaffold Background - Transparent to allow gradient wrapper to show through
-  scaffoldBackgroundColor: Colors.transparent,
+  scaffoldBackgroundColor: AppColors.lightBackground,
+  cardColor: AppColors.lightSurface,
 
   // List Tile Theme - Automotive Style
   listTileTheme: const ListTileThemeData(

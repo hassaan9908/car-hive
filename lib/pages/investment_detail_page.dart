@@ -124,40 +124,51 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
                   // Title
                   Text(
                     _vehicle!.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
 
                   // Vehicle Details
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _buildDetailChip(
                         Icons.calendar_today,
                         _vehicle!.year,
                       ),
-                      const SizedBox(width: 8),
                       _buildDetailChip(
                         Icons.local_gas_station,
                         _vehicle!.fuel,
                       ),
-                      const SizedBox(width: 8),
                       _buildDetailChip(
                         Icons.speed,
                         '${_vehicle!.mileage} km',
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   // Location
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16),
-                      const SizedBox(width: 4),
-                      Text(_vehicle!.location),
+                      Icon(
+                        Icons.location_on,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _vehicle!.location,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -205,20 +216,37 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
                               });
                             },
                           )
-                        : SizedBox(
+                        : Container(
                             width: double.infinity,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 setState(() {
                                   _showInvestmentForm = true;
                                 });
                               },
-                              icon: const Icon(Icons.add_circle),
-                              label: const Text('Invest Now'),
+                              icon: const Icon(Icons.add_circle,
+                                  color: Colors.white),
+                              label: const Text(
+                                'Invest Now',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
                             ),
                           )
@@ -236,14 +264,33 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
   }
 
   Widget _buildDetailChip(IconData icon, String label) {
-    return Chip(
-      avatar: Icon(icon, size: 16),
-      label: Text(label),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildStatusCard() {
+    final theme = Theme.of(context);
     Color statusColor;
     String statusText;
     IconData statusIcon;
@@ -255,7 +302,7 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
         statusIcon = Icons.lock_open;
         break;
       case 'funded':
-        statusColor = Colors.green;
+        statusColor = const Color(0xFF4CAF50);
         statusText = 'Fully Funded';
         statusIcon = Icons.check_circle;
         break;
@@ -265,7 +312,7 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
         statusIcon = Icons.lock;
         break;
       case 'sold':
-        statusColor = Colors.orange;
+        statusColor = const Color(0xFFFF6B35);
         statusText = 'Sold';
         statusIcon = Icons.sell;
         break;
@@ -278,13 +325,13 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: statusColor),
+        color: statusColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: statusColor, width: 2),
       ),
       child: Row(
         children: [
-          Icon(statusIcon, color: statusColor),
+          Icon(statusIcon, color: statusColor, size: 28),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -301,7 +348,10 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
                 if (_vehicle!.expiresAt != null)
                   Text(
                     'Expires: ${_formatDate(_vehicle!.expiresAt!)}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
               ],
             ),
@@ -312,158 +362,208 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
   }
 
   Widget _buildProgressSection() {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Investment Progress',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Investment Progress',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
                 ),
-                Text(
-                  '${_vehicle!.fundingProgress.toStringAsFixed(1)}%',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(
-              value: _vehicle!.fundingProgress / 100,
-              minHeight: 8,
-              backgroundColor: Colors.grey[300],
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Invested',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                    Text(
-                      '${_vehicle!.currentInvestment.toStringAsFixed(0)} PKR',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Goal',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                    Text(
-                      '${_vehicle!.totalInvestmentGoal.toStringAsFixed(0)} PKR',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(4),
               ),
-              child: Row(
+              Text(
+                '${_vehicle!.fundingProgress.toStringAsFixed(1)}%',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4CAF50),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: _vehicle!.fundingProgress / 100,
+              minHeight: 12,
+              backgroundColor: theme.colorScheme.surfaceVariant,
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline, size: 16, color: Colors.blue),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Remaining: ${_vehicle!.remainingAmount.toStringAsFixed(0)} PKR',
-                      style: const TextStyle(fontSize: 12),
+                  Text(
+                    'Invested',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_vehicle!.currentInvestment.toStringAsFixed(0)} PKR',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ],
               ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Goal',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_vehicle!.totalInvestmentGoal.toStringAsFixed(0)} PKR',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.blue.withOpacity(0.2) : Colors.blue[50],
+              borderRadius: BorderRadius.circular(8),
             ),
-          ],
-        ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 18, color: Colors.blue),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Remaining: ${_vehicle!.remainingAmount.toStringAsFixed(0)} PKR',
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildInvestmentDetailsSection() {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Investment Details',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Investment Details',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
             ),
-            const SizedBox(height: 16),
-            _buildDetailRow(
-              'Total Investment Goal',
-              '${_vehicle!.totalInvestmentGoal.toStringAsFixed(0)} PKR',
-            ),
-            const Divider(),
-            _buildDetailRow(
-              'Minimum Contribution',
-              '${_vehicle!.minimumContribution.toStringAsFixed(0)} PKR',
-            ),
-            const Divider(),
-            _buildDetailRow(
-              'Profit Distribution',
-              'Proportional (Based on investment ratio)',
-            ),
-            const Divider(),
-            _buildDetailRow(
-              'Platform Fee',
-              '${_vehicle!.platformFeePercentage}%',
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          _buildDetailRow(
+            'Total Investment Goal',
+            '${_vehicle!.totalInvestmentGoal.toStringAsFixed(0)} PKR',
+          ),
+          Divider(color: theme.colorScheme.surfaceVariant),
+          _buildDetailRow(
+            'Minimum Contribution',
+            '${_vehicle!.minimumContribution.toStringAsFixed(0)} PKR',
+          ),
+          Divider(color: theme.colorScheme.surfaceVariant),
+          _buildDetailRow(
+            'Profit Distribution',
+            'Proportional (Based on investment ratio)',
+          ),
+          Divider(color: theme.colorScheme.surfaceVariant),
+          _buildDetailRow(
+            'Platform Fee',
+            '${_vehicle!.platformFeePercentage}%',
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildDetailRow(String label, String value) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(color: Colors.grey[600]),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
+          const SizedBox(width: 16),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: theme.colorScheme.onSurface,
+            ),
+            textAlign: TextAlign.right,
           ),
         ],
       ),
@@ -471,32 +571,48 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
   }
 
   Widget _buildDescriptionSection() {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Description',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Description',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
             ),
-            const SizedBox(height: 8),
-            Text(
-              _vehicle!.description!,
-              style: const TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _vehicle!.description!,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildCannotInvestMessage() {
+    final theme = Theme.of(context);
     String message;
     if (_vehicle!.investmentStatus == 'funded') {
       message = 'This investment is fully funded';
@@ -513,17 +629,23 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
+        color: theme.colorScheme.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline),
+          Icon(
+            Icons.info_outline,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(fontSize: 14),
+              style: TextStyle(
+                fontSize: 14,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -532,7 +654,8 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
   }
 
   Widget _buildShareMarketplaceSection() {
-    final ShareMarketplaceService marketplaceService = ShareMarketplaceService();
+    final ShareMarketplaceService marketplaceService =
+        ShareMarketplaceService();
 
     return Card(
       elevation: 2,
@@ -617,7 +740,8 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => ShareMarketplacePage(
-                                      vehicleInvestmentId: widget.vehicleInvestmentId,
+                                      vehicleInvestmentId:
+                                          widget.vehicleInvestmentId,
                                     ),
                                   ),
                                 );
@@ -638,7 +762,8 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => ShareMarketplacePage(
-                                    vehicleInvestmentId: widget.vehicleInvestmentId,
+                                    vehicleInvestmentId:
+                                        widget.vehicleInvestmentId,
                                   ),
                                 ),
                               );
@@ -661,4 +786,3 @@ class _InvestmentDetailPageState extends State<InvestmentDetailPage> {
     return '${date.day}/${date.month}/${date.year}';
   }
 }
-

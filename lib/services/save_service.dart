@@ -30,6 +30,8 @@ class SaveService {
       throw Exception('User must be logged in to save ads');
     }
 
+    print('SaveService: Toggling save for adId: $adId');
+
     final savedRef = _firestore
         .collection('users')
         .doc(user.uid)
@@ -41,6 +43,7 @@ class SaveService {
     if (doc.exists) {
       // Unsave the ad
       await savedRef.delete();
+      print('SaveService: Ad unsaved successfully');
       return false;
     } else {
       // Save the ad
@@ -48,9 +51,11 @@ class SaveService {
         'adId': adId,
         'savedAt': FieldValue.serverTimestamp(),
       });
+      print('SaveService: Ad saved successfully, recording insight...');
 
       // Record the save event for insights
       await _insightService.recordSave(adId);
+      print('SaveService: Insight recorded successfully');
       return true;
     }
   }

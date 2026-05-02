@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carhive/models/ad_model.dart';
+import 'package:carhive/models/home_quick_filter.dart';
 import 'package:carhive/store/global_ads.dart';
 import 'package:carhive/services/car_brand_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,21 +8,48 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class CarTabs extends StatelessWidget {
   final int initialTab;
   final String? selectedBrandId; // For brand filtering
+  final String selectedQuickFilterId;
+  final String? selectedCity;
+  final int? selectedYear;
+  final String? selectedTrustLevelId;
 
-  const CarTabs({Key? key, this.initialTab = 0, this.selectedBrandId})
-      : super(key: key);
+  const CarTabs({
+    super.key,
+    this.initialTab = 0,
+    this.selectedBrandId,
+    this.selectedQuickFilterId = HomeQuickFilter.allId,
+    this.selectedCity,
+    this.selectedYear,
+    this.selectedTrustLevelId,
+  });
 
   @override
   Widget build(BuildContext context) {
     // Simplified - just show Used Cars tab content
-    return _UsedCarsTab(selectedBrandId: selectedBrandId);
+    return _UsedCarsTab(
+      selectedBrandId: selectedBrandId,
+      selectedQuickFilterId: selectedQuickFilterId,
+      selectedCity: selectedCity,
+      selectedYear: selectedYear,
+      selectedTrustLevelId: selectedTrustLevelId,
+    );
   }
 }
 
 class _UsedCarsTab extends StatelessWidget {
   final String? selectedBrandId;
+  final String selectedQuickFilterId;
+  final String? selectedCity;
+  final int? selectedYear;
+  final String? selectedTrustLevelId;
 
-  const _UsedCarsTab({this.selectedBrandId});
+  const _UsedCarsTab({
+    this.selectedBrandId,
+    this.selectedQuickFilterId = HomeQuickFilter.allId,
+    this.selectedCity,
+    this.selectedYear,
+    this.selectedTrustLevelId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -80,63 +108,281 @@ class _UsedCarsTab extends StatelessWidget {
           );
         }
 
-        var ads = snapshot.data ?? [];
+        final ads = snapshot.data ?? [];
 
-        // Filter by brand if selected
-        if (selectedBrandId != null && selectedBrandId!.isNotEmpty) {
-          // Get brand display name from ID
-          final brandService = CarBrandService();
-          final brand = brandService.getBrandById(selectedBrandId!);
-          final brandName = brand?.displayName ?? selectedBrandId!;
-          
-          ads = ads.where((ad) {
-            if (ad.carBrand == null) return false;
-            // Match by brand display name (case-insensitive)
-            final adBrandLower = ad.carBrand!.toLowerCase();
-            final selectedBrandLower = brandName.toLowerCase();
-            return adBrandLower == selectedBrandLower ||
-                adBrandLower.contains(selectedBrandLower) ||
-                selectedBrandLower.contains(adBrandLower);
-          }).toList();
-        }
+        if (_requiresSellerMetadata) {
+          return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance.collection('users').snapshots(),
+            builder: (context, userSnapshot) {
+              if (userSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
 
-        if (ads.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.car_rental, size: 48, color: Colors.grey),
-                SizedBox(height: 16),
-                Text('No cars available',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      textBaseline: TextBaseline.alphabetic,
-                      inherit: false,
-                    )),
-                SizedBox(height: 8),
-                Text('Check back later for new listings',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      textBaseline: TextBaseline.alphabetic,
-                      inherit: false,
-                    )),
-              ],
-            ),
+              final sellerMetadataByUserId = _buildSellerMetadataMap(
+                userSnapshot.data,
+              );
+              final filteredAds = _applyFilters(
+                ads,
+                sellerMetadataByUserId: sellerMetadataByUserId,
+              );
+
+              return _buildAdsContent(context, filteredAds);
+            },
           );
         }
 
-        return ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          itemCount: ads.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final ad = ads[index];
-            return _buildAdListItem(context, ad);
-          },
+        final filteredAds = _applyFilters(ads);
+        return _buildAdsContent(context, filteredAds);
+      },
+    );
+  }
+
+  bool get _requiresSellerMetadata {
+    return (selectedCity != null && selectedCity!.trim().isNotEmpty) ||
+        (selectedTrustLevelId != null &&
+            selectedTrustLevelId!.trim().isNotEmpty);
+  }
+
+  bool get _hasActiveFilters {
+    return (selectedBrandId != null && selectedBrandId!.isNotEmpty) ||
+        selectedQuickFilterId != HomeQuickFilter.allId ||
+        (selectedCity != null && selectedCity!.trim().isNotEmpty) ||
+        selectedYear != null ||
+        (selectedTrustLevelId != null &&
+            selectedTrustLevelId!.trim().isNotEmpty);
+  }
+
+  Map<String, _SellerMetadata> _buildSellerMetadataMap(
+    QuerySnapshot<Map<String, dynamic>>? snapshot,
+  ) {
+    if (snapshot == null) {
+      return const <String, _SellerMetadata>{};
+    }
+
+    final metadataByUserId = <String, _SellerMetadata>{};
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final rawCity = _normalizeText(data['city']);
+      final rawTrustLevel = (data['trustLevel'] ?? data['trust_level'] ?? 'Bronze')
+          .toString();
+
+      metadataByUserId[doc.id] = _SellerMetadata(
+        city: rawCity.isEmpty ? null : rawCity,
+        trustLevelId: _normalizeTrustLevel(rawTrustLevel),
+      );
+    }
+
+    return metadataByUserId;
+  }
+
+  List<AdModel> _applyFilters(
+    List<AdModel> ads, {
+    Map<String, _SellerMetadata> sellerMetadataByUserId =
+        const <String, _SellerMetadata>{},
+  }) {
+    return ads.where((ad) {
+      if (!_matchesBrand(ad)) {
+        return false;
+      }
+
+      if (!_matchesQuickFilter(ad)) {
+        return false;
+      }
+
+      if (!_matchesCity(ad, sellerMetadataByUserId[ad.userId])) {
+        return false;
+      }
+
+      if (!_matchesYear(ad)) {
+        return false;
+      }
+
+      if (!_matchesTrustLevel(sellerMetadataByUserId[ad.userId])) {
+        return false;
+      }
+
+      return true;
+    }).toList();
+  }
+
+  bool _matchesBrand(AdModel ad) {
+    if (selectedBrandId == null || selectedBrandId!.isEmpty) {
+      return true;
+    }
+
+    final brandService = CarBrandService();
+    final brand = brandService.getBrandById(selectedBrandId!);
+    final brandName = (brand?.displayName ?? selectedBrandId!).toLowerCase();
+    final adBrand = ad.carBrand?.toLowerCase() ?? '';
+
+    if (adBrand.isEmpty) {
+      return false;
+    }
+
+    return adBrand == brandName ||
+        adBrand.contains(brandName) ||
+        brandName.contains(adBrand);
+  }
+
+  bool _matchesQuickFilter(AdModel ad) {
+    switch (selectedQuickFilterId) {
+      case HomeQuickFilter.under50LId:
+        final price = _parseNumber(ad.price);
+        return price != null && price <= 5000000;
+      case HomeQuickFilter.electricId:
+        return _containsAnyTerm(
+          [ad.fuel, ad.title, ad.description],
+          ['electric', 'ev'],
         );
+      case HomeQuickFilter.allId:
+      default:
+        return true;
+    }
+  }
+
+  bool _matchesCity(AdModel ad, _SellerMetadata? sellerMetadata) {
+    if (selectedCity == null || selectedCity!.trim().isEmpty) {
+      return true;
+    }
+
+    final sellerCity = _resolveSellerCity(ad, sellerMetadata);
+    if (sellerCity.isEmpty) {
+      return false;
+    }
+
+    return _normalizeText(sellerCity) == _normalizeText(selectedCity);
+  }
+
+  bool _matchesYear(AdModel ad) {
+    if (selectedYear == null) {
+      return true;
+    }
+
+    return _parseNumber(ad.year) == selectedYear;
+  }
+
+  bool _matchesTrustLevel(_SellerMetadata? sellerMetadata) {
+    if (selectedTrustLevelId == null || selectedTrustLevelId!.trim().isEmpty) {
+      return true;
+    }
+
+    final resolvedTrustLevelId =
+        sellerMetadata?.trustLevelId ?? HomeTrustLevelOption.bronzeId;
+    return resolvedTrustLevelId == _normalizeTrustLevel(selectedTrustLevelId);
+  }
+
+  String _resolveSellerCity(AdModel ad, _SellerMetadata? sellerMetadata) {
+    final sellerCity = sellerMetadata?.city?.trim();
+    if (sellerCity != null && sellerCity.isNotEmpty) {
+      return sellerCity;
+    }
+
+    if (ad.location.trim().isEmpty) {
+      return '';
+    }
+
+    return ad.location.split(',').first.trim();
+  }
+
+  bool _containsAnyTerm(List<String?> sources, List<String> terms) {
+    for (final source in sources) {
+      if (source == null || source.trim().isEmpty) {
+        continue;
+      }
+
+      for (final term in terms) {
+        final pattern = RegExp(
+          '(?:^|\\b)${RegExp.escape(term)}(?:\\b|\$)',
+          caseSensitive: false,
+        );
+
+        if (pattern.hasMatch(source)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  String _normalizeText(String? value) {
+    if (value == null) {
+      return '';
+    }
+
+    return value.trim().toLowerCase();
+  }
+
+  String _normalizeTrustLevel(String? value) {
+    final normalized = _normalizeText(value);
+    if (normalized == 'gold') {
+      return HomeTrustLevelOption.goldId;
+    }
+    if (normalized == 'silver') {
+      return HomeTrustLevelOption.silverId;
+    }
+    return HomeTrustLevelOption.bronzeId;
+  }
+
+  int? _parseNumber(String? rawValue) {
+    if (rawValue == null || rawValue.trim().isEmpty) {
+      return null;
+    }
+
+    final normalized = rawValue.replaceAll(RegExp(r'[^0-9]'), '');
+    if (normalized.isEmpty) {
+      return null;
+    }
+
+    return int.tryParse(normalized);
+  }
+
+  Widget _buildAdsContent(BuildContext context, List<AdModel> ads) {
+    if (ads.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.car_rental, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              _hasActiveFilters
+                  ? 'No cars match these filters'
+                  : 'No cars available',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                textBaseline: TextBaseline.alphabetic,
+                inherit: false,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _hasActiveFilters
+                  ? 'Try adjusting your selected brand, chips, or dropdown filters'
+                  : 'Check back later for new listings',
+              style: const TextStyle(
+                color: Colors.grey,
+                textBaseline: TextBaseline.alphabetic,
+                inherit: false,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: ads.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final ad = ads[index];
+        return _buildAdListItem(context, ad);
       },
     );
   }
@@ -146,10 +392,10 @@ class _UsedCarsTab extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final Color card_color = isDark 
-        ? const Color.fromARGB(255, 15, 15, 15) 
+    final Color cardColor = isDark
+        ? const Color.fromARGB(255, 15, 15, 15)
         : Colors.grey.shade200;
-    
+
     return GestureDetector(
       onTap: () {
         // Navigate to detailed car page
@@ -163,7 +409,7 @@ class _UsedCarsTab extends StatelessWidget {
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         clipBehavior: Clip.antiAlias,
-        color: card_color,
+        color: cardColor,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -174,7 +420,7 @@ class _UsedCarsTab extends StatelessWidget {
                 child: Container(
                   width: 120,
                   height: 100,
-                  color: colorScheme.surfaceVariant,
+                  color: colorScheme.surfaceContainerHighest,
                   child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
                       ? Image.network(
                           ad.imageUrls![0],
@@ -258,7 +504,9 @@ class _UsedCarsTab extends StatelessWidget {
 
         final userData =
             userSnapshot.data!.data() as Map<String, dynamic>? ?? {};
-        final String level = (userData['trustLevel'] ?? 'Bronze').toString();
+        final String level =
+            (userData['trustLevel'] ?? userData['trust_level'] ?? 'Bronze')
+                .toString();
 
         return StreamBuilder<QuerySnapshot>(
           stream: adId != null && adId.isNotEmpty
@@ -299,9 +547,11 @@ class _UsedCarsTab extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: levelColor.withOpacity(0.12),
+                    color: levelColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: levelColor.withOpacity(0.3)),
+                    border: Border.all(
+                      color: levelColor.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Text(
                     level,
@@ -315,7 +565,7 @@ class _UsedCarsTab extends StatelessWidget {
                 Icon(Icons.star, size: 14, color: Colors.amber[600]),
                 const SizedBox(width: 2),
                 Text(
-                  '${avgRating.toStringAsFixed(1)} (${ratingCount})',
+                  '${avgRating.toStringAsFixed(1)} ($ratingCount)',
                   style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                 ),
               ],
@@ -357,4 +607,14 @@ class _UsedCarsTab extends StatelessWidget {
         return cs.primary;
     }
   }
+}
+
+class _SellerMetadata {
+  final String? city;
+  final String trustLevelId;
+
+  const _SellerMetadata({
+    required this.city,
+    required this.trustLevelId,
+  });
 }

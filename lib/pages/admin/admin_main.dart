@@ -13,6 +13,7 @@ class AdminMain extends StatefulWidget {
 
 class _AdminMainState extends State<AdminMain> {
   bool _hasCheckedPrivileges = false;
+  bool _isCheckingPrivileges = true;
 
   @override
   void initState() {
@@ -32,17 +33,24 @@ class _AdminMainState extends State<AdminMain> {
 
     print('AdminMain: Checking admin privileges...');
     await context.read<AdminProvider>().initialize();
-    _hasCheckedPrivileges = true;
+    if (!mounted) return;
+    setState(() {
+      _hasCheckedPrivileges = true;
+      _isCheckingPrivileges = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AdminProvider>(
       builder: (context, adminProvider, child) {
-        print('AdminMain: Building with isLoading: ${adminProvider.isLoading}, isAuthenticated: ${adminProvider.isAuthenticated}, hasAdminPrivileges: ${adminProvider.hasAdminPrivileges}');
-        
-        // Show loading only during initial check
-        if (adminProvider.isLoading && !_hasCheckedPrivileges) {
+        print(
+            'AdminMain: Building with isLoading: ${adminProvider.isLoading}, isAuthenticated: ${adminProvider.isAuthenticated}, hasAdminPrivileges: ${adminProvider.hasAdminPrivileges}');
+
+        // Keep showing loading until the first privilege check has actually completed.
+        if (_isCheckingPrivileges ||
+            !_hasCheckedPrivileges ||
+            adminProvider.isLoading) {
           return const Scaffold(
             body: Center(
               child: Column(
@@ -58,16 +66,19 @@ class _AdminMainState extends State<AdminMain> {
         }
 
         // Check if user is authenticated as admin
-        if (adminProvider.isAuthenticated && adminProvider.currentAdmin != null) {
+        if (adminProvider.isAuthenticated &&
+            adminProvider.currentAdmin != null) {
           // Verify the user actually has admin role
           if (adminProvider.hasAdminPrivileges) {
             print('AdminMain: User has admin privileges, showing AdminLayout');
             return const AdminLayout();
           } else {
-            print('AdminMain: User is authenticated but does not have admin privileges');
+            print(
+                'AdminMain: User is authenticated but does not have admin privileges');
           }
         } else {
-          print('AdminMain: User is not authenticated or no current admin data');
+          print(
+              'AdminMain: User is not authenticated or no current admin data');
         }
 
         // Show access denied page for non-admin users

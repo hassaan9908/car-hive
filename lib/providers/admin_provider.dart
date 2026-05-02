@@ -25,7 +25,8 @@ class AdminProvider extends ChangeNotifier {
     // Listen to Firebase Auth state changes
     FirebaseAuth.instance.authStateChanges().listen((User? user) {
       if (user != null) {
-        print('AdminProvider: Firebase Auth state changed, user logged in: ${user.email}');
+        print(
+            'AdminProvider: Firebase Auth state changed, user logged in: ${user.email}');
         // Wait a bit for the user to be fully loaded
         Future.delayed(const Duration(milliseconds: 100), () {
           refreshOnAuthChange();
@@ -48,21 +49,22 @@ class AdminProvider extends ChangeNotifier {
   List<AdModel> get pendingAds => _pendingAds;
   List<ActivityModel> get recentActivities => _recentActivities;
   UserModel? get currentAdmin => _currentAdmin;
-  
+
   // Check if current user has admin privileges
   bool get hasAdminPrivileges {
     if (_currentAdmin == null) return false;
-    return _currentAdmin!.role == 'admin' || _currentAdmin!.role == 'super_admin';
+    return _currentAdmin!.role == 'admin' ||
+        _currentAdmin!.role == 'super_admin';
   }
-  
+
   // Get current user role
   String get currentUserRole => _currentAdmin?.role ?? 'none';
-  
+
   // Force refresh admin status
   Future<void> refreshAdminStatus() async {
     await initialize();
   }
-  
+
   // Reset admin provider state (useful for testing)
   void resetState() {
     _isLoading = false;
@@ -71,13 +73,14 @@ class AdminProvider extends ChangeNotifier {
     _clearData();
     notifyListeners();
   }
-  
+
   // Check if current user can access admin panel
   bool get canAccessAdminPanel {
     if (!_isAuthenticated || _currentAdmin == null) return false;
-    return _currentAdmin!.role == 'admin' || _currentAdmin!.role == 'super_admin';
+    return _currentAdmin!.role == 'admin' ||
+        _currentAdmin!.role == 'super_admin';
   }
-  
+
   // Manual refresh when auth state changes
   Future<void> refreshOnAuthChange() async {
     print('AdminProvider: Auth state changed, refreshing admin status...');
@@ -89,9 +92,9 @@ class AdminProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      
+
       print('AdminProvider: Starting initialization...');
-      
+
       // Check if user is currently signed in
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) {
@@ -100,26 +103,28 @@ class AdminProvider extends ChangeNotifier {
         _clearData();
         return;
       }
-      
-      print('AdminProvider: Current user: ${currentUser.email} (${currentUser.uid})');
-      
+
+      print(
+          'AdminProvider: Current user: ${currentUser.email} (${currentUser.uid})');
+
       // Check if user has admin role
       final isAdmin = await _adminAuthService.isCurrentUserAdmin();
-      
+
       print('AdminProvider: isCurrentUserAdmin() returned: $isAdmin');
-      
+
       if (isAdmin) {
         // User is an admin, authenticate them
         _isAuthenticated = true;
         print('AdminProvider: User is admin, loading data...');
-        
+
         await _loadCurrentAdminData();
-        
+
         print('AdminProvider: Current admin loaded: ${_currentAdmin?.role}');
-        
+
         // Double-check that the loaded user actually has admin role
-        if (_currentAdmin != null && 
-            (_currentAdmin!.role == 'admin' || _currentAdmin!.role == 'super_admin')) {
+        if (_currentAdmin != null &&
+            (_currentAdmin!.role == 'admin' ||
+                _currentAdmin!.role == 'super_admin')) {
           print('AdminProvider: Role verified, loading dashboard stats...');
           await _loadDashboardStats();
           print('AdminProvider: Initialization complete for admin user');
@@ -142,7 +147,8 @@ class AdminProvider extends ChangeNotifier {
       _clearData();
     } finally {
       _setLoading(false);
-      print('AdminProvider: Initialization finished. isAuthenticated: $_isAuthenticated, role: ${_currentAdmin?.role}');
+      print(
+          'AdminProvider: Initialization finished. isAuthenticated: $_isAuthenticated, role: ${_currentAdmin?.role}');
       debugCurrentState();
     }
   }
@@ -152,13 +158,13 @@ class AdminProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      
+
       await _adminAuthService.adminLogin(email, password);
       _isAuthenticated = true;
-      
+
       await _loadDashboardStats();
       await _loadCurrentAdminData();
-      
+
       notifyListeners();
       return true;
     } catch (e) {
@@ -245,11 +251,11 @@ class AdminProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _adminService.approveAd(adId);
-      
+
       // Remove from pending ads and update stats
       _pendingAds.removeWhere((ad) => ad.id == adId);
       await _loadDashboardStats();
-      
+
       notifyListeners();
       return true;
     } catch (e) {
@@ -265,11 +271,11 @@ class AdminProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _adminService.rejectAd(adId, reason);
-      
+
       // Remove from pending ads and update stats
       _pendingAds.removeWhere((ad) => ad.id == adId);
       await _loadDashboardStats();
-      
+
       notifyListeners();
       return true;
     } catch (e) {
@@ -285,14 +291,14 @@ class AdminProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _adminService.updateUserRole(userId, newRole);
-      
+
       // Update local user list
       final userIndex = _users.indexWhere((user) => user.id == userId);
       if (userIndex != -1) {
         _users[userIndex] = _users[userIndex].copyWith(role: newRole);
         notifyListeners();
       }
-      
+
       return true;
     } catch (e) {
       _setError('Failed to update user role: $e');
@@ -307,14 +313,14 @@ class AdminProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       await _adminService.toggleUserStatus(userId, isActive);
-      
+
       // Update local user list
       final userIndex = _users.indexWhere((user) => user.id == userId);
       if (userIndex != -1) {
         _users[userIndex] = _users[userIndex].copyWith(isActive: isActive);
         notifyListeners();
       }
-      
+
       return true;
     } catch (e) {
       _setError('Failed to toggle user status: $e');
@@ -380,18 +386,54 @@ class AdminProvider extends ChangeNotifier {
     try {
       print('AdminProvider: Loading current admin data...');
       final adminData = await _adminAuthService.getCurrentAdminData();
-      if (adminData != null) {
-        // Get the current user's UID from Firebase Auth
-        final currentUser = FirebaseAuth.instance.currentUser;
-        if (currentUser != null) {
-          print('AdminProvider: Creating UserModel from admin data...');
-          _currentAdmin = UserModel.fromFirestore(adminData, currentUser.uid);
-          print('AdminProvider: UserModel created successfully. Role: ${_currentAdmin?.role}');
+      if (adminData == null) {
+        print(
+            'AdminProvider: No admin data returned from getCurrentAdminData()');
+        _currentAdmin = null;
+        return;
+      }
+
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        print('AdminProvider: No current user found when loading admin data');
+        _currentAdmin = null;
+        return;
+      }
+
+      try {
+        print('AdminProvider: Creating UserModel from admin data...');
+        _currentAdmin = UserModel.fromFirestore(adminData, currentUser.uid);
+        print(
+            'AdminProvider: UserModel created successfully. Role: ${_currentAdmin?.role}');
+      } catch (parseError) {
+        print('AdminProvider: Error parsing admin data: $parseError');
+        final resolvedRole =
+            adminData['role']?.toString().trim().toLowerCase() ?? '';
+        final normalizedRole =
+            resolvedRole.replaceAll('-', '_').replaceAll(' ', '_') ==
+                    'superadmin'
+                ? 'super_admin'
+                : resolvedRole.replaceAll('-', '_').replaceAll(' ', '_');
+
+        if (normalizedRole == 'admin' || normalizedRole == 'super_admin') {
+          print(
+            'AdminProvider: Falling back to minimal admin identity after parse error',
+          );
+          _currentAdmin = UserModel(
+            id: currentUser.uid,
+            email: adminData['email']?.toString() ?? currentUser.email ?? '',
+            displayName:
+                adminData['displayName']?.toString() ?? currentUser.displayName,
+            role: normalizedRole,
+            createdAt: DateTime.now(),
+            lastLoginAt: DateTime.now(),
+            isActive: adminData['isActive'] is bool
+                ? adminData['isActive'] as bool
+                : true,
+          );
         } else {
-          print('AdminProvider: No current user found when loading admin data');
+          _currentAdmin = null;
         }
-      } else {
-        print('AdminProvider: No admin data returned from getCurrentAdminData()');
       }
     } catch (e) {
       print('AdminProvider: Error loading current admin data: $e');

@@ -13,6 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import shutil
 import uuid
 from pathlib import Path
+import requests
+import base64
 
 app = FastAPI()
 
@@ -35,6 +37,11 @@ OUTPUT_DIR = BASE_DIR / "output"
 # Create directories if they don't exist
 for directory in [UPLOAD_DIR, EXTRACT_DIR, STABILIZED_DIR, OUTPUT_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
+
+# Cloudinary configuration
+CLOUDINARY_CLOUD_NAME = "dkcpilqiq"
+CLOUDINARY_UPLOAD_PRESET = "unsigned_preset"
+CLOUDINARY_UPLOAD_URL = f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload"
 
 # FFmpeg configuration
 # If FFmpeg is not in PATH, specify the full path here
@@ -363,6 +370,64 @@ def export_frames(stabilized_dir, output_files, output_dir, session_id):
     return exported_files
 
 
+def upload_frames_to_cloudinary(output_dir, frame_files, session_id):
+    """Upload frames to Cloudinary using HTTP requests (unsigned upload with preset)."""
+    import json
+    
+    cloudinary_urls = []
+    
+    for i, frame_file in enumerate(frame_files):
+        frame_path = os.path.join(output_dir, frame_file)
+        
+        if not os.path.exists(frame_path):
+            print(f"Warning: Frame file not found: {frame_path}")
+            continue
+        
+        try:
+            # Read image file
+            with open(frame_path, 'rb') as f:
+                image_data = f.read()
+            
+            # Prepare form data for multipart upload (same as Flutter app)
+            files = {
+                'file': (frame_file, image_data, 'image/jpeg')
+            }
+            data = {
+                'upload_preset': CLOUDINARY_UPLOAD_PRESET,
+                'folder': f'360_frames/{session_id}',
+                'public_id': f'frame_{i:03d}',
+                'quality': 'auto:good',
+                'fetch_format': 'auto',
+            }
+            
+            # Upload to Cloudinary using HTTP POST
+            response = requests.post(CLOUDINARY_UPLOAD_URL, files=files, data=data)
+            
+            if response.status_code == 200:
+                upload_result = response.json()
+                secure_url = upload_result.get('secure_url')
+                if secure_url:
+                    cloudinary_urls.append(secure_url)
+                    print(f"✅ Uploaded frame {i+1}/{len(frame_files)} to Cloudinary")
+                else:
+                    print(f"⚠️ Warning: No secure_url in Cloudinary response for frame {i+1}")
+                    print(f"Response: {upload_result}")
+            else:
+                print(f"❌ Error uploading frame {i+1}: HTTP {response.status_code} - {response.text}")
+                
+        except Exception as e:
+            print(f"❌ Error uploading frame {i+1} to Cloudinary: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # Continue with other frames even if one fails
+            continue
+    
+    if len(cloudinary_urls) != len(frame_files):
+        print(f"⚠️ Warning: Only {len(cloudinary_urls)}/{len(frame_files)} frames uploaded successfully")
+    
+    return cloudinary_urls
+
+
 @app.post("/process360")
 async def process_360_video(file: UploadFile = File(...)):
     """Process uploaded video and return 360 frame URLs."""
@@ -424,16 +489,20 @@ async def process_360_video(file: UploadFile = File(...)):
             session_id
         )
         
-        # Generate URLs (adjust base URL as needed)
-        base_url = "http://localhost:8000"  # Change to your server URL
-        frame_urls = [
-            f"{base_url}/frames/{session_id}/{fname}" for fname in exported_files
-        ]
+        # Step 6: Upload frames to Cloudinary
+        print(f"Uploading {len(exported_files)} frames to Cloudinary...")
+        frame_urls = upload_frames_to_cloudinary(
+            str(output_session_dir),
+            exported_files,
+            session_id
+        )
+        
+        print(f"Successfully uploaded {len(frame_urls)} frames to Cloudinary")
         
         return JSONResponse({
             "success": True,
             "session_id": session_id,
-            "frame_count": len(exported_files),
+            "frame_count": len(frame_urls),
             "frame_urls": frame_urls,
         })
     

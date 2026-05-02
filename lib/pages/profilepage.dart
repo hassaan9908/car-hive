@@ -8,6 +8,7 @@ import 'homepage.dart';
 import 'edit_profile_page.dart';
 import 'blog_list_page.dart'; // Add this import
 import 'video_list_page.dart'; // Add this import
+import 'my_visits_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -54,6 +55,15 @@ class Profilepage extends StatelessWidget {
           ),
           backgroundColor: Colors.transparent,
           centerTitle: true,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[400],
+              height: 1,
+            ),
+          ),
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -141,12 +151,14 @@ class Profilepage extends StatelessWidget {
                 // Explore section
                 _sectionHeader(context, 'Explore'),
                 _settingsCard(context, [
-                  _settingsTile(context, Icons.article, 'Blog',
-                      onTap: () => _navigateToBlog(context)),
-                  _dividerInset(context),
-                  _settingsTile(context, Icons.ondemand_video, 'Videos',
-                      onTap: () => _navigateToVideos(context)),
-                  _dividerInset(context),
+                  if (authProvider.isLoggedIn) ...[
+                    _settingsTile(context, Icons.article, 'Blog',
+                        onTap: () => _navigateToBlog(context)),
+                    _dividerInset(context),
+                    _settingsTile(context, Icons.ondemand_video, 'Videos',
+                        onTap: () => _navigateToVideos(context)),
+                    _dividerInset(context),
+                  ],
                   _settingsTile(context, Icons.directions_car, 'Cool Rides',
                       onTap: () {}),
                 ]),
@@ -156,6 +168,17 @@ class Profilepage extends StatelessWidget {
                 // More section
                 _sectionHeader(context, 'More'),
                 _settingsCard(context, [
+                  if (authProvider.isLoggedIn) ...[
+                    _settingsTile(context, Icons.bookmark, 'Saved Ads',
+                        subtitle: 'View your saved ads',
+                        onTap: () => _navigateToSavedAds(context)),
+                    _dividerInset(context),
+                    _settingsTile(
+                        context, Icons.event_note_outlined, 'My Visits',
+                        subtitle: 'Track booked and completed visits',
+                        onTap: () => _navigateToMyVisits(context)),
+                    _dividerInset(context),
+                  ],
                   _settingsTile(
                       context, Icons.reviews_outlined, 'Rate & Review',
                       onTap: () {}),
@@ -211,7 +234,7 @@ class Profilepage extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
-            ),
+          ),
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
@@ -521,9 +544,8 @@ class Profilepage extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final Color cardSettings = isDark 
-        ? const Color.fromARGB(255, 15, 15, 15) 
-        : Colors.grey.shade200;
+    final Color cardSettings =
+        isDark ? const Color.fromARGB(255, 15, 15, 15) : Colors.grey.shade200;
 
     return Card(
       elevation: 0,
@@ -672,14 +694,20 @@ class Profilepage extends StatelessWidget {
     );
   }
 
-  Widget _buildEngagementCard(BuildContext context, ColorScheme colorScheme, int score, String rank, 
-      int adsSold, int positiveRatings, int totalRatings, bool isLoading) {
-        final theme = Theme.of(context);
+  Widget _buildEngagementCard(
+      BuildContext context,
+      ColorScheme colorScheme,
+      int score,
+      String rank,
+      int adsSold,
+      int positiveRatings,
+      int totalRatings,
+      bool isLoading) {
+    final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final Color cardEngagement = isDark 
-        ? const Color.fromARGB(255, 15, 15, 15) 
-        : Colors.grey.shade200;
+    final Color cardEngagement =
+        isDark ? const Color.fromARGB(255, 15, 15, 15) : Colors.grey.shade200;
 
     return Card(
       elevation: 2,
@@ -1045,6 +1073,19 @@ class Profilepage extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const VideoListPage()),
+    );
+  }
+
+  void _navigateToSavedAds(BuildContext context) {
+    Navigator.pushNamed(context, '/saved-ads');
+  }
+
+  void _navigateToMyVisits(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MyVisitsPage(),
+      ),
     );
   }
 }

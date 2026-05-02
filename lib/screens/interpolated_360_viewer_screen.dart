@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:gesture_x_detector/gesture_x_detector.dart';
 import 'package:carhive/widgets/smooth_image_blend.dart';
 import 'package:carhive/controllers/advanced_360_controller.dart';
-import 'package:carhive/services/interpolation_service.dart';
+import 'package:carhive/services/url_interpolation_service.dart';
 
 /// Enhanced 360° viewer that automatically uses 64 interpolated frames
 class Interpolated360ViewerScreen extends StatefulWidget {
@@ -71,23 +71,25 @@ class _Interpolated360ViewerScreenState extends State<Interpolated360ViewerScree
     });
 
     try {
-      // Try loading interpolated frames first (64 frames)
-      final interpolatedExist = await InterpolationService.interpolatedFramesExist();
-      
-      if (interpolatedExist) {
-        final frames = await InterpolationService.loadInterpolatedFramesAsBytes();
+      // Use provided image URLs, files, or bytes directly
+      // Video-based capture already provides smooth frames, no interpolation needed
+      if (widget.imageUrls != null && widget.imageUrls!.isNotEmpty) {
+        // Load frames from URLs using the service
+        final frames = await UrlInterpolationService.generateFromUrls(
+          imageUrls: widget.imageUrls!,
+        );
         if (mounted) {
           setState(() {
             _loadedFrames = frames;
-            _totalFrames = 64;
+            _totalFrames = frames.length;
             _isLoading = false;
           });
-          _controller.setIndex(widget.initialIndex.clamp(0, 63), smooth: false);
+          _controller.setIndex(widget.initialIndex.clamp(0, _totalFrames - 1), smooth: false);
         }
         return;
       }
 
-      // Fallback: Use provided images or raw images
+      // Fallback: Use provided image bytes
       if (widget.imageBytes != null && widget.imageBytes!.isNotEmpty) {
         if (mounted) {
           setState(() {
@@ -100,8 +102,8 @@ class _Interpolated360ViewerScreenState extends State<Interpolated360ViewerScree
         return;
       }
 
-      // Final fallback: Load raw images
-      throw Exception('No frames available. Please capture and interpolate images first.');
+      // Final fallback: No frames available
+      throw Exception('No frames available. Please provide image URLs or bytes.');
     } catch (e) {
       if (mounted) {
         setState(() {

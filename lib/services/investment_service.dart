@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/investment_model.dart';
+import 'share_marketplace_service.dart';
 
 class InvestmentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final ShareMarketplaceService _marketplaceService = ShareMarketplaceService();
+  static const Set<String> _contributableStatuses = {'pending', 'active'};
 
   // Get all investments for a user
   Stream<List<InvestmentModel>> getUserInvestments(String userId) {
@@ -74,6 +77,38 @@ class InvestmentService {
     }
   }
 
+  Future<InvestmentModel?> getUserInvestmentForVehicle(
+    String userId,
+    String vehicleInvestmentId,
+  ) async {
+    try {
+      final snapshot = await _firestore
+          .collection('investments')
+          .where('userId', isEqualTo: userId)
+          .where('vehicleInvestmentId', isEqualTo: vehicleInvestmentId)
+          .get();
+
+      InvestmentModel? pendingInvestment;
+      for (final doc in snapshot.docs) {
+        final investment = InvestmentModel.fromFirestore(doc.data(), doc.id);
+        if (!_contributableStatuses.contains(investment.status)) {
+          continue;
+        }
+
+        if (investment.status == 'active') {
+          return investment;
+        }
+
+        pendingInvestment ??= investment;
+      }
+
+      return pendingInvestment;
+    } catch (e) {
+      print('Error getting user investment for vehicle: $e');
+      return null;
+    }
+  }
+
   // Create investment
   Future<String> createInvestment({
     required String vehicleInvestmentId,
@@ -101,12 +136,47 @@ class InvestmentService {
         updatedAt: DateTime.now(),
       );
 
-      final docRef =
-          await _firestore.collection('investments').add(investment.toFirestore());
+      final docRef = await _firestore
+          .collection('investments')
+          .add(investment.toFirestore());
 
       return docRef.id;
     } catch (e) {
       print('Error creating investment: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> finalizeInvestmentContribution({
+    required String investmentId,
+    required double contributionAmount,
+    required double totalInvestmentGoal,
+    required bool hasExistingInvestment,
+  }) async {
+    try {
+      final docRef = _firestore.collection('investments').doc(investmentId);
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) {
+          throw Exception('Investment not found');
+        }
+
+        final data = snapshot.data()!;
+        final currentAmount = (data['amount'] as num?)?.toDouble() ?? 0.0;
+        final targetAmount = hasExistingInvestment
+            ? currentAmount + contributionAmount
+            : currentAmount;
+
+        transaction.update(docRef, {
+          'amount': targetAmount,
+          'investmentRatio':
+              calculateInvestmentRatio(targetAmount, totalInvestmentGoal),
+          'status': 'active',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      });
+    } catch (e) {
+      print('Error finalizing investment contribution: $e');
       rethrow;
     }
   }
@@ -184,12 +254,25 @@ class InvestmentService {
   // Cancel share sale listing
   Future<void> cancelShareSale(String investmentId) async {
     try {
+      // Update investment record
       await _firestore.collection('investments').doc(investmentId).update({
         'sharesForSale': false,
         'sharesForSalePrice': null,
         'sharesForSaleDate': null,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Find and cancel the marketplace listing for this investment
+      final marketplaceListings = await _firestore
+          .collection('share_marketplace')
+          .where('investmentId', isEqualTo: investmentId)
+          .where('status', isEqualTo: 'active')
+          .get();
+
+      // Cancel all active marketplace listings for this investment
+      for (var doc in marketplaceListings.docs) {
+        await _marketplaceService.cancelShareListing(doc.id);
+      }
     } catch (e) {
       print('Error canceling share sale: $e');
       rethrow;
@@ -219,7 +302,8 @@ class InvestmentService {
       final doc = await _firestore.collection('investments').doc(id).get();
       if (!doc.exists) return;
 
-      final currentProfit = (doc.data()?['totalProfitReceived'] as num?)?.toDouble() ?? 0.0;
+      final currentProfit =
+          (doc.data()?['totalProfitReceived'] as num?)?.toDouble() ?? 0.0;
       final newTotal = currentProfit + profitAmount;
 
       await _firestore.collection('investments').doc(id).update({
@@ -249,4 +333,3 @@ class InvestmentService {
     }
   }
 }
-

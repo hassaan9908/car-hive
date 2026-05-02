@@ -204,6 +204,22 @@ class AuthService {
     }
   }
 
+  Future<void> resetPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        throw Exception('No user found with this email address.');
+      } else if (e.code == 'invalid-email') {
+        throw Exception('The email address is invalid.');
+      }
+      rethrow;
+    } catch (e) {
+      print("Password reset error: $e");
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>?> getUserDocument(String userId) async {
     try {
       final userDoc = await _firestore.collection('users').doc(userId).get();

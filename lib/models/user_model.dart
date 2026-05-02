@@ -35,25 +35,61 @@ class UserModel {
       Map<String, dynamic> data, String documentId) {
     return UserModel(
       id: documentId,
-      email: data['email'] ?? '',
-      displayName: data['displayName'],
-      phoneNumber: data['phoneNumber'],
-      role: data['role'] ?? 'user',
-      createdAt: data['createdAt'] != null
-          ? (data['createdAt'] as Timestamp).toDate()
-          : DateTime.now(),
-      lastLoginAt: data['lastLoginAt'] != null
-          ? (data['lastLoginAt'] as Timestamp).toDate()
-          : DateTime.now(),
-      isActive: data['isActive'] ?? true,
-      totalAdsPosted: data['totalAdsPosted'] ?? 0,
-      activeAdsCount: data['activeAdsCount'] ?? 0,
-      rejectedAdsCount: data['rejectedAdsCount'] ?? 0,
-      totalSales: data['totalSales'] ?? 0,
-      lastSaleAt: data['lastSaleAt'] != null
-          ? (data['lastSaleAt'] as Timestamp).toDate()
-          : null,
+      email: _asString(data['email']),
+      displayName: _asNullableString(data['displayName'] ?? data['fullName']),
+      phoneNumber: _asNullableString(data['phoneNumber']),
+      role: _normalizeRole(data['role']),
+      createdAt: _parseDateTime(data['createdAt']) ?? DateTime.now(),
+      lastLoginAt: _parseDateTime(data['lastLoginAt']) ??
+          _parseDateTime(data['updatedAt']) ??
+          DateTime.now(),
+      isActive: data['isActive'] is bool ? data['isActive'] as bool : true,
+      totalAdsPosted: _asInt(data['totalAdsPosted']),
+      activeAdsCount: _asInt(data['activeAdsCount']),
+      rejectedAdsCount: _asInt(data['rejectedAdsCount']),
+      totalSales: _asInt(data['totalSales']),
+      lastSaleAt: _parseDateTime(data['lastSaleAt']),
     );
+  }
+
+  static String _asString(dynamic value) {
+    return value?.toString().trim() ?? '';
+  }
+
+  static String? _asNullableString(dynamic value) {
+    final normalized = value?.toString().trim() ?? '';
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  static int _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static String _normalizeRole(dynamic role) {
+    final normalized = role?.toString().trim().toLowerCase() ?? 'user';
+    final underscored = normalized.replaceAll('-', '_').replaceAll(' ', '_');
+    if (underscored == 'superadmin') {
+      return 'super_admin';
+    }
+    return underscored.isEmpty ? 'user' : underscored;
+  }
+
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+    if (value is num) {
+      return DateTime.fromMillisecondsSinceEpoch(value.toInt());
+    }
+    if (value is String && value.trim().isNotEmpty) {
+      return DateTime.tryParse(value.trim());
+    }
+    return null;
   }
 
   Map<String, dynamic> toFirestore() {

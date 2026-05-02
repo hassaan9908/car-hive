@@ -5,14 +5,15 @@ import { stripe } from './config';
 const db = admin.firestore();
 
 interface CreatePaymentIntentData {
-  amount: number;
-  currency?: string;
+  amount: number; // Amount in USD (converted from PKR on client side)
+  currency?: string; // Should be 'usd' for Stripe
   userId: string;
   vehicleInvestmentId?: string;
   investmentId?: string;
   transactionId?: string;
   type?: string; // 'investment', 'share_purchase'
   description?: string;
+  originalAmountPkr?: number; // Original PKR amount before conversion (for reference)
 }
 
 export const createPaymentIntent = async (
@@ -25,7 +26,7 @@ export const createPaymentIntent = async (
       return { success: false, error: 'Unauthorized' };
     }
 
-    const { amount, currency = 'pkr', userId, vehicleInvestmentId, investmentId, transactionId, type, description } = data;
+    const { amount, currency = 'usd', userId, vehicleInvestmentId, investmentId, transactionId, type, description, originalAmountPkr } = data;
 
     // Validate inputs
     if (!amount || amount <= 0) {
@@ -36,9 +37,9 @@ export const createPaymentIntent = async (
       return { success: false, error: 'User ID mismatch' };
     }
 
-    // Convert amount to smallest currency unit (cents for USD, but PKR doesn't have cents)
+    // Convert amount to smallest currency unit (cents for USD)
     // Stripe requires amount in smallest currency unit
-    // For PKR, we'll use paisa (1 PKR = 100 paisa)
+    // Amount is already in USD (converted from PKR on client side)
     const amountInSmallestUnit = Math.round(amount * 100);
 
     // Create metadata for tracking
@@ -46,6 +47,11 @@ export const createPaymentIntent = async (
       userId,
       type: type || 'investment',
     };
+
+    // Store original PKR amount if provided (for reference)
+    if (originalAmountPkr) {
+      metadata.originalAmountPkr = originalAmountPkr.toString();
+    }
 
     if (vehicleInvestmentId) {
       metadata.vehicleInvestmentId = vehicleInvestmentId;

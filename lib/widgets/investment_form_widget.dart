@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/investment_vehicle_model.dart';
 import '../services/investment_service.dart';
 import '../services/investment_vehicle_service.dart';
 import '../services/investment_transaction_service.dart';
 import '../services/payment_service.dart';
+import '../services/currency_converter_service.dart';
 
 class InvestmentFormWidget extends StatefulWidget {
   final InvestmentVehicleModel vehicle;
@@ -35,12 +37,15 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
 
   bool _isSubmitting = false;
   String? _selectedPaymentMethod;
-  final List<String> _paymentMethods = [
-    'jazzcash',
-    'easypay',
-    'bank_transfer',
-    'stripe',
-  ];
+
+  // Payment methods - exclude Stripe on web since payment sheet doesn't work on web
+  List<String> get _paymentMethods => [
+        'jazzcash',
+        'easypay',
+        'bank_transfer',
+        if (!kIsWeb)
+          'stripe', // Stripe only on mobile (payment sheet not supported on web)
+      ];
 
   @override
   void dispose() {
@@ -67,7 +72,17 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
       return 'Please enter a valid number';
     }
 
-    if (amount < widget.vehicle.minimumContribution) {
+    // Get the effective minimum: if remaining amount is less than minimum,
+    // allow investing the exact remaining amount
+    final effectiveMinimum =
+        widget.vehicle.remainingAmount < widget.vehicle.minimumContribution
+            ? widget.vehicle.remainingAmount
+            : widget.vehicle.minimumContribution;
+
+    if (amount < effectiveMinimum) {
+      if (widget.vehicle.remainingAmount < widget.vehicle.minimumContribution) {
+        return 'You can invest the remaining amount: ${widget.vehicle.remainingAmount.toStringAsFixed(0)} PKR';
+      }
       return 'Minimum investment is ${widget.vehicle.minimumContribution.toStringAsFixed(0)} PKR';
     }
 
@@ -105,16 +120,36 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
       _isSubmitting = true;
     });
 
+    String? transactionId;
+    String? investmentId;
+    bool createdPendingInvestment = false;
+
     try {
-      // Create investment record
-      final investmentId = await _investmentService.createInvestment(
-        vehicleInvestmentId: widget.vehicle.id,
-        amount: amount,
-        totalInvestmentGoal: widget.vehicle.totalInvestmentGoal,
+      final existingInvestment =
+          await _investmentService.getUserInvestmentForVehicle(
+        user.uid,
+        widget.vehicle.id,
       );
+      final hasExistingInvestment = existingInvestment?.status == 'active';
+
+      if (hasExistingInvestment && existingInvestment != null) {
+        investmentId = existingInvestment.id;
+      } else {
+        if (existingInvestment != null &&
+            existingInvestment.status == 'pending') {
+          await _investmentService.deleteInvestment(existingInvestment.id);
+        }
+
+        investmentId = await _investmentService.createInvestment(
+          vehicleInvestmentId: widget.vehicle.id,
+          amount: amount,
+          totalInvestmentGoal: widget.vehicle.totalInvestmentGoal,
+        );
+        createdPendingInvestment = true;
+      }
 
       // Create transaction record
-      final transactionId = await _transactionService.createTransaction(
+      transactionId = await _transactionService.createTransaction(
         vehicleInvestmentId: widget.vehicle.id,
         investmentId: investmentId,
         userId: user.uid,
@@ -145,8 +180,12 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
           paymentResult['reference'] ?? '',
         );
 
-        // Activate investment
-        await _investmentService.activateInvestment(investmentId);
+        await _investmentService.finalizeInvestmentContribution(
+          investmentId: investmentId,
+          contributionAmount: amount,
+          totalInvestmentGoal: widget.vehicle.totalInvestmentGoal,
+          hasExistingInvestment: hasExistingInvestment,
+        );
 
         // Update vehicle current investment
         await _vehicleService.updateCurrentInvestment(
@@ -176,16 +215,32 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
           notes: paymentResult['error'] ?? 'Payment failed',
         );
 
+        if (createdPendingInvestment) {
+          await _investmentService.deleteInvestment(investmentId);
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Payment failed: ${paymentResult['error'] ?? 'Unknown error'}'),
+              content: Text(
+                  'Payment failed: ${paymentResult['error'] ?? 'Unknown error'}'),
               backgroundColor: Colors.red,
             ),
           );
         }
       }
     } catch (e) {
+      if (transactionId != null) {
+        await _transactionService.markTransactionFailed(
+          transactionId,
+          notes: e.toString(),
+        );
+      }
+
+      if (createdPendingInvestment && investmentId != null) {
+        await _investmentService.deleteInvestment(investmentId);
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -205,116 +260,208 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Make Investment',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close,
+                      color: theme.colorScheme.onSurfaceVariant),
+                  onPressed: widget.onCancel,
+                  style: IconButton.styleFrom(
+                    backgroundColor:
+                        theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Investment Amount Input
+            TextFormField(
+              controller: _amountController,
+              style: TextStyle(color: theme.colorScheme.onSurface),
+              decoration: InputDecoration(
+                labelText: 'Investment Amount (PKR)',
+                hintText: 'Enter amount',
+                prefixIcon: Icon(Icons.attach_money,
+                    color: theme.colorScheme.onSurfaceVariant),
+                filled: true,
+                fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: const Color(0xFF4CAF50), width: 2),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: theme.colorScheme.error, width: 2),
+                ),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
+              validator: _validateAmount,
+            ),
+            const SizedBox(height: 16),
+
+            // Investment Info
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2196F3).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF2196F3).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
                 children: [
-                  const Text(
-                    'Make Investment',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  _buildInfoRow(
+                    'Minimum',
+                    '${widget.vehicle.minimumContribution.toStringAsFixed(0)} PKR',
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: widget.onCancel,
+                  Divider(color: theme.colorScheme.surfaceVariant, height: 16),
+                  _buildInfoRow(
+                    'Remaining',
+                    '${widget.vehicle.remainingAmount.toStringAsFixed(0)} PKR',
+                  ),
+                  Divider(color: theme.colorScheme.surfaceVariant, height: 16),
+                  _buildInfoRow(
+                    'Your Share',
+                    _amountController.text.isNotEmpty &&
+                            _getInvestmentAmount() != null
+                        ? '${((_getInvestmentAmount()! / widget.vehicle.totalInvestmentGoal) * 100).toStringAsFixed(2)}%'
+                        : '0%',
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 20),
 
-              // Investment Amount Input
-              TextFormField(
-                controller: _amountController,
-                decoration: InputDecoration(
-                  labelText: 'Investment Amount (PKR)',
-                  hintText: 'Enter amount',
-                  prefixIcon: const Icon(Icons.attach_money),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                ],
-                validator: _validateAmount,
+            // Payment Method Selection
+            Text(
+              'Payment Method',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
               ),
-              const SizedBox(height: 8),
-
-              // Investment Info
-              Container(
-                padding: const EdgeInsets.all(12),
+            ),
+            const SizedBox(height: 12),
+            ..._paymentMethods.map((method) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
+                  color: _selectedPaymentMethod == method
+                      ? const Color(0xFF4CAF50).withOpacity(0.12)
+                      : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _selectedPaymentMethod == method
+                        ? const Color(0xFF4CAF50)
+                        : theme.colorScheme.surfaceVariant,
+                    width: _selectedPaymentMethod == method ? 2 : 1,
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _buildInfoRow(
-                      'Minimum',
-                      '${widget.vehicle.minimumContribution.toStringAsFixed(0)} PKR',
+                child: RadioListTile<String>(
+                  title: Text(
+                    _getPaymentMethodName(method),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: _selectedPaymentMethod == method
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
-                    const SizedBox(height: 4),
-                    _buildInfoRow(
-                      'Remaining',
-                      '${widget.vehicle.remainingAmount.toStringAsFixed(0)} PKR',
-                    ),
-                    const SizedBox(height: 4),
-                    _buildInfoRow(
-                      'Your Share',
-                      _amountController.text.isNotEmpty &&
-                              _getInvestmentAmount() != null
-                          ? '${((_getInvestmentAmount()! / widget.vehicle.totalInvestmentGoal) * 100).toStringAsFixed(2)}%'
-                          : '0%',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Payment Method Selection
-              const Text(
-                'Payment Method',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ..._paymentMethods.map((method) {
-                return RadioListTile<String>(
-                  title: Text(_getPaymentMethodName(method)),
+                  ),
+                  subtitle: method == 'stripe' &&
+                          _amountController.text.isNotEmpty &&
+                          _getInvestmentAmount() != null
+                      ? Text(
+                          'Charged as ${CurrencyConverterService.formatCurrency(CurrencyConverterService.convertPkrToUsd(_getInvestmentAmount()!), currency: 'USD')}',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                      : null,
                   value: method,
                   groupValue: _selectedPaymentMethod,
+                  activeColor: const Color(0xFF4CAF50),
                   onChanged: (value) {
                     setState(() {
                       _selectedPaymentMethod = value;
                     });
                   },
-                );
-              }),
-              const SizedBox(height: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+              );
+            }),
+            const SizedBox(height: 20),
 
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
+            // Submit Button
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4CAF50).withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitInvestment,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: _isSubmitting
                       ? const SizedBox(
@@ -328,30 +475,39 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
                         )
                       : const Text(
                           'Invest Now',
-                          style: TextStyle(fontSize: 16),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final theme = Theme.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          style: TextStyle(
+            fontSize: 13,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: 13,
             fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ],
@@ -373,4 +529,3 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
     }
   }
 }
-

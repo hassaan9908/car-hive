@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/ad_model.dart';
 import '../services/review_service.dart';
 import '../models/review_model.dart';
-import '../widgets/car_360_viewer.dart';
-import '../screens/car_360_viewer_screen.dart';
+import '../360_viewer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,6 +11,8 @@ import 'chat_detail_page.dart';
 import '../features/inspection/screens/inspection_start_page.dart';
 import '../services/save_service.dart';
 import '../services/insight_service.dart';
+import '../services/market_pulse_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CarDetailsPage extends StatefulWidget {
   final AdModel ad;
@@ -26,6 +27,7 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
   final ReviewService _reviewService = ReviewService();
   final SaveService _saveService = SaveService();
   final InsightService _insightService = InsightService();
+  final MarketPulseService _marketPulseService = MarketPulseService();
   final TextEditingController _commentController = TextEditingController();
   int _rating = 0;
   bool _submitting = false;
@@ -39,6 +41,16 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     super.initState();
     // Record view when page opens
     _recordView();
+    // Debug: Check 360 view data
+    print('DEBUG: 360 View Data - images360Urls: ${widget.ad.images360Urls}');
+    print('DEBUG: 360 View Data - isNull: ${widget.ad.images360Urls == null}');
+    print(
+        'DEBUG: 360 View Data - isEmpty: ${widget.ad.images360Urls?.isEmpty ?? true}');
+    if (widget.ad.images360Urls != null &&
+        widget.ad.images360Urls!.isNotEmpty) {
+      print('DEBUG: 360 View Data - count: ${widget.ad.images360Urls!.length}');
+      print('DEBUG: 360 View Data - first URL: ${widget.ad.images360Urls![0]}');
+    }
   }
 
   Future<void> _recordView() async {
@@ -48,6 +60,11 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null && currentUser.uid != widget.ad.userId) {
         await _insightService.recordView(adId);
+        await _marketPulseService.trackAdView(
+          adId: adId,
+          city: widget.ad.location,
+        );
+        print('InsightService: View recorded for adId: $adId');
       }
     }
   }
@@ -68,6 +85,16 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
           );
         }
         return;
+      }
+
+      // Record contact click for insights
+      final adId = widget.ad.id;
+      if (adId != null && adId.isNotEmpty) {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null && currentUser.uid != widget.ad.userId) {
+          await _insightService.recordContactClick(adId);
+          print('InsightService: Contact recorded for adId: $adId');
+        }
       }
 
       // Clean phone number: remove spaces, dashes, parentheses, and other non-digit characters except +
@@ -103,19 +130,12 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
       }
     } catch (e) {
       print('Error making phone call: $e'); // Debug log
-      // Record contact click
-      final adId = widget.ad.id;
-      if (adId != null && adId.isNotEmpty) {
-        await _insightService.recordContactClick(adId);
-      }
-
-      // Sanitize number (remove spaces, dashes)
-      final sanitized = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
-      final Uri phoneUri = Uri(scheme: 'tel', path: sanitized);
-      if (await canLaunchUrl(phoneUri)) {
-        await launchUrl(
-          phoneUri,
-          mode: LaunchMode.externalApplication,
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not launch phone dialer: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+          ),
         );
       } else {
         if (mounted) {
@@ -154,6 +174,7 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     final adId = widget.ad.id;
     if (adId != null && adId.isNotEmpty) {
       await _insightService.recordMessageSent(adId);
+      print('InsightService: Message recorded for adId: $adId');
     }
 
     // Get seller info for display name
@@ -242,37 +263,45 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     final ad = widget.ad;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Car Details'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          // Save button in app bar
-          StreamBuilder<bool>(
-            stream: _saveService.isAdSaved(ad.id ?? ''),
-            builder: (context, snapshot) {
-              final isSaved = snapshot.data ?? false;
-              return IconButton(
-                onPressed: _savingAd ? null : _toggleSaveAd,
-                icon: _savingAd
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        isSaved ? Icons.bookmark : Icons.bookmark_border,
-                        color: isSaved ? colorScheme.primary : null,
-                      ),
-              );
-            },
+        appBar: AppBar(
+          title: const Text('Car Details'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[400],
+              height: 1,
+            ),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          actions: [
+            // Save button in app bar
+            StreamBuilder<bool>(
+              stream: _saveService.isAdSaved(ad.id ?? ''),
+              builder: (context, snapshot) {
+                final isSaved = snapshot.data ?? false;
+                return IconButton(
+                  onPressed: _savingAd ? null : _toggleSaveAd,
+                  icon: _savingAd
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          isSaved ? Icons.bookmark : Icons.bookmark_border,
+                          color: isSaved ? colorScheme.primary : null,
+                        ),
+                );
+              },
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             // Enhanced Car images display
             Container(
               height: 280,
@@ -403,29 +432,48 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
               ),
             ),
 
-            // 360° View Section (if available)
-            if (ad.images360Urls != null && ad.images360Urls!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.rotate_right,
-                            color: colorScheme.primary,
-                            size: 20,
-                          ),
+            // 360° View Section - Always visible
+            Container(
+              key: const ValueKey('360_view_section'), // Key for debugging
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colorScheme.primary.withOpacity(0.5),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.primary.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        const SizedBox(width: 12),
-                        Text(
+                        child: Icon(
+                          Icons.rotate_right,
+                          color: colorScheme.primary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
                           '360° View',
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -433,7 +481,9 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                     color: colorScheme.onSurface,
                                   ),
                         ),
-                        const Spacer(),
+                      ),
+                      if (ad.images360Urls != null &&
+                          ad.images360Urls!.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -457,27 +507,153 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Car360PreviewWidget(
-                      imageUrls: ad.images360Urls!,
-                      size: 220,
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Show 360 view if available, otherwise show message
+                  if (ad.images360Urls != null && ad.images360Urls!.isNotEmpty)
+                    GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => Car360ViewerScreen(
-                              imageUrls: ad.images360Urls!,
-                              title: ad.title,
+                            builder: (context) => Viewer360Screen(
+                              frameUrls: ad.images360Urls!,
                             ),
                           ),
                         );
                       },
+                      child: Stack(
+                        children: [
+                          Container(
+                            height: 220,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: CachedNetworkImage(
+                                imageUrl: ad.images360Urls![0],
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                  color: colorScheme.surfaceContainerHighest,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: colorScheme.surfaceContainerHighest,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.rotate_right,
+                                      size: 48,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Overlay with tap hint
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withOpacity(0.3),
+                                  ],
+                                ),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.6),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.touch_app,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'Tap to view 360°',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    // Show message if no 360 view available
+                    Container(
+                      height: 220,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                        color: colorScheme.surfaceContainerHighest,
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.rotate_right,
+                              size: 48,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              '360° View Not Available',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'This car doesn\'t have a 360° view',
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant
+                                    .withOpacity(0.7),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ],
-                ),
+                ],
               ),
+            ),
 
             // Main content with enhanced styling
             Container(
@@ -739,538 +915,463 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    if (FirebaseAuth.instance.currentUser != null)
+                      const SizedBox(height: 24),
                   ],
 
-                  // Enhanced Contact Information Section
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color:
-                                    colorScheme.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
+                  // Enhanced Contact Information Section (Only for logged-in users)
+                  if (FirebaseAuth.instance.currentUser != null)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.primary.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary
+                                      .withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.contact_phone,
+                                  color: colorScheme.primary,
+                                  size: 20,
+                                ),
                               ),
-                              child: Icon(
-                                Icons.contact_phone,
-                                color: colorScheme.primary,
-                                size: 20,
+                              const SizedBox(width: 12),
+                              Text(
+                                'Contact Information',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: colorScheme.onSurface,
+                                    ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Contact Information',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: colorScheme.onSurface,
-                                  ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        // Fetch seller info from user document with real-time updates
-                        if (ad.userId != null && ad.userId!.isNotEmpty)
-                          StreamBuilder<DocumentSnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(ad.userId)
-                                .snapshots(),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const SizedBox(
-                                  height: 40,
-                                  child: Center(
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2)),
-                                );
-                              }
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          // Fetch seller info from user document with real-time updates
+                          if (ad.userId != null && ad.userId!.isNotEmpty)
+                            StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(ad.userId)
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const SizedBox(
+                                    height: 40,
+                                    child: Center(
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2)),
+                                  );
+                                }
 
-                              // Fallback to ad fields if user doc doesn't exist
-                              if (!snapshot.hasData || !snapshot.data!.exists) {
+                                // Fallback to ad fields if user doc doesn't exist
+                                if (!snapshot.hasData ||
+                                    !snapshot.data!.exists) {
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (ad.name != null &&
+                                          ad.name!.isNotEmpty) ...[
+                                        _buildEnhancedContactCard(
+                                          context,
+                                          'Seller Name',
+                                          ad.name!,
+                                          Icons.person,
+                                        ),
+                                        const SizedBox(height: 12),
+                                      ],
+                                      if (ad.phone != null &&
+                                          ad.phone!.isNotEmpty)
+                                        _buildEnhancedContactCard(
+                                          context,
+                                          'Phone',
+                                          ad.phone!,
+                                          Icons.phone,
+                                        ),
+                                    ],
+                                  );
+                                }
+
+                                final data = snapshot.data!.data()
+                                        as Map<String, dynamic>? ??
+                                    {};
+                                final sellerName = (data['fullName'] ??
+                                        data['displayName'] ??
+                                        ad.name ??
+                                        '')
+                                    .toString();
+                                final email = (data['email'] ?? '').toString();
+                                final phone =
+                                    (data['phoneNumber'] ?? ad.phone ?? '')
+                                        .toString();
+
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if (ad.name != null &&
-                                        ad.name!.isNotEmpty) ...[
+                                    if (sellerName.isNotEmpty) ...[
                                       _buildEnhancedContactCard(
                                         context,
                                         'Seller Name',
-                                        ad.name!,
+                                        sellerName,
                                         Icons.person,
                                       ),
                                       const SizedBox(height: 12),
                                     ],
-                                    if (ad.phone != null &&
-                                        ad.phone!.isNotEmpty)
+                                    if (email.isNotEmpty) ...[
+                                      _buildEnhancedContactCard(
+                                        context,
+                                        'Email',
+                                        email,
+                                        Icons.email,
+                                      ),
+                                      const SizedBox(height: 12),
+                                    ],
+                                    if (phone.isNotEmpty)
                                       _buildEnhancedContactCard(
                                         context,
                                         'Phone',
-                                        ad.phone!,
+                                        phone,
                                         Icons.phone,
                                       ),
                                   ],
                                 );
-                              }
-
-                              final data = snapshot.data!.data()
-                                      as Map<String, dynamic>? ??
-                                  {};
-                              final sellerName = (data['fullName'] ??
-                                      data['displayName'] ??
-                                      ad.name ??
-                                      '')
-                                  .toString();
-                              final email = (data['email'] ?? '').toString();
-                              final phone =
-                                  (data['phoneNumber'] ?? ad.phone ?? '')
-                                      .toString();
-
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (sellerName.isNotEmpty) ...[
-                                    _buildEnhancedContactCard(
-                                      context,
-                                      'Seller Name',
-                                      sellerName,
-                                      Icons.person,
-                                    ),
-                                    const SizedBox(height: 12),
-                                  ],
-                                  if (email.isNotEmpty) ...[
-                                    _buildEnhancedContactCard(
-                                      context,
-                                      'Email',
-                                      email,
-                                      Icons.email,
-                                    ),
-                                    const SizedBox(height: 12),
-                                  ],
-                                  if (phone.isNotEmpty)
-                                    _buildEnhancedContactCard(
-                                      context,
-                                      'Phone',
-                                      phone,
-                                      Icons.phone,
-                                    ),
-                                ],
-                              );
-                            },
-                          )
-                        else ...[
-                          // No userId, use ad embedded fields only
-                          if (ad.name != null && ad.name!.isNotEmpty) ...[
-                            _buildEnhancedContactCard(
-                              context,
-                              'Seller Name',
-                              ad.name!,
-                              Icons.person,
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                          if (ad.phone != null && ad.phone!.isNotEmpty)
-                            _buildEnhancedContactCard(
-                              context,
-                              'Phone',
-                              ad.phone!,
-                              Icons.phone,
+                              },
                             ),
                         ],
-                      ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 32),
+                  if (FirebaseAuth.instance.currentUser != null)
+                    const SizedBox(height: 32),
 
-                  // Enhanced Action Buttons
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        // First row: Call and Message buttons
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFFFF6B35),
-                                      Color(0xFFFF8C42),
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFFFF6B35)
-                                          .withOpacity(0.3),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
+                  // Enhanced Action Buttons (Only for logged-in users)
+                  if (FirebaseAuth.instance.currentUser != null)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.primary.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // First row: Call and Message buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFFFF6B35),
+                                        Color(0xFFFF8C42),
+                                      ],
                                     ),
-                                  ],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: () async {
-                                    // Get phone number from user doc or ad
-                                    String? phoneNumber;
-                                    if (ad.userId != null &&
-                                        ad.userId!.isNotEmpty) {
-                                      try {
-                                        final userDoc = await FirebaseFirestore
-                                            .instance
-                                            .collection('users')
-                                            .doc(ad.userId)
-                                            .get();
-                                        if (userDoc.exists) {
-                                          final data = userDoc.data();
-                                          phoneNumber = data?['phoneNumber']
-                                                  ?.toString() ??
-                                              data?['phone']?.toString();
-                                          print(
-                                              'Phone from user doc: $phoneNumber'); // Debug log
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFFF6B35)
+                                            .withOpacity(0.3),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ElevatedButton.icon(
+                                    onPressed: () async {
+                                      // Get phone number from user doc or ad
+                                      String? phoneNumber;
+                                      if (ad.userId != null &&
+                                          ad.userId!.isNotEmpty) {
+                                        try {
+                                          final userDoc =
+                                              await FirebaseFirestore.instance
+                                                  .collection('users')
+                                                  .doc(ad.userId)
+                                                  .get();
+                                          if (userDoc.exists) {
+                                            final data = userDoc.data();
+                                            phoneNumber = data?['phoneNumber']
+                                                    ?.toString() ??
+                                                data?['phone']?.toString();
+                                            print(
+                                                'Phone from user doc: $phoneNumber'); // Debug log
+                                          }
+                                        } catch (e) {
+                                          print('Error fetching phone: $e');
                                         }
-                                      } catch (e) {
-                                        print('Error fetching phone: $e');
                                       }
-                                    }
-                                    phoneNumber ??= ad.phone;
-                                    print(
-                                        'Final phone number: $phoneNumber'); // Debug log
+                                      phoneNumber ??= ad.phone;
+                                      print(
+                                          'Final phone number: $phoneNumber'); // Debug log
 
-                                    if (phoneNumber != null &&
-                                        phoneNumber.trim().isNotEmpty) {
-                                      await _makePhoneCall(phoneNumber.trim());
-                                    } else {
-                                      if (mounted) {
+                                      if (phoneNumber != null &&
+                                          phoneNumber.trim().isNotEmpty) {
+                                        await _makePhoneCall(
+                                            phoneNumber.trim());
+                                      } else {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content: Text(
+                                                    'Phone number not available')),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    icon: const Icon(Icons.phone),
+                                    label: const Text('Call'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16),
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        colorScheme.secondary,
+                                        colorScheme.secondary
+                                            .withValues(alpha: 0.8),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      if (ad.userId != null &&
+                                          ad.userId!.isNotEmpty) {
+                                        _openChat(ad.userId!);
+                                      } else {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           const SnackBar(
                                               content: Text(
-                                                  'Phone number not available')),
+                                                  'Seller information not available')),
                                         );
                                       }
-                                    }
-                                  },
-                                  icon: const Icon(Icons.phone),
-                                  label: const Text('Call'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                    },
+                                    icon: const Icon(Icons.message),
+                                    label: const Text('Message'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16),
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF4CAF50),
-                                      Color(0xFF66BB6A),
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF4CAF50)
-                                          .withOpacity(0.3),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    if (ad.userId != null &&
-                                        ad.userId!.isNotEmpty) {
-                                      _openChat(ad.userId!);
-                                    } else {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                'Seller information not available')),
-                                      );
-                                    }
-                                  },
-                                  icon: const Icon(Icons.message),
-                                  label: const Text('Message'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Second row: Save button
-                        StreamBuilder<bool>(
-                          stream: _saveService.isAdSaved(ad.id ?? ''),
-                          builder: (context, snapshot) {
-                            final isSaved = snapshot.data ?? false;
-                            return SizedBox(
-                              width: double.infinity,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: isSaved
-                                        ? [Colors.green, Colors.green.shade700]
-                                        : [
-                                            Colors.grey.shade600,
-                                            Colors.grey.shade700
-                                          ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color:
-                                          (isSaved ? Colors.green : Colors.grey)
-                                              .withOpacity(0.3),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: _savingAd ? null : _toggleSaveAd,
-                                  icon: _savingAd
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : Icon(isSaved
-                                          ? Icons.bookmark
-                                          : Icons.bookmark_border),
-                                  label: Text(isSaved ? 'Saved' : 'Save Ad'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 16),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Buyer Inspection Tool
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          colorScheme.primary.withValues(alpha: 0.1),
-                          colorScheme.secondary.withValues(alpha: 0.05),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: colorScheme.primary.withValues(alpha: 0.2),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.fact_check,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Guided Inspection',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleLarge
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: colorScheme.onSurface,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Evaluate this car before buying',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: colorScheme.onSurface
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.black.withValues(alpha: 0.2)
-                                    : Colors.white.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.checklist, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('27 inspection points'),
-                                  Spacer(),
-                                  Icon(Icons.timer_outlined, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('15-20 mins'),
-                                ],
-                              ),
-                              SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Icon(Icons.analytics_outlined, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('Get condition score (0-100)'),
-                                  Spacer(),
-                                  Icon(Icons.save_outlined, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('Save report'),
-                                ],
                               ),
                             ],
                           ),
+                        ],
+                      ),
+                    ),
+
+                  if (FirebaseAuth.instance.currentUser != null)
+                    const SizedBox(height: 32),
+
+                  // Buyer Inspection Tool (Only for logged-in users)
+                  if (FirebaseAuth.instance.currentUser != null)
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            colorScheme.primary.withValues(alpha: 0.1),
+                            colorScheme.secondary.withValues(alpha: 0.05),
+                          ],
                         ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              final currentUser =
-                                  FirebaseAuth.instance.currentUser;
-                              if (currentUser == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        'Please sign in to start an inspection'),
-                                    backgroundColor: Colors.red,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.primary.withValues(alpha: 0.2),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.fact_check,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Guided Inspection',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: colorScheme.onSurface,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Evaluate this car before buying',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: colorScheme.onSurface
+                                                .withValues(alpha: 0.7),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.black.withValues(alpha: 0.2)
+                                  : Colors.white.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.checklist, size: 20),
+                                    SizedBox(width: 8),
+                                    Text('27 inspection points'),
+                                    Spacer(),
+                                    Icon(Icons.timer_outlined, size: 20),
+                                    SizedBox(width: 8),
+                                    Text('15-20 mins'),
+                                  ],
+                                ),
+                                SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Icon(Icons.analytics_outlined, size: 20),
+                                    SizedBox(width: 8),
+                                    Text('Get condition score (0-100)'),
+                                    Spacer(),
+                                    Icon(Icons.save_outlined, size: 20),
+                                    SizedBox(width: 8),
+                                    Text('Save report'),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                final currentUser =
+                                    FirebaseAuth.instance.currentUser;
+                                if (currentUser == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Please sign in to start an inspection'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) {
+                                      return InspectionStartPage(
+                                        carId: ad.id ?? '',
+                                        carTitle: ad.title,
+                                        carBrand: ad.carBrand ?? ad.title,
+                                        buyerId: currentUser.uid,
+                                        sellerId: ad.userId ?? '',
+                                      );
+                                    },
                                   ),
                                 );
-                                return;
-                              }
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) {
-                                    return InspectionStartPage(
-                                      carId: ad.id ?? '',
-                                      carTitle: ad.title,
-                                      carBrand: ad.carBrand ?? ad.title,
-                                      buyerId: currentUser.uid,
-                                      sellerId: ad.userId ?? '',
-                                    );
-                                  },
+                              },
+                              icon: const Icon(Icons.start),
+                              label: const Text(
+                                'Start Inspection',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              );
-                            },
-                            icon: const Icon(Icons.start),
-                            label: const Text(
-                              'Start Inspection',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
                               ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: colorScheme.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: 32),
+                  SizedBox(
+                      height:
+                          FirebaseAuth.instance.currentUser != null ? 32 : 24),
 
                   // Enhanced Reviews Section
                   Container(
@@ -1380,13 +1481,112 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                   ),
 
                   const SizedBox(height: 32),
+
+                  // Login prompt for guest users
+                  if (FirebaseAuth.instance.currentUser == null)
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            colorScheme.primary.withValues(alpha: 0.1),
+                            colorScheme.secondary.withValues(alpha: 0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.primary.withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.lock,
+                              size: 48,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Want to contact the seller?',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onSurface,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Login to view contact details, send messages,\nand use guided inspection tool',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  height: 1.5,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      const Color(0xFFFF6B35).withOpacity(0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, 'loginscreen');
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Login Now',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
+          ]),
+        ));
   }
 
   Widget _buildSpecificationCard(

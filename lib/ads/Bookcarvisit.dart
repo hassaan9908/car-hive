@@ -1,6 +1,10 @@
 // ignore: file_names
-import 'package:carhive/ads/checkout.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import 'checkout.dart';
+import '../models/visit_models.dart';
+import '../services/visit_service.dart';
 
 class BookVisitScreen extends StatefulWidget {
   final String carModel;
@@ -8,6 +12,8 @@ class BookVisitScreen extends StatefulWidget {
   final String engine;
   final String registeredCity;
   final String assembly;
+  final String? carAdId;
+  final String? carImageUrl;
 
   const BookVisitScreen({
     super.key,
@@ -16,6 +22,8 @@ class BookVisitScreen extends StatefulWidget {
     required this.engine,
     required this.registeredCity,
     required this.assembly,
+    this.carAdId,
+    this.carImageUrl,
   });
 
   @override
@@ -23,564 +31,515 @@ class BookVisitScreen extends StatefulWidget {
 }
 
 class _BookVisitScreenState extends State<BookVisitScreen> {
+  final VisitService _visitService = VisitService();
+
   String? selectedCity;
   String? selectedArea;
-  final Map<String, List<String>> cityAreas = {
-    'Lahore': ['DHA', 'Gulberg', 'Johar Town', 'Model Town', 'Bahria Town'],
-    'Karachi': ['Clifton', 'DHA', 'Gulshan', 'North Nazimabad', 'Saddar'],
-    'Islamabad': ['F-6', 'F-7', 'F-8', 'G-6', 'Blue Area'],
-    'Rawalpindi': ['Bahria Town', 'Saddar', 'Satellite Town', 'Chaklala'],
-  };
-  final List<String> availableDates = ['Aug 6', 'Aug 7', 'Aug 8', 'Aug 9'];
-  final Map<String, int> seatAvailability = {
-    'Aug 6': 2,
-    'Aug 7': 4,
-    'Aug 8': 1,
-    'Aug 9': 3,
-  };
-
-  String? selectedDate;
+  String? selectedDateKey;
   String? selectedSlot;
-  final Map<String, List<String>> timeSlotsByDate = {
-    'Aug 6': ['09:30 AM', '11:00 AM', '01:00 PM', '03:00 PM'],
-    'Aug 7': ['10:00 AM', '12:00 PM', '02:00 PM', '04:00 PM'],
-    'Aug 8': ['09:00 AM', '11:30 AM', '01:30 PM', '03:30 PM'],
-    'Aug 9': ['10:30 AM', '12:30 PM', '02:30 PM', '04:30 PM'],
-  };
-
-  String _weekdayFor(String label) {
-    final parts = label.split(' ');
-    if (parts.length != 2) return '';
-    final monthAbbr = parts[0];
-    final day = int.tryParse(parts[1]) ?? 1;
-    final months = {
-      'Jan': 1,
-      'Feb': 2,
-      'Mar': 3,
-      'Apr': 4,
-      'May': 5,
-      'Jun': 6,
-      'Jul': 7,
-      'Aug': 8,
-      'Sep': 9,
-      'Oct': 10,
-      'Nov': 11,
-      'Dec': 12,
-    };
-    final month = months[monthAbbr];
-    if (month == null) return '';
-    final now = DateTime.now();
-    final dt = DateTime(now.year, month, day);
-    const fullWeekNames = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday'
-    ];
-    return fullWeekNames[dt.weekday - 1];
-  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("Book Visit"),
+        title: const Text('Book Visit'),
         backgroundColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, color: theme.dividerColor),
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      body: StreamBuilder<List<VisitSchedule>>(
+        stream: _visitService.watchSchedules(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return _buildMessageState(
+              context,
+              icon: Icons.error_outline,
+              title: 'Could not load visit schedule',
+              subtitle: snapshot.error.toString(),
+            );
+          }
+
+          final schedules = snapshot.data ?? <VisitSchedule>[];
+          if (schedules.isEmpty) {
+            return _buildMessageState(
+              context,
+              icon: Icons.event_busy_outlined,
+              title: 'Visit booking is unavailable',
+              subtitle:
+                  'The admin team has not published any visit schedules yet.',
+            );
+          }
+
+          _syncSelection(schedules);
+
+          final selectedSchedule = schedules.firstWhere(
+            (schedule) => schedule.city == selectedCity,
+            orElse: () => schedules.first,
+          );
+          final selectedDay = selectedDateKey == null
+              ? null
+              : selectedSchedule.days[selectedDateKey];
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildStepCircle('1', 'Info', completed: true),
+                    _buildStepConnector(context),
+                    _buildStepCircle('2', 'Visit', active: true),
+                    _buildStepConnector(context),
+                    _buildStepCircle('3', 'Checkout'),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _buildSectionCard(
+                  context,
+                  icon: Icons.event_available_outlined,
+                  title: 'Visit Details',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        value: selectedCity,
+                        decoration: const InputDecoration(
+                          labelText: 'Select City',
+                          prefixIcon: Icon(Icons.location_city_outlined),
+                        ),
+                        items: schedules
+                            .map(
+                              (schedule) => DropdownMenuItem<String>(
+                                value: schedule.city,
+                                child: Text(schedule.city),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedCity = value;
+                            selectedArea = null;
+                            selectedDateKey = null;
+                            selectedSlot = null;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: selectedArea,
+                        decoration: const InputDecoration(
+                          labelText: 'Select Area',
+                          prefixIcon: Icon(Icons.place_outlined),
+                        ),
+                        items: selectedSchedule.areas
+                            .map(
+                              (area) => DropdownMenuItem<String>(
+                                value: area,
+                                child: Text(area),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedArea = value;
+                            selectedDateKey = null;
+                            selectedSlot = null;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                if (selectedArea != null) ...[
+                  const SizedBox(height: 20),
+                  _buildSectionCard(
+                    context,
+                    icon: Icons.calendar_today_outlined,
+                    title: 'Available Dates',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (selectedSchedule.sortedDays.isEmpty)
+                          Text(
+                            'No dates available for this city right now.',
+                            style: theme.textTheme.bodyMedium,
+                          )
+                        else
+                          _buildDateGrid(
+                            context,
+                            selectedSchedule.sortedDays,
+                          ),
+                        if (selectedDay != null) ...[
+                          const SizedBox(height: 20),
+                          Text(
+                            'Available Time Slots',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          if (selectedDay.enabledTimeSlots.isEmpty)
+                            Text(
+                              'No enabled time slots on this date.',
+                              style: theme.textTheme.bodyMedium,
+                            )
+                          else
+                            _buildSlotGrid(
+                              context,
+                              selectedDay.enabledTimeSlots,
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _canContinue && selectedDay != null
+                        ? () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CheckoutScreen(
+                                  carModel: widget.carModel,
+                                  carYear: widget.carYear,
+                                  engine: widget.engine,
+                                  registeredCity: widget.registeredCity,
+                                  assembly: widget.assembly,
+                                  selectedCity: selectedCity!,
+                                  selectedArea: selectedArea!,
+                                  selectedDate: selectedDay.date,
+                                  selectedTimeSlot: selectedSlot!,
+                                  carAdId: widget.carAdId,
+                                  carImageUrl: widget.carImageUrl,
+                                ),
+                              ),
+                            );
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('Continue to Checkout'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  bool get _canContinue {
+    return selectedCity != null &&
+        selectedArea != null &&
+        selectedDateKey != null &&
+        selectedSlot != null;
+  }
+
+  void _syncSelection(List<VisitSchedule> schedules) {
+    if (schedules.isEmpty) {
+      return;
+    }
+
+    selectedCity ??= schedules.first.city;
+    if (!schedules.any((schedule) => schedule.city == selectedCity)) {
+      selectedCity = schedules.first.city;
+      selectedArea = null;
+      selectedDateKey = null;
+      selectedSlot = null;
+    }
+
+    final schedule = schedules.firstWhere(
+      (item) => item.city == selectedCity,
+      orElse: () => schedules.first,
+    );
+
+    if (selectedArea == null && schedule.areas.isNotEmpty) {
+      selectedArea = schedule.areas.first;
+    }
+    if (selectedArea != null && !schedule.areas.contains(selectedArea)) {
+      selectedArea = schedule.areas.isEmpty ? null : schedule.areas.first;
+      selectedDateKey = null;
+      selectedSlot = null;
+    }
+    if (selectedDateKey != null &&
+        !schedule.days.containsKey(selectedDateKey)) {
+      selectedDateKey = null;
+      selectedSlot = null;
+    }
+    final selectedDay =
+        selectedDateKey == null ? null : schedule.days[selectedDateKey];
+    if (selectedDay != null &&
+        !selectedDay.enabledTimeSlots.contains(selectedSlot)) {
+      selectedSlot = null;
+    }
+  }
+
+  Widget _buildSectionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Widget child,
+  }) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.cardColor,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 📍 Step Indicator
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStepCircle("1", "Info", completed: true),
-                Container(width: 40, height: 2, color: const Color(0xFFFF6B35)),
-                _buildStepCircle("2", "Visit", active: true),
-                Container(width: 40, height: 2, color: Colors.grey),
-                _buildStepCircle("3", "Checkout"),
+                Icon(icon, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 30),
-
-            /// 🗺️ Visit Details Section
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: isDark
-                    ? []
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                border:
-                    Border.all(color: isDark ? Colors.white12 : Colors.black12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.event_available,
-                          color: Color(0xFFFF6B35)),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Visit Details",
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : Colors.black),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text("Select City",
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : Colors.black87)),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.location_city,
-                          color: isDark ? Colors.white70 : Colors.black54),
-                      filled: true,
-                      fillColor: isDark
-                          ? const Color(0xFF2A2A2A)
-                          : Colors.grey.shade50,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(14)),
-                          borderSide: BorderSide(
-                              color: isDark ? Colors.white12 : Colors.black12)),
-                      focusedBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(14)),
-                          borderSide:
-                              BorderSide(color: Color(0xFFf48c25), width: 2)),
-                    ),
-                    value: selectedCity,
-                    items: cityAreas.keys
-                        .map((city) => DropdownMenuItem(
-                              value: city,
-                              child: Text(city),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedCity = value;
-                        selectedArea = null;
-                        selectedDate = null;
-                      });
-                    },
-                  ),
-                  if (selectedCity != null) ...[
-                    const SizedBox(height: 16),
-                    Text("Select Area",
-                        style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : Colors.black87)),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.place_outlined,
-                            color: isDark ? Colors.white70 : Colors.black54),
-                        filled: true,
-                        fillColor: isDark
-                            ? const Color(0xFF2A2A2A)
-                            : Colors.grey.shade50,
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(
-                            borderRadius:
-                                const BorderRadius.all(Radius.circular(14)),
-                            borderSide: BorderSide(
-                                color:
-                                    isDark ? Colors.white12 : Colors.black12)),
-                        focusedBorder: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(14)),
-                            borderSide:
-                                BorderSide(color: Color(0xFFf48c25), width: 2)),
-                      ),
-                      value: selectedArea,
-                      items: (cityAreas[selectedCity] ?? [])
-                          .map((area) => DropdownMenuItem(
-                                value: area,
-                                child: Text(area),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedArea = value;
-                          selectedDate = null;
-                        });
-                      },
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            /// 📅 Date Selection + Seat Availability
-            if (selectedArea != null) ...[
-              const SizedBox(height: 30),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: isDark
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                  border: Border.all(
-                      color: isDark ? Colors.white12 : Colors.black12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.calendar_today_rounded,
-                            color: Color(0xFFFF6B35)),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Available Dates",
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : Colors.black),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Column(
-                      children: () {
-                        List<Widget> rows = [];
-                        for (int i = 0; i < availableDates.length; i += 2) {
-                          final isLastAndOdd = i == availableDates.length - 1;
-                          if (isLastAndOdd) {
-                            // Last item occupies full row
-                            rows.add(
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child:
-                                    _buildDateTile(availableDates[i], flex: 1),
-                              ),
-                            );
-                          } else {
-                            rows.add(
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                        child:
-                                            _buildDateTile(availableDates[i])),
-                                    const SizedBox(width: 10),
-                                    if (i + 1 < availableDates.length)
-                                      Expanded(
-                                          child: _buildDateTile(
-                                              availableDates[i + 1])),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
-                        }
-                        return rows;
-                      }(),
-                    ),
-                    if (selectedDate != null) ...[
-                      const SizedBox(height: 14),
-                      Text("Available Time Slots",
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : Colors.black87)),
-                      const SizedBox(height: 8),
-                      Column(
-                        children: () {
-                          final seats = seatAvailability[selectedDate] ?? 0;
-                          final allSlots = timeSlotsByDate[selectedDate] ??
-                              ['10:00 AM', '12:00 PM', '02:00 PM', '04:00 PM'];
-                          // Show exactly as many slots as seats available
-                          final slots = allSlots.take(seats).toList();
-                          List<Widget> rows = [];
-                          for (int i = 0; i < slots.length; i += 2) {
-                            final isLastAndOdd = i == slots.length - 1;
-                            if (isLastAndOdd) {
-                              rows.add(
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: _buildSlotTile(slots[i], flex: 1),
-                                ),
-                              );
-                            } else {
-                              rows.add(
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: Row(
-                                    children: [
-                                      Expanded(child: _buildSlotTile(slots[i])),
-                                      const SizedBox(width: 10),
-                                      if (i + 1 < slots.length)
-                                        Expanded(
-                                            child:
-                                                _buildSlotTile(slots[i + 1])),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                          return rows;
-                        }(),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 50),
-
-            /// ✅ Continue Button
-            Center(
-              child: ElevatedButton(
-                onPressed: selectedDate != null
-                    ? () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => CheckoutScreen(
-                                    carModel: widget.carModel,
-                                    carYear: widget.carYear,
-                                    engine: widget.engine,
-                                    registeredCity: widget.registeredCity,
-                                    assembly: widget.assembly,
-                                  )),
-                        );
-                      }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: selectedDate != null
-                      ? const Color(0xFFf48c25)
-                      : Colors.grey,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                child: const Text("Continue to Checkout",
-                    style: TextStyle(fontSize: 16, color: Colors.white)),
-              ),
-            ),
+            const SizedBox(height: 16),
+            child,
           ],
         ),
       ),
     );
   }
 
-  /// Step Circle Widget
-  Widget _buildStepCircle(String number, String label,
-      {bool active = false, bool completed = false}) {
-    const Color brand = Color(0xFFFF6B35);
-    final Color color = completed || active ? brand : Colors.grey;
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 16,
-          backgroundColor: color,
-          child: completed
-              ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-              : Text(number, style: const TextStyle(color: Colors.white)),
-        ),
-        const SizedBox(height: 4),
-        Text(label,
-            style: TextStyle(color: color, fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
+  Widget _buildDateTile(BuildContext context, VisitScheduleDay day) {
+    final theme = Theme.of(context);
+    final selected = selectedDateKey == day.dateKey;
+    final enabled = day.isSelectable;
+    final colorScheme = theme.colorScheme;
+    final orange = colorScheme.primary;
 
-  /// Date Tile Widget
-  Widget _buildDateTile(String date, {int flex = 1}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isSelected = date == selectedDate;
-    final seats = seatAvailability[date] ?? 0;
-    final bool disabled = seats == 0;
-    return Opacity(
-      opacity: disabled ? 0.5 : 1,
-      child: IgnorePointer(
-        ignoring: disabled,
-        child: GestureDetector(
-          onTap: () {
-            setState(() {
-              selectedDate = date;
-              selectedSlot = null;
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? const Color(0xFFf48c25)
-                  : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: isSelected
-                      ? const Color(0xFFf48c25)
-                      : (isDark ? Colors.white12 : Colors.black12)),
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: !enabled
+          ? null
+          : () {
+              setState(() {
+                selectedDateKey = day.dateKey;
+                selectedSlot = null;
+              });
+            },
+      child: Opacity(
+        opacity: enabled ? 1 : 0.5,
+        child: Container(
+          height: 122,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color:
+                selected ? orange.withValues(alpha: 0.12) : colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? orange : theme.dividerColor,
+              width: selected ? 1.5 : 1,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Weekday pill - full width at top
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.white.withOpacity(0.2)
-                        : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: isSelected
-                            ? Colors.white.withOpacity(0.3)
-                            : (isDark ? Colors.white12 : Colors.black12)),
-                  ),
-                  child: Text(
-                    _weekdayFor(date),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black87,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                DateFormat('EEE').format(day.date),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: selected ? orange : theme.textTheme.bodySmall?.color,
+                  fontWeight: FontWeight.w700,
                 ),
-                const SizedBox(height: 16),
-                // Date and Seat badge row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Date with checkmark
-                    Row(
-                      children: [
-                        if (isSelected)
-                          const Icon(Icons.check_circle,
-                              color: Colors.white, size: 20),
-                        if (isSelected) const SizedBox(width: 8),
-                        Text(
-                          date,
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black87,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Seat badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? Colors.white.withOpacity(0.2)
-                            : (isDark ? const Color(0xFF1E1E1E) : Colors.white),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: isSelected
-                                ? Colors.white.withOpacity(0.3)
-                                : (isDark ? Colors.white12 : Colors.black12)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.event_seat,
-                              size: 16,
-                              color:
-                                  isSelected ? Colors.white : Colors.black54),
-                          const SizedBox(width: 6),
-                          Text(
-                            "$seats",
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black87,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              ),
+              Text(
+                DateFormat('dd MMM').format(day.date),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
-            ),
+              ),
+              Text(
+                day.statusLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: !day.isAvailable
+                      ? theme.colorScheme.error
+                      : day.isFull
+                          ? Colors.orange
+                          : theme.textTheme.bodyMedium?.color,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  /// Time Slot Tile Widget
-  Widget _buildSlotTile(String slot, {int flex = 1}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool isSelectedSlot = selectedSlot == slot;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedSlot = slot;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelectedSlot
-              ? const Color(0xFFf48c25)
-              : (isDark ? const Color(0xFF2A2A2A) : Colors.grey.shade100),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-              color: isSelectedSlot
-                  ? const Color(0xFFf48c25)
-                  : (isDark ? Colors.white12 : Colors.black12)),
+  Widget _buildSlotTile(BuildContext context, String slot) {
+    final theme = Theme.of(context);
+    final selected = selectedSlot == slot;
+    final colorScheme = theme.colorScheme;
+    final orange = colorScheme.primary;
+
+    return SizedBox(
+      height: 52,
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: () {
+          setState(() {
+            selectedSlot = slot;
+          });
+        },
+        style: OutlinedButton.styleFrom(
+          backgroundColor:
+              selected ? orange.withValues(alpha: 0.12) : colorScheme.surface,
+          foregroundColor:
+              selected ? orange : theme.textTheme.bodyMedium?.color,
+          side: BorderSide(
+            color: selected ? orange : theme.dividerColor,
+            width: selected ? 1.5 : 1,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Text(
+          slot,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: selected ? orange : theme.textTheme.bodyMedium?.color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepCircle(
+    String number,
+    String label, {
+    bool active = false,
+    bool completed = false,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isUpcoming = !completed && !active;
+    final circleColor = isUpcoming
+        ? theme.disabledColor.withValues(alpha: 0.22)
+        : colorScheme.primary;
+    final numberColor =
+        isUpcoming ? theme.textTheme.bodyMedium?.color : Colors.white;
+    final labelColor = active || completed
+        ? colorScheme.primary
+        : theme.textTheme.bodyMedium?.color;
+
+    return Column(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: circleColor,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: completed
+              ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+              : Text(
+                  number,
+                  style: TextStyle(
+                    color: numberColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: labelColor,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepConnector(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: Theme.of(context).colorScheme.primary,
+    );
+  }
+
+  Widget _buildDateGrid(BuildContext context, List<VisitScheduleDay> days) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: days.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        mainAxisExtent: 122,
+      ),
+      itemBuilder: (context, index) => _buildDateTile(context, days[index]),
+    );
+  }
+
+  Widget _buildSlotGrid(BuildContext context, List<String> slots) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: slots.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        mainAxisExtent: 52,
+      ),
+      itemBuilder: (context, index) => _buildSlotTile(context, slots[index]),
+    );
+  }
+
+  Widget _buildMessageState(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.access_time,
-                size: 16,
-                color: isSelectedSlot ? Colors.white : Colors.black54),
-            const SizedBox(width: 6),
-            Text(slot,
-                style: TextStyle(
-                    color: isSelectedSlot ? Colors.white : Colors.black87,
-                    fontWeight: FontWeight.w600)),
+            Icon(icon, size: 48, color: theme.colorScheme.primary),
+            const SizedBox(height: 16),
+            Text(title, style: theme.textTheme.titleLarge),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

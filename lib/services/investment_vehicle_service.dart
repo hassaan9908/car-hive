@@ -7,6 +7,28 @@ class InvestmentVehicleService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  String _buildVehicleTitleFromAd(AdModel adModel) {
+    final brand = (adModel.carBrand ?? '').trim();
+    final model = (adModel.carName ?? '').trim();
+    final year = adModel.year.trim();
+
+    final composed = [brand, model].where((part) => part.isNotEmpty).join(' ');
+    if (composed.isNotEmpty) {
+      return composed;
+    }
+
+    final title = adModel.title.trim();
+    if (title.isNotEmpty) {
+      return title;
+    }
+
+    if (year.isNotEmpty) {
+      return 'Vehicle $year';
+    }
+
+    return 'Vehicle';
+  }
+
   // Get all investment vehicles
   Stream<List<InvestmentVehicleModel>> getAllInvestmentVehicles() {
     return _firestore
@@ -14,8 +36,8 @@ class InvestmentVehicleService {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
-          .map((doc) =>
-              InvestmentVehicleModel.fromFirestore(doc.data(), doc.id))
+          .map(
+              (doc) => InvestmentVehicleModel.fromFirestore(doc.data(), doc.id))
           .toList();
     });
   }
@@ -29,8 +51,8 @@ class InvestmentVehicleService {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
-          .map((doc) =>
-              InvestmentVehicleModel.fromFirestore(doc.data(), doc.id))
+          .map(
+              (doc) => InvestmentVehicleModel.fromFirestore(doc.data(), doc.id))
           .toList();
     });
   }
@@ -44,8 +66,8 @@ class InvestmentVehicleService {
         .map((snapshot) {
       final now = DateTime.now();
       return snapshot.docs
-          .map((doc) =>
-              InvestmentVehicleModel.fromFirestore(doc.data(), doc.id))
+          .map(
+              (doc) => InvestmentVehicleModel.fromFirestore(doc.data(), doc.id))
           .where((vehicle) {
         // Filter out expired investments
         if (vehicle.expiresAt != null && vehicle.expiresAt!.isBefore(now)) {
@@ -59,7 +81,8 @@ class InvestmentVehicleService {
   // Get investment vehicle by ID
   Future<InvestmentVehicleModel?> getInvestmentVehicleById(String id) async {
     try {
-      final doc = await _firestore.collection('investment_vehicles').doc(id).get();
+      final doc =
+          await _firestore.collection('investment_vehicles').doc(id).get();
       if (!doc.exists) return null;
       return InvestmentVehicleModel.fromFirestore(doc.data()!, doc.id);
     } catch (e) {
@@ -77,10 +100,21 @@ class InvestmentVehicleService {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
-          .map((doc) =>
-              InvestmentVehicleModel.fromFirestore(doc.data(), doc.id))
+          .map(
+              (doc) => InvestmentVehicleModel.fromFirestore(doc.data(), doc.id))
           .toList();
     });
+  }
+
+  Future<AdModel?> getAdById(String adId) async {
+    try {
+      final doc = await _firestore.collection('ads').doc(adId).get();
+      if (!doc.exists) return null;
+      return AdModel.fromFirestore(doc.data()!, doc.id);
+    } catch (e) {
+      print('Error getting ad for investment vehicle: $e');
+      return null;
+    }
   }
 
   // Create investment vehicle from ad
@@ -111,7 +145,7 @@ class InvestmentVehicleService {
       final investmentVehicle = InvestmentVehicleModel(
         id: '', // Will be set by Firestore
         adId: adId,
-        title: adModel.title,
+        title: _buildVehicleTitleFromAd(adModel),
         price: adModel.price,
         location: adModel.location,
         year: adModel.year,
@@ -150,7 +184,10 @@ class InvestmentVehicleService {
       String id, Map<String, dynamic> updates) async {
     try {
       updates['updatedAt'] = FieldValue.serverTimestamp();
-      await _firestore.collection('investment_vehicles').doc(id).update(updates);
+      await _firestore
+          .collection('investment_vehicles')
+          .doc(id)
+          .update(updates);
     } catch (e) {
       print('Error updating investment vehicle: $e');
       rethrow;
@@ -174,14 +211,18 @@ class InvestmentVehicleService {
   // Check if funding is complete and update status
   Future<bool> checkFundingComplete(String id) async {
     try {
-      final doc = await _firestore.collection('investment_vehicles').doc(id).get();
+      final doc =
+          await _firestore.collection('investment_vehicles').doc(id).get();
       if (!doc.exists) return false;
 
       final data = doc.data()!;
-      final currentInvestment = (data['currentInvestment'] as num?)?.toDouble() ?? 0.0;
-      final totalGoal = (data['totalInvestmentGoal'] as num?)?.toDouble() ?? 0.0;
+      final currentInvestment =
+          (data['currentInvestment'] as num?)?.toDouble() ?? 0.0;
+      final totalGoal =
+          (data['totalInvestmentGoal'] as num?)?.toDouble() ?? 0.0;
 
-      if (currentInvestment >= totalGoal && data['investmentStatus'] == 'open') {
+      if (currentInvestment >= totalGoal &&
+          data['investmentStatus'] == 'open') {
         await _firestore.collection('investment_vehicles').doc(id).update({
           'investmentStatus': 'funded',
           'fundedAt': FieldValue.serverTimestamp(),
@@ -250,4 +291,3 @@ class InvestmentVehicleService {
     }
   }
 }
-

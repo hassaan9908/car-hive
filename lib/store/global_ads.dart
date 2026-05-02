@@ -24,6 +24,7 @@ import 'package:carhive/models/ad_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/trust_rank_service.dart';
+import '../services/market_pulse_service.dart';
 
 class GlobalAdStore {
   static final GlobalAdStore _instance = GlobalAdStore._internal();
@@ -32,6 +33,7 @@ class GlobalAdStore {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final MarketPulseService _marketPulseService = MarketPulseService();
 
   // Get all active ads for the used cars tab (simplified query to avoid index issues)
   Stream<List<AdModel>> getAllActiveAds() {
@@ -273,7 +275,10 @@ class GlobalAdStore {
           final existingAdsQuery = await _firestore
               .collection('ads')
               .where('registrationNoHash', isEqualTo: registrationHash)
-              .where('status', whereIn: ['active', 'pending']) // Only check active and pending ads
+              .where('status', whereIn: [
+                'active',
+                'pending'
+              ]) // Only check active and pending ads
               .limit(1)
               .get();
 
@@ -296,20 +301,23 @@ class GlobalAdStore {
                 .where('registrationNoHash', isEqualTo: registrationHash)
                 .limit(10) // Get more to filter by status
                 .get();
-            
+
             // Filter to only check active and pending ads (sold ads can be reposted)
             final blockingAds = fallbackQuery.docs.where((doc) {
               final adData = doc.data();
               final status = adData['status'] as String? ?? 'unknown';
               return ['active', 'pending'].contains(status);
             }).toList();
-            
+
             if (blockingAds.isNotEmpty) {
               final existingAd = blockingAds.first;
               final existingAdData = existingAd.data();
-              final existingStatus = existingAdData['status'] as String? ?? 'unknown';
-              print('Found existing ad with same registration number: ${existingAd.id}, status: $existingStatus');
-              throw Exception('An ad with registration number "$normalizedRegNo" already exists. Each vehicle can only be listed once. Please check your existing ads or contact support if you believe this is an error.');
+              final existingStatus =
+                  existingAdData['status'] as String? ?? 'unknown';
+              print(
+                  'Found existing ad with same registration number: ${existingAd.id}, status: $existingStatus');
+              throw Exception(
+                  'An ad with registration number "$normalizedRegNo" already exists. Each vehicle can only be listed once. Please check your existing ads or contact support if you believe this is an error.');
             }
           } else {
             // Re-throw if it's not an index error
@@ -459,6 +467,16 @@ class GlobalAdStore {
         'soldAt': FieldValue.serverTimestamp(),
       });
 
+      final price = _parseNumericPrice((adData?['price'] ?? '').toString());
+      await _marketPulseService.trackDealCompleted(
+        adId: adId,
+        price: price,
+        city: (adData?['cityName'] ??
+                adData?['locationString'] ??
+                adData?['location'])
+            ?.toString(),
+      );
+
       // Update user's sales count and trigger trust rank recompute
       await _updateUserSalesCount(ownerId);
     } catch (e) {
@@ -574,6 +592,14 @@ class GlobalAdStore {
     final bytes = utf8.encode(normalized);
     final hash = sha256.convert(bytes);
     return hash.toString();
+  }
+
+  double _parseNumericPrice(String raw) {
+    final cleaned = raw.replaceAll(RegExp(r'[^0-9.]'), '');
+    if (cleaned.isEmpty) {
+      return 0;
+    }
+    return double.tryParse(cleaned) ?? 0;
   }
 
   /// Marks an ad as expired (removed) if it has passed its expiration date

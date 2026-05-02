@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "1043251250775-dr4juirs68ougug9lfcg9atk1dji189o.apps.googleusercontent.com",
+          "client_id": "1043251250775-grdbe362kug9g9mpnd6864o36t9mukj8.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.carhive",
-            "certificate_hash": "8e52eb3149b62944d8a7ee3f030b598ebf07e041"
+            "certificate_hash": "2663eb6769bbdf8c157dfe22b8275eb09f0639e4"
           }
         },
         {
