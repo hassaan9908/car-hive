@@ -5,7 +5,6 @@ import 'package:carhive/services/vehicle_service.dart';
 import 'package:carhive/utils/html_parser.dart';
 import 'package:carhive/utils/encryption_service.dart';
 import 'package:carhive/screens/video_capture_360_screen.dart';
-import 'package:carhive/screens/photo_capture_360_screen.dart';
 import 'package:carhive/widgets/location_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -96,15 +95,13 @@ class _PostAdCarState extends State<PostAdCar> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _carbrandController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-
+  
   // Vehicle verification fields (encrypted)
-  final TextEditingController _registrationNoController =
-      TextEditingController();
-  final TextEditingController _registrationDateController =
-      TextEditingController();
+  final TextEditingController _registrationNoController = TextEditingController();
+  final TextEditingController _registrationDateController = TextEditingController();
   final TextEditingController _chassisNoController = TextEditingController();
   final TextEditingController _ownerNameController = TextEditingController();
-
+  
   // Vehicle verification state
   bool _isVerifying = false;
 
@@ -115,16 +112,17 @@ class _PostAdCarState extends State<PostAdCar> {
   String? _userCity;
   String? _userUsername;
   bool _isLoadingProfile = true;
-
+  
   // Image upload state
   bool _isUploadingImages = false;
   double _uploadProgress = 0.0;
   final CloudinaryService _cloudinaryService = CloudinaryService();
-
+  
   // 360° capture state (16 angles)
   // 360° video capture state
   List<String>? _video360FrameUrls;
   bool _isUploading360 = false;
+
 
   final List<String> chipOptions = [
     "Alloy Rims",
@@ -159,7 +157,7 @@ class _PostAdCarState extends State<PostAdCar> {
   // Upload images to Cloudinary and return URLs
   Future<List<String>> _uploadImages() async {
     final List<String> imageUrls = [];
-
+    
     setState(() {
       _isUploadingImages = true;
       _uploadProgress = 0.0;
@@ -237,8 +235,7 @@ class _PostAdCarState extends State<PostAdCar> {
                             setState(() {
                               selectedLocationCoords = location;
                               selectedLocationAddress = address;
-                              selectedLocation = address
-                                  .split(',')[0]; // Use first part as city
+                              selectedLocation = address.split(',')[0]; // Use first part as city
                             });
                           },
                         ),
@@ -315,7 +312,7 @@ class _PostAdCarState extends State<PostAdCar> {
                 ),
               ),
             ),
-
+            
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
@@ -329,64 +326,63 @@ class _PostAdCarState extends State<PostAdCar> {
                 ],
               ),
             ),
-
+            
             // City list
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  ...[
-                    "Abbottabad",
-                    "Bahawalpur",
-                    "Chiniot",
-                    "Dera Ghazi Khan",
-                    "Faisalabad",
-                    "Gujranwala",
-                    "Gujrat",
-                    "Hyderabad",
-                    "Islamabad",
-                    "Jacobabad",
-                    "Jhang",
-                    "Jhelum",
-                    "Karachi",
-                    "Kasur",
-                    "Kohat",
-                    "Lahore",
-                    "Larkana",
-                    "Mardan",
-                    "Mirpur",
-                    "Multan",
-                    "Muzaffarabad",
-                    "Muzaffargarh",
-                    "Nawabshah",
-                    "Okara",
-                    "Peshawar",
-                    "Quetta",
-                    "Rahim Yar Khan",
-                    "Rawalpindi",
-                    "Sahiwal",
-                    "Sargodha",
-                    "Sheikhupura",
-                    "Sialkot",
-                    "Sukkur",
-                    "Swat",
-                    "Toba Tek Singh",
-                    "Vehari",
-                    "Burewala",
-                    "Gujrawnala",
-                    "Zhob"
-                  ].map(
-                    (city) => ListTile(
-                      title: Text(city),
-                      onTap: () {
+          padding: const EdgeInsets.all(16),
+          children: [
+            ...[
+              "Abbottabad",
+              "Bahawalpur",
+              "Chiniot",
+              "Dera Ghazi Khan",
+              "Faisalabad",
+              "Gujranwala",
+              "Gujrat",
+              "Hyderabad",
+              "Islamabad",
+              "Jacobabad",
+              "Jhang",
+              "Jhelum",
+              "Karachi",
+              "Kasur",
+              "Kohat",
+              "Lahore",
+              "Larkana",
+              "Mardan",
+              "Mirpur",
+              "Multan",
+              "Muzaffarabad",
+              "Muzaffargarh",
+              "Nawabshah",
+              "Okara",
+              "Peshawar",
+              "Quetta",
+              "Rahim Yar Khan",
+              "Rawalpindi",
+              "Sahiwal",
+              "Sargodha",
+              "Sheikhupura",
+              "Sialkot",
+              "Sukkur",
+              "Swat",
+              "Toba Tek Singh",
+              "Vehari",
+              "Burewala",
+              "Gujrawnala",
+              "Zhob"
+            ].map(
+              (city) => ListTile(
+                title: Text(city),
+                onTap: () {
                         setState(() {
                           selectedLocation = city;
-                          selectedLocationCoords =
-                              null; // Clear precise coords when using city
+                          selectedLocationCoords = null; // Clear precise coords when using city
                           selectedLocationAddress = city;
                         });
-                        Navigator.pop(context);
-                      },
+                  Navigator.pop(context);
+                },
                     ),
                   ),
                 ],
@@ -433,8 +429,8 @@ class _PostAdCarState extends State<PostAdCar> {
           padding: const EdgeInsets.all(16),
           children: [
             const Text("Unregistered",
-                style: TextStyle(
-                    color: Color(0xFFf48c25), fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ListTile(
               title: const Text("Unregistered"),
               onTap: () {
@@ -444,8 +440,8 @@ class _PostAdCarState extends State<PostAdCar> {
             ),
             const SizedBox(height: 8),
             const Text("Provinces",
-                style: TextStyle(
-                    color: Color(0xFFf48c25), fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ...["Punjab", "Sindh", "Balochistan", "KPK"]
                 .map((province) => ListTile(
                       title: Text(province),
@@ -456,8 +452,8 @@ class _PostAdCarState extends State<PostAdCar> {
                     )),
             const SizedBox(height: 8),
             const Text("Popular Cities",
-                style: TextStyle(
-                    color: Color(0xFFf48c25), fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ...["Lahore", "Karachi", "Islamabad", "Multan", "Quetta"]
                 .map((city) => ListTile(
                       title: Text(city),
@@ -468,8 +464,8 @@ class _PostAdCarState extends State<PostAdCar> {
                     )),
             const SizedBox(height: 8),
             const Text("Other Cities",
-                style: TextStyle(
-                    color: Color(0xFFf48c25), fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: Color(0xFFf48c25), fontWeight: FontWeight.bold)),
             ...[
               "Rawalpindi",
               "Faisalabad",
@@ -540,8 +536,7 @@ class _PostAdCarState extends State<PostAdCar> {
       setState(() => _isVerifying = true);
 
       // Convert date from MM/DD/YYYY to YYYY-MM-DD for API
-      final dateForApi =
-          _convertDateToApiFormat(_registrationDateController.text.trim());
+      final dateForApi = _convertDateToApiFormat(_registrationDateController.text.trim());
 
       // Call the API
       final htmlResponse = await VehicleService.fetchVehicleData(
@@ -554,8 +549,7 @@ class _PostAdCarState extends State<PostAdCar> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                  'No record found in the database. Please verify the registration number and date.'),
+              content: Text('No record found in the database. Please verify the registration number and date.'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 4),
             ),
@@ -574,8 +568,10 @@ class _PostAdCarState extends State<PostAdCar> {
 
       // Normalize values for comparison (case-insensitive, trim whitespace, handle asterisk)
       String normalize(String value, {bool isRegistrationNo = false}) {
-        var normalized = value.trim().toUpperCase();
-
+        var normalized = value
+            .trim()
+            .toUpperCase();
+        
         // For registration numbers, handle asterisk - remove it for comparison
         // API returns format like "LEN-310*" but user enters "LEN-310"
         if (isRegistrationNo) {
@@ -583,16 +579,14 @@ class _PostAdCarState extends State<PostAdCar> {
           normalized = normalized.trim(); // Trim again after removing asterisk
         } else {
           // For other fields, normalize spaces
-          normalized = normalized.replaceAll(
-              RegExp(r'\s+'), ' '); // Normalize multiple spaces to single space
+          normalized = normalized.replaceAll(RegExp(r'\s+'), ' '); // Normalize multiple spaces to single space
         }
-
+        
         return normalized;
       }
 
       // Get user input values
-      final userRegNo = normalize(_registrationNoController.text.trim(),
-          isRegistrationNo: true);
+      final userRegNo = normalize(_registrationNoController.text.trim(), isRegistrationNo: true);
       final userChassisNo = normalize(_chassisNoController.text.trim());
       final userOwnerName = normalize(_ownerNameController.text.trim());
 
@@ -602,34 +596,27 @@ class _PostAdCarState extends State<PostAdCar> {
       String apiOwnerName = '';
 
       // Try different field name variations
-      final rawApiRegNo = extractedFields['Registration No'] ??
-          extractedFields['REGISTRATION NO'] ??
-          extractedFields['Reg No'] ??
-          extractedFields['Registration Number'] ??
-          '';
+      final rawApiRegNo = extractedFields['Registration No'] ?? 
+                         extractedFields['REGISTRATION NO'] ?? 
+                         extractedFields['Reg No'] ?? 
+                         extractedFields['Registration Number'] ?? '';
+      
+      apiRegNo = normalize(rawApiRegNo, isRegistrationNo: true); // Remove asterisk from API response
 
-      apiRegNo = normalize(rawApiRegNo,
-          isRegistrationNo: true); // Remove asterisk from API response
+      apiChassisNo = normalize(extractedFields['Chassis No'] ?? 
+                               extractedFields['CHASSIS NO'] ?? 
+                               extractedFields['Chassis Number'] ?? 
+                               extractedFields['CHASSIS NUMBER'] ?? '');
 
-      apiChassisNo = normalize(extractedFields['Chassis No'] ??
-          extractedFields['CHASSIS NO'] ??
-          extractedFields['Chassis Number'] ??
-          extractedFields['CHASSIS NUMBER'] ??
-          '');
-
-      apiOwnerName = normalize(extractedFields['Owner Name'] ??
-          extractedFields['OWNER NAME'] ??
-          extractedFields['Owner'] ??
-          extractedFields['OWNER'] ??
-          '');
+      apiOwnerName = normalize(extractedFields['Owner Name'] ?? 
+                               extractedFields['OWNER NAME'] ?? 
+                               extractedFields['Owner'] ?? 
+                               extractedFields['OWNER'] ?? '');
 
       // Debug: Print comparison values
-      print(
-          'User Reg No: "$userRegNo" | API Reg No: "$apiRegNo" | Match: ${userRegNo == apiRegNo}');
-      print(
-          'User Chassis: "$userChassisNo" | API Chassis: "$apiChassisNo" | Match: ${userChassisNo == apiChassisNo}');
-      print(
-          'User Owner: "$userOwnerName" | API Owner: "$apiOwnerName" | Match: ${userOwnerName == apiOwnerName}');
+      print('User Reg No: "$userRegNo" | API Reg No: "$apiRegNo" | Match: ${userRegNo == apiRegNo}');
+      print('User Chassis: "$userChassisNo" | API Chassis: "$apiChassisNo" | Match: ${userChassisNo == apiChassisNo}');
+      print('User Owner: "$userOwnerName" | API Owner: "$apiOwnerName" | Match: ${userOwnerName == apiOwnerName}');
 
       // Check if any field is empty
       if (apiRegNo.isEmpty || apiChassisNo.isEmpty || apiOwnerName.isEmpty) {
@@ -637,8 +624,7 @@ class _PostAdCarState extends State<PostAdCar> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                  'Could not extract all required fields from API. Missing: ${apiRegNo.isEmpty ? "Registration No " : ""}${apiChassisNo.isEmpty ? "Chassis No " : ""}${apiOwnerName.isEmpty ? "Owner Name" : ""}'),
+              content: Text('Could not extract all required fields from API. Missing: ${apiRegNo.isEmpty ? "Registration No " : ""}${apiChassisNo.isEmpty ? "Chassis No " : ""}${apiOwnerName.isEmpty ? "Owner Name" : ""}'),
               backgroundColor: Colors.orange,
               duration: const Duration(seconds: 4),
             ),
@@ -654,8 +640,7 @@ class _PostAdCarState extends State<PostAdCar> {
       final ownerNameMatches = userOwnerName == apiOwnerName;
 
       // Debug: Print final result
-      print(
-          'Reg No Match: $regNoMatches, Chassis Match: $chassisNoMatches, Owner Match: $ownerNameMatches');
+      print('Reg No Match: $regNoMatches, Chassis Match: $chassisNoMatches, Owner Match: $ownerNameMatches');
       print('=== END VERIFICATION DEBUG ===');
 
       // All fields must match exactly
@@ -665,11 +650,10 @@ class _PostAdCarState extends State<PostAdCar> {
           if (!regNoMatches) mismatches.add('Registration No');
           if (!chassisNoMatches) mismatches.add('Chassis No');
           if (!ownerNameMatches) mismatches.add('Owner Name');
-
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                  'Verification failed. Mismatched fields: ${mismatches.join(", ")}'),
+              content: Text('Verification failed. Mismatched fields: ${mismatches.join(", ")}'),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 5),
             ),
@@ -713,39 +697,11 @@ class _PostAdCarState extends State<PostAdCar> {
       setState(() {
         _video360FrameUrls = result;
       });
-
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Generated ${result.length} frames from video!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    }
-  }
-
-  // Open photo-based 360 capture (16 frames)
-  Future<void> _openPhoto360CaptureScreen() async {
-    final result = await Navigator.push<List<String>>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PhotoCapture360Screen(
-          onComplete: (framePaths) {},
-        ),
-      ),
-    );
-
-    if (result != null && result.isNotEmpty) {
-      setState(() {
-        // Reuse the same variable that stores 360 frames
-        _video360FrameUrls = result;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Captured ${result.length} photos for 360° view!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -776,6 +732,7 @@ class _PostAdCarState extends State<PostAdCar> {
 
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -941,8 +898,7 @@ class _PostAdCarState extends State<PostAdCar> {
                             ),
                           ],
                         ),
-                        if (_video360FrameUrls != null &&
-                            _video360FrameUrls!.isNotEmpty)
+                        if (_video360FrameUrls != null && _video360FrameUrls!.isNotEmpty)
                           TextButton.icon(
                             onPressed: _clear360Images,
                             icon: const Icon(Icons.clear, size: 18),
@@ -962,151 +918,94 @@ class _PostAdCarState extends State<PostAdCar> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (_video360FrameUrls == null ||
-                        _video360FrameUrls!.isEmpty)
-                      // Offer both Photo (16 frames) and Video capture options
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: _openPhoto360CaptureScreen,
-                              child: Container(
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.orange.withOpacity(0.08),
-                                      Colors.orange.withOpacity(0.14),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.orange.withOpacity(0.5),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.orange,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(Icons.photo_camera,
-                                          color: Colors.white, size: 24),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: const [
-                                        Text('Photo Capture (16 frames)',
-                                            style: TextStyle(
-                                                color: Colors.orange,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14)),
-                                        Text('Capture 16 angles',
-                                            style: TextStyle(
-                                                color: Colors.orangeAccent,
-                                                fontSize: 11)),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
+                    if (_video360FrameUrls == null || _video360FrameUrls!.isEmpty)
+                      // Video-based capture
+                      GestureDetector(
+                        onTap: _openVideo360CaptureScreen,
+                        child: Container(
+                          width: double.infinity,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.blue.withOpacity(0.1),
+                                Colors.blue.withOpacity(0.2),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.blue.withOpacity(0.5),
+                              width: 2,
+                              style: BorderStyle.solid,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: _openVideo360CaptureScreen,
-                              child: Container(
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.blue.withOpacity(0.1),
-                                      Colors.blue.withOpacity(0.2),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.blue.withOpacity(0.5),
-                                    width: 2,
-                                    style: BorderStyle.solid,
-                                  ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: const BoxDecoration(
+                                  color: Colors.blue,
+                                  shape: BoxShape.circle,
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.blue,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(Icons.videocam,
-                                          color: Colors.white, size: 24),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                            'Video Capture (${_video360FrameUrls?.length ?? 0} frames)',
-                                            style: const TextStyle(
-                                                color: Colors.blue,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14)),
-                                        Text('Record 15-20 sec video',
-                                            style: TextStyle(
-                                                color: Colors.blue
-                                                    .withOpacity(0.8),
-                                                fontSize: 11)),
-                                      ],
-                                    ),
-                                  ],
+                                child: const Icon(
+                                  Icons.videocam,
+                                  color: Colors.white,
+                                  size: 24,
                                 ),
                               ),
-                            ),
+                              const SizedBox(width: 12),
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Video Capture (${_video360FrameUrls?.length ?? 0} frames)',
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Record 15-20 sec video',
+                                    style: TextStyle(
+                                      color: Colors.blue.withOpacity(0.8),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       )
                     else
-                      // Preview captured frames (photo or video)
+                      // Preview video frames
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: Colors.green.withOpacity(0.1),
-                          border:
-                              Border.all(color: Colors.green.withOpacity(0.5)),
+                          border: Border.all(color: Colors.green.withOpacity(0.5)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.check_circle,
-                                color: Colors.green, size: 24),
+                            const Icon(Icons.check_circle, color: Colors.green, size: 24),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '360° Frames Captured',
+                                    '360° Video Captured',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
                                   ),
                                   Text(
-                                    '${_video360FrameUrls!.length} frames available',
+                                    '${_video360FrameUrls!.length} frames generated',
                                     style: TextStyle(
                                       color: Colors.grey.shade600,
                                       fontSize: 12,
@@ -1155,11 +1054,11 @@ class _PostAdCarState extends State<PostAdCar> {
                         child: Row(
                           children: [
                             Icon(
-                              selectedLocationCoords != null
-                                  ? Icons.location_on
+                              selectedLocationCoords != null 
+                                  ? Icons.location_on 
                                   : Icons.location_city,
-                              color: selectedLocation != null
-                                  ? const Color(0xFFf48c25)
+                              color: selectedLocation != null 
+                                  ? const Color(0xFFf48c25) 
                                   : Colors.grey,
                             ),
                             const SizedBox(width: 12),
@@ -1171,14 +1070,13 @@ class _PostAdCarState extends State<PostAdCar> {
                                     selectedLocation ?? 'Select Location',
                                     style: TextStyle(
                                       fontSize: 16,
-                                      color: selectedLocation != null
-                                          ? Colors.black87
+                                      color: selectedLocation != null 
+                                          ? Colors.black87 
                                           : Colors.grey,
                                     ),
                                   ),
-                                  if (selectedLocationAddress.isNotEmpty &&
-                                      selectedLocationAddress !=
-                                          selectedLocation) ...[
+                                  if (selectedLocationAddress.isNotEmpty && 
+                                      selectedLocationAddress != selectedLocation) ...[
                                     const SizedBox(height: 4),
                                     Text(
                                       selectedLocationAddress,
@@ -1217,7 +1115,7 @@ class _PostAdCarState extends State<PostAdCar> {
                             Icon(
                               Icons.arrow_drop_down,
                               color: Colors.grey[600],
-                            ),
+                ),
                           ],
                         ),
                       ),
@@ -1338,7 +1236,7 @@ class _PostAdCarState extends State<PostAdCar> {
                   ),
                 ),
               ),
-
+              
               // Vehicle Verification Section
               Padding(
                 padding: const EdgeInsets.all(12.0),
@@ -1351,8 +1249,7 @@ class _PostAdCarState extends State<PostAdCar> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.verified_user,
-                                color: Colors.blue.shade700),
+                            Icon(Icons.verified_user, color: Colors.blue.shade700),
                             const SizedBox(width: 8),
                             Text(
                               'Vehicle Verification',
@@ -1469,269 +1366,225 @@ class _PostAdCarState extends State<PostAdCar> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SizedBox(
-                    width: double.infinity,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFFF6B35),
-                            Color(0xFFFF8C42),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF6B35).withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
+                  width: double.infinity,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFFF6B35),
+                          Color(0xFFFF8C42),
                         ],
-                      ),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                         ),
-                        onPressed: (_isUploadingImages ||
-                                _isUploading360 ||
-                                _isVerifying)
-                            ? null
-                            : () async {
-                                if (_formKey.currentState!.validate()) {
-                                  // Verify vehicle details first
-                                  if (!mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content:
-                                          Text('Verifying vehicle details...'),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6B35).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: (_isUploadingImages || _isUploading360 || _isVerifying) ? null : () async {
+                      if (_formKey.currentState!.validate()) {
+                        // Verify vehicle details first
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Verifying vehicle details...'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
 
-                                  final isVerified =
-                                      await _verifyVehicleDetails();
+                        final isVerified = await _verifyVehicleDetails();
 
-                                  if (!isVerified) {
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Vehicle verification failed. Please ensure all details match the official records.'),
-                                        backgroundColor: Colors.red,
-                                        duration: Duration(seconds: 4),
-                                      ),
-                                    );
-                                    return;
-                                  }
+                        if (!isVerified) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Vehicle verification failed. Please ensure all details match the official records.'),
+                              backgroundColor: Colors.red,
+                              duration: Duration(seconds: 4),
+                            ),
+                          );
+                          return;
+                        }
 
-                                  // Verification successful, proceed with upload
-                                  List<String> imageUrls = [];
-
-                                  // Upload images to Cloudinary
-                                  if (_images.isNotEmpty ||
-                                      _webImages.isNotEmpty) {
-                                    try {
-                                      imageUrls = await _uploadImages();
-                                      if (imageUrls.isEmpty) {
-                                        if (!mounted) return;
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                                'No images were uploaded. Please try again.'),
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                    } catch (e) {
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                              'Failed to upload images: $e'),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                  }
-
-                                  // Use video-generated 360° frame URLs
-                                  List<String>? images360Urls;
-                                  if (_video360FrameUrls != null &&
-                                      _video360FrameUrls!.isNotEmpty) {
-                                    // Video frames are already processed and available as URLs
-                                    images360Urls = _video360FrameUrls;
-                                  }
-
-                                  // Use selected location coordinates or get current location
-                                  Map<String, double>? locationCoords;
-                                  if (selectedLocationCoords != null) {
-                                    // Use the precise location selected by user
-                                    locationCoords = {
-                                      'lat': selectedLocationCoords!.latitude,
-                                      'lng': selectedLocationCoords!.longitude,
-                                    };
-                                  } else {
-                                    // Fallback to current location if no precise location selected
-                                    try {
-                                      LocationPermission permission =
-                                          await Geolocator.checkPermission();
-                                      if (permission ==
-                                          LocationPermission.denied) {
-                                        permission = await Geolocator
-                                            .requestPermission();
-                                      }
-
-                                      if (permission ==
-                                              LocationPermission.whileInUse ||
-                                          permission ==
-                                              LocationPermission.always) {
-                                        Position position =
-                                            await Geolocator.getCurrentPosition(
-                                          desiredAccuracy:
-                                              LocationAccuracy.medium,
-                                        );
-                                        locationCoords = {
-                                          'lat': position.latitude,
-                                          'lng': position.longitude,
-                                        };
-                                      }
-                                    } catch (e) {
-                                      print('Error getting location: $e');
-                                      // Continue without location coordinates
-                                    }
-                                  }
-
-                                  // Prepare vehicle verification data
-                                  // Normalize registration number for consistent duplicate checking
-                                  final plainRegistrationNo =
-                                      _registrationNoController.text
-                                          .trim()
-                                          .toUpperCase()
-                                          .replaceAll('*', '')
-                                          .replaceAll(' ', '')
-                                          .replaceAll(RegExp(r'[^\w\-]'), '');
-                                  final vehicleData = {
-                                    'registrationNo': plainRegistrationNo,
-                                    'registrationDate':
-                                        _registrationDateController.text.trim(),
-                                    'chassisNo':
-                                        _chassisNoController.text.trim(),
-                                    'ownerName':
-                                        _ownerNameController.text.trim(),
-                                  };
-
-                                  // Encrypt sensitive vehicle data
-                                  final encryptedVehicleData =
-                                      EncryptionService.encryptFields(
-                                          vehicleData);
-
-                                  // Add plain registration number temporarily for duplicate checking
-                                  // This will be removed before storing in Firestore
-                                  encryptedVehicleData['_plainRegistrationNo'] =
-                                      plainRegistrationNo;
-
-                                  // Create ad with image URLs and encrypted vehicle data
-                                  final newAd = AdModel(
-                                    title: _titleController.text,
-                                    price: _priceController.text,
-                                    location: selectedLocationAddress.isNotEmpty
-                                        ? selectedLocationAddress
-                                        : selectedLocation ??
-                                            _locationController.text,
-                                    year: selectedCarModel ?? '',
-                                    mileage: _mileageController.text,
-                                    fuel: _fuelController.text,
-                                    description: _descriptionController.text,
-                                    carBrand: _carbrandController.text,
-                                    bodyColor: _bodyColorController.text,
-                                    kmsDriven: _mileageController
-                                        .text, // Use mileage for kmsDriven
-                                    registeredIn: selectedRegisteredIn,
-                                    name: _nameController.text,
-                                    phone: _phoneController.text,
-                                    imageUrls:
-                                        imageUrls.isNotEmpty ? imageUrls : null,
-                                    locationCoordinates: locationCoords,
-                                    images360Urls: images360Urls != null &&
-                                            images360Urls.isNotEmpty
-                                        ? images360Urls
-                                        : null,
-                                  );
-
-                                  try {
-                                    // Add ad with encrypted vehicle data and auto-approve (status = 'active')
-                                    await GlobalAdStore().addAdWithVerification(
-                                        newAd, encryptedVehicleData);
-
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Vehicle verified successfully! Your ad has been posted.'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-
-                                    await Future.delayed(
-                                        const Duration(seconds: 1));
-                                    if (!mounted) return;
-                                    Navigator.pushReplacementNamed(
-                                        context, '/myads');
-                                  } catch (e) {
-                                    if (!mounted) return;
-                                    final errorMessage = e
-                                        .toString()
-                                        .replaceAll('Exception: ', '')
-                                        .replaceAll(
-                                            'Failed to add verified ad: ', '');
-                                    final isDuplicateError =
-                                        errorMessage.contains('already exists');
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(errorMessage),
-                                        backgroundColor: isDuplicateError
-                                            ? Colors.orange
-                                            : Colors.red,
-                                        duration: const Duration(seconds: 5),
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                        child: (_isUploadingImages || _isUploading360)
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    _isUploading360
-                                        ? "Uploading 360° images..."
-                                        : "Uploading...",
-                                    style: const TextStyle(
-                                        fontSize: 16, color: Colors.white),
-                                  ),
-                                ],
-                              )
-                            : const Text(
-                                "Post Ad",
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.white),
+                        // Verification successful, proceed with upload
+                        List<String> imageUrls = [];
+                        
+                        // Upload images to Cloudinary
+                        if (_images.isNotEmpty || _webImages.isNotEmpty) {
+                          try {
+                            imageUrls = await _uploadImages();
+                            if (imageUrls.isEmpty) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('No images were uploaded. Please try again.'),
+                                ),
+                              );
+                              return;
+                            }
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to upload images: $e'),
                               ),
-                      ),
-                    )),
+                            );
+                            return;
+                          }
+                        }
+
+                        // Use video-generated 360° frame URLs
+                        List<String>? images360Urls;
+                        if (_video360FrameUrls != null && _video360FrameUrls!.isNotEmpty) {
+                          // Video frames are already processed and available as URLs
+                          images360Urls = _video360FrameUrls;
+                        }
+
+                        // Use selected location coordinates or get current location
+                        Map<String, double>? locationCoords;
+                        if (selectedLocationCoords != null) {
+                          // Use the precise location selected by user
+                          locationCoords = {
+                            'lat': selectedLocationCoords!.latitude,
+                            'lng': selectedLocationCoords!.longitude,
+                          };
+                        } else {
+                          // Fallback to current location if no precise location selected
+                          try {
+                          LocationPermission permission = await Geolocator.checkPermission();
+                          if (permission == LocationPermission.denied) {
+                            permission = await Geolocator.requestPermission();
+                          }
+                          
+                          if (permission == LocationPermission.whileInUse ||
+                              permission == LocationPermission.always) {
+                            Position position = await Geolocator.getCurrentPosition(
+                              desiredAccuracy: LocationAccuracy.medium,
+                            );
+                            locationCoords = {
+                              'lat': position.latitude,
+                              'lng': position.longitude,
+                            };
+                          }
+                        } catch (e) {
+                          print('Error getting location: $e');
+                          // Continue without location coordinates
+                          }
+                        }
+
+                        // Prepare vehicle verification data
+                        // Normalize registration number for consistent duplicate checking
+                        final plainRegistrationNo = _registrationNoController.text
+                            .trim()
+                            .toUpperCase()
+                            .replaceAll('*', '')
+                            .replaceAll(' ', '')
+                            .replaceAll(RegExp(r'[^\w\-]'), '');
+                        final vehicleData = {
+                          'registrationNo': plainRegistrationNo,
+                          'registrationDate': _registrationDateController.text.trim(),
+                          'chassisNo': _chassisNoController.text.trim(),
+                          'ownerName': _ownerNameController.text.trim(),
+                        };
+
+                        // Encrypt sensitive vehicle data
+                        final encryptedVehicleData = EncryptionService.encryptFields(vehicleData);
+                        
+                        // Add plain registration number temporarily for duplicate checking
+                        // This will be removed before storing in Firestore
+                        encryptedVehicleData['_plainRegistrationNo'] = plainRegistrationNo;
+
+                        // Create ad with image URLs and encrypted vehicle data
+                        final newAd = AdModel(
+                          title: _titleController.text,
+                          price: _priceController.text,
+                          location: selectedLocationAddress.isNotEmpty 
+                              ? selectedLocationAddress 
+                              : selectedLocation ?? _locationController.text,
+                          year: selectedCarModel ?? '',
+                          mileage: _mileageController.text,
+                          fuel: _fuelController.text,
+                          description: _descriptionController.text,
+                          carBrand: _carbrandController.text,
+                          bodyColor: _bodyColorController.text,
+                          kmsDriven: _mileageController
+                              .text, // Use mileage for kmsDriven
+                          registeredIn: selectedRegisteredIn,
+                          name: _nameController.text,
+                          phone: _phoneController.text,
+                          imageUrls: imageUrls.isNotEmpty ? imageUrls : null,
+                          locationCoordinates: locationCoords,
+                          images360Urls: images360Urls != null && images360Urls.isNotEmpty
+                              ? images360Urls
+                              : null,
+                        );
+
+                        try {
+                          // Add ad with encrypted vehicle data and auto-approve (status = 'active')
+                          await GlobalAdStore().addAdWithVerification(newAd, encryptedVehicleData);
+
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Vehicle verified successfully! Your ad has been posted.'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+
+                          await Future.delayed(const Duration(seconds: 1));
+                          if (!mounted) return;
+                          Navigator.pushReplacementNamed(context, '/myads');
+                        } catch (e) {
+                          if (!mounted) return;
+                          final errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('Failed to add verified ad: ', '');
+                          final isDuplicateError = errorMessage.contains('already exists');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(errorMessage),
+                              backgroundColor: isDuplicateError ? Colors.orange : Colors.red,
+                              duration: const Duration(seconds: 5),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: (_isUploadingImages || _isUploading360)
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                _isUploading360 ? "Uploading 360° images..." : "Uploading...",
+                                style: const TextStyle(fontSize: 16, color: Colors.white),
+                              ),
+                            ],
+                          )
+                        : const Text(
+                            "Post Ad",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                  ),
+                  )
+                ),
               ),
               const SizedBox(height: 40),
             ],
@@ -1752,8 +1605,9 @@ class _PostAdCarState extends State<PostAdCar> {
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final Color fillColor =
-        isDark ? const Color.fromARGB(255, 15, 15, 15) : Colors.grey.shade200;
+    final Color fillColor = isDark 
+        ? const Color.fromARGB(255, 15, 15, 15) 
+        : Colors.grey.shade200;
 
     return ListTile(
       leading: Icon(icon, color: Colors.grey.shade700),
@@ -1839,3 +1693,40 @@ class _FullScreenPopup extends StatelessWidget {
     );
   }
 }
+
+
+// i added these code twice 
+
+// import 'package:flutter/material.dart';
+
+// // ignore: unused_element
+// class _FullScreenPopup extends StatelessWidget {
+//   final String title;
+//   final Widget? content;
+
+//   // ignore: unused_element_parameter
+//   const _FullScreenPopup({required this.title, this.content});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return SizedBox(
+//       height: MediaQuery.of(context).size.height * 0.95,
+//       child: Scaffold(
+//         appBar: AppBar(
+//           automaticallyImplyLeading: false,
+//           title: Text(title),
+//           actions: [
+//             IconButton(
+//               icon: const Icon(Icons.close),
+//               onPressed: () => Navigator.pop(context),
+//             )
+//           ],
+//         ),
+//         body: content ??
+//             const Center(
+//               child: Text("Custom List or Search will go here."),
+//             ),
+//       ),
+//     );
+//   }
+// }

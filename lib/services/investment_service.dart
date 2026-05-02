@@ -14,7 +14,6 @@ class InvestmentService {
     return _firestore
         .collection('investments')
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -29,7 +28,6 @@ class InvestmentService {
         .collection('investments')
         .where('userId', isEqualTo: userId)
         .where('status', isEqualTo: 'active')
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -44,7 +42,6 @@ class InvestmentService {
     return _firestore
         .collection('investments')
         .where('vehicleInvestmentId', isEqualTo: vehicleInvestmentId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -60,7 +57,6 @@ class InvestmentService {
         .collection('investments')
         .where('vehicleInvestmentId', isEqualTo: vehicleInvestmentId)
         .where('status', isEqualTo: 'active')
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs

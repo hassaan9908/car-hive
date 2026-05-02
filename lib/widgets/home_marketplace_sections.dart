@@ -14,13 +14,11 @@ import 'market_pulse_teaser_card.dart';
 
 class HomeMarketplaceSections extends StatefulWidget {
   final Widget? filterSection;
-  final Widget? brandsSection;
   final Widget listings;
 
   const HomeMarketplaceSections({
     super.key,
     this.filterSection,
-    this.brandsSection,
     required this.listings,
   });
 
@@ -256,10 +254,6 @@ class _HomeMarketplaceSectionsState extends State<HomeMarketplaceSections> {
             message: 'No new listings today. Check back soon!',
           ),
         ),
-        if (widget.brandsSection != null) ...[
-          const SizedBox(height: 12),
-          widget.brandsSection!,
-        ],
         if (widget.filterSection != null) ...[
           const SizedBox(height: 12),
           widget.filterSection!,
