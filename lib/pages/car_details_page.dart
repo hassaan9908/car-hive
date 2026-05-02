@@ -137,6 +137,15 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
             duration: const Duration(seconds: 3),
           ),
         );
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not launch phone dialer: ${e.toString()}'),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
       }
     }
   }
@@ -254,46 +263,45 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     final ad = widget.ad;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Car Details'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.grey[800]
-                : Colors.grey[400],
-            height: 1,
+        appBar: AppBar(
+          title: const Text('Car Details'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[400],
+              height: 1,
+            ),
           ),
+          actions: [
+            // Save button in app bar
+            StreamBuilder<bool>(
+              stream: _saveService.isAdSaved(ad.id ?? ''),
+              builder: (context, snapshot) {
+                final isSaved = snapshot.data ?? false;
+                return IconButton(
+                  onPressed: _savingAd ? null : _toggleSaveAd,
+                  icon: _savingAd
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          isSaved ? Icons.bookmark : Icons.bookmark_border,
+                          color: isSaved ? colorScheme.primary : null,
+                        ),
+                );
+              },
+            ),
+          ],
         ),
-        actions: [
-          // Save button in app bar
-          StreamBuilder<bool>(
-            stream: _saveService.isAdSaved(ad.id ?? ''),
-            builder: (context, snapshot) {
-              final isSaved = snapshot.data ?? false;
-              return IconButton(
-                onPressed: _savingAd ? null : _toggleSaveAd,
-                icon: _savingAd
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        isSaved ? Icons.bookmark : Icons.bookmark_border,
-                        color: isSaved ? colorScheme.primary : null,
-                      ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        body: SingleChildScrollView(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             // Enhanced Car images display
             Container(
               height: 280,
@@ -574,7 +582,7 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                         color: Colors.black.withOpacity(0.6),
                                         borderRadius: BorderRadius.circular(20),
                                       ),
-                                      child: Row(
+                                      child: const Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(
@@ -582,7 +590,7 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                             color: Colors.white,
                                             size: 18,
                                           ),
-                                          const SizedBox(width: 8),
+                                          SizedBox(width: 8),
                                           Text(
                                             'Tap to view 360°',
                                             style: TextStyle(
@@ -1049,26 +1057,7 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                                   ],
                                 );
                               },
-                            )
-                          else ...[
-                            // No userId, use ad embedded fields only
-                            if (ad.name != null && ad.name!.isNotEmpty) ...[
-                              _buildEnhancedContactCard(
-                                context,
-                                'Seller Name',
-                                ad.name!,
-                                Icons.person,
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                            if (ad.phone != null && ad.phone!.isNotEmpty)
-                              _buildEnhancedContactCard(
-                                context,
-                                'Phone',
-                                ad.phone!,
-                                Icons.phone,
-                              ),
-                          ],
+                            ),
                         ],
                       ),
                     ),
@@ -1082,7 +1071,6 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
                             color: colorScheme.primary.withValues(alpha: 0.05),
@@ -1597,10 +1585,8 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
+          ]),
+        ));
   }
 
   Widget _buildSpecificationCard(
