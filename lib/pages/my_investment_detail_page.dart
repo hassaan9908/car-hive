@@ -682,7 +682,8 @@ class _MyInvestmentDetailPageState extends State<MyInvestmentDetailPage> {
               final transactions = snapshot.data ?? [];
               final investmentTransactions = transactions
                   .where((t) => t.investmentId == widget.investmentId)
-                  .toList();
+                  .toList()
+                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
               if (investmentTransactions.isEmpty) {
                 return Padding(
@@ -846,7 +847,12 @@ class _MyInvestmentDetailPageState extends State<MyInvestmentDetailPage> {
               final profitTransactions = snapshot.data ?? [];
               final investmentProfits = profitTransactions
                   .where((t) => t.investmentId == widget.investmentId)
-                  .toList();
+                  .toList()
+                ..sort((a, b) {
+                  final aDate = a.distributionDate ?? a.createdAt;
+                  final bDate = b.distributionDate ?? b.createdAt;
+                  return bDate.compareTo(aDate);
+                });
 
               if (investmentProfits.isEmpty) {
                 return Padding(

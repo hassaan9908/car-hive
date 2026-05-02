@@ -7,6 +7,7 @@ import 'package:carhive/models/car_brand_model.dart';
 import 'package:carhive/utils/html_parser.dart';
 import 'package:carhive/utils/encryption_service.dart';
 import 'package:carhive/screens/video_capture_360_screen.dart';
+import 'package:carhive/screens/photo_capture_360_screen.dart';
 import 'package:carhive/widgets/location_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -33,170 +34,6 @@ class _PostAdCarState extends State<PostAdCar> {
   bool _routeArgsProcessed = false;
   List<String> _existingImageUrls = [];
   List<String> _existing360ImageUrls = [];
-
-  String? selectedLocation;
-  String? selectedCarModel;
-  String? selectedRegisteredIn;
-  LatLng? selectedLocationCoords;
-  String selectedLocationAddress = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserProfile();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_routeArgsProcessed) return;
-    _routeArgsProcessed = true;
-    _loadEditDataFromRoute();
-  }
-
-  String _stringValue(dynamic value) {
-    if (value == null) return '';
-    if (value is String) return value;
-    return value.toString();
-  }
-
-  List<String> _stringList(dynamic value) {
-    if (value is List) {
-      return value
-          .map((item) => _stringValue(item).trim())
-          .where((item) => item.isNotEmpty)
-          .toList();
-    }
-    return const [];
-  }
-
-  Future<void> _loadEditDataFromRoute() async {
-    final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is! Map<String, dynamic>) {
-      return;
-    }
-
-    final adId = _stringValue(args['adId']).trim();
-    if (adId.isEmpty) {
-      return;
-    }
-
-    final adDataRaw = args['adData'];
-    if (adDataRaw is Map) {
-      _applyAdData(Map<String, dynamic>.from(adDataRaw));
-    }
-
-    if (mounted) {
-      setState(() {
-        _isEditing = true;
-        _editingAdId = adId;
-      });
-    }
-
-    try {
-      final adDoc =
-          await FirebaseFirestore.instance.collection('ads').doc(adId).get();
-      if (!adDoc.exists || !mounted) return;
-      final liveData = adDoc.data();
-      if (liveData != null) {
-        _applyAdData(liveData);
-      }
-    } catch (_) {
-      // If live fetch fails, form still uses route payload fallback.
-    }
-  }
-
-  void _applyAdData(Map<String, dynamic> adData) {
-    final carBrandName = _stringValue(adData['carBrand']).trim().toLowerCase();
-    CarBrand? matchedBrand;
-    if (carBrandName.isNotEmpty) {
-      for (final brand in CarBrandService().getAllBrands()) {
-        if (brand.displayName.toLowerCase() == carBrandName) {
-          matchedBrand = brand;
-          break;
-        }
-      }
-    }
-
-    final imageUrls = _stringList(adData['imageUrls']);
-    final images360Urls = _stringList(adData['images360Urls']);
-
-    final locationRaw = adData['location'];
-    final locationCoordinatesRaw = adData['locationCoordinates'];
-    LatLng? routeLocationCoords;
-    if (locationRaw is Map) {
-      final lat = locationRaw['lat'];
-      final lng = locationRaw['lng'];
-      if (lat is num && lng is num) {
-        routeLocationCoords = LatLng(lat.toDouble(), lng.toDouble());
-      }
-    } else if (locationCoordinatesRaw is Map) {
-      final lat = locationCoordinatesRaw['lat'];
-      final lng = locationCoordinatesRaw['lng'];
-      if (lat is num && lng is num) {
-        routeLocationCoords = LatLng(lat.toDouble(), lng.toDouble());
-      }
-    }
-
-    final encryptedVehicleRaw = adData['vehicleVerification'];
-    Map<String, dynamic> vehicleVerification = {};
-    if (encryptedVehicleRaw is Map) {
-      vehicleVerification = EncryptionService.decryptFields(
-        Map<String, dynamic>.from(encryptedVehicleRaw),
-      );
-    }
-
-    if (!mounted) return;
-    setState(() {
-      _titleController.text = _stringValue(adData['title']);
-      _priceController.text = _stringValue(adData['price']);
-      _mileageController.text = _stringValue(adData['mileage']);
-      _fuelController.text = _stringValue(adData['fuel']);
-      _descriptionController.text = _stringValue(adData['description']);
-      _carNameController.text = _stringValue(adData['carName']);
-      _bodyColorController.text = _stringValue(adData['bodyColor']);
-      _nameController.text = _stringValue(adData['name']);
-      _phoneController.text = _stringValue(adData['phone']);
-
-      selectedCarModel = _stringValue(adData['year']).isNotEmpty
-          ? _stringValue(adData['year'])
-          : selectedCarModel;
-      selectedRegisteredIn = _stringValue(adData['registeredIn']).isNotEmpty
-          ? _stringValue(adData['registeredIn'])
-          : selectedRegisteredIn;
-
-      final locationString = _stringValue(
-        adData['locationString'] ?? adData['location'],
-      );
-      if (locationString.isNotEmpty) {
-        selectedLocation = locationString.split(',').first.trim();
-        selectedLocationAddress = locationString;
-      }
-      if (routeLocationCoords != null) {
-        selectedLocationCoords = routeLocationCoords;
-      }
-
-      if (matchedBrand != null) {
-        _selectedBrand = matchedBrand;
-      }
-
-      if (imageUrls.isNotEmpty) {
-        _existingImageUrls = imageUrls;
-      }
-      if (images360Urls.isNotEmpty) {
-        _existing360ImageUrls = images360Urls;
-      }
-
-      _registrationNoController.text =
-          _stringValue(vehicleVerification['registrationNo']);
-      _registrationDateController.text =
-          _stringValue(vehicleVerification['registrationDate']);
-      _chassisNoController.text =
-          _stringValue(vehicleVerification['chassisNo']);
-      _ownerNameController.text =
-          _stringValue(vehicleVerification['ownerName']);
-    });
-  }
 
   Future<void> _handleAdSubmit() async {
     if (!_formKey.currentState!.validate()) {
@@ -486,6 +323,15 @@ class _PostAdCarState extends State<PostAdCar> {
   String? _userCity;
   String? _userUsername;
   bool _isLoadingProfile = true;
+
+  // Location selection state
+  LatLng? selectedLocationCoords;
+  String selectedLocationAddress = '';
+  String? selectedLocation; // city or short location string
+
+  // Other selection state
+  String? selectedCarModel;
+  String? selectedRegisteredIn;
 
   // Image upload state
   bool _isUploadingImages = false;
@@ -1099,6 +945,33 @@ class _PostAdCarState extends State<PostAdCar> {
     }
   }
 
+  // Open photo-based 360 capture (16 frames)
+  Future<void> _openPhoto360CaptureScreen() async {
+    final result = await Navigator.push<List<String>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PhotoCapture360Screen(
+          onComplete: (framePaths) {},
+        ),
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        _video360FrameUrls = result;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Captured ${result.length} photos for 360° view!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
   // Clear 360° video frames
   void _clear360Images() {
     setState(() {
@@ -1625,66 +1498,136 @@ class _PostAdCarState extends State<PostAdCar> {
                           const SizedBox(height: 12),
                           if (_video360FrameUrls == null ||
                               _video360FrameUrls!.isEmpty)
-                            GestureDetector(
-                              onTap: _openVideo360CaptureScreen,
-                              child: Container(
-                                width: double.infinity,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.blue.withOpacity(0.1),
-                                      Colors.blue.withOpacity(0.2),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.blue.withOpacity(0.5),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.blue,
-                                        shape: BoxShape.circle,
+                            Column(
+                              children: [
+                                GestureDetector(
+                                  onTap: _openVideo360CaptureScreen,
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.blue.withOpacity(0.1),
+                                          Colors.blue.withOpacity(0.2),
+                                        ],
                                       ),
-                                      child: const Icon(
-                                        Icons.videocam,
-                                        color: Colors.white,
-                                        size: 24,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.blue.withOpacity(0.5),
+                                        width: 2,
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
-                                    Column(
+                                    child: Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
-                                          'Video Capture (60 frames)',
-                                          style: TextStyle(
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: const BoxDecoration(
                                             color: Colors.blue,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.videocam,
+                                            color: Colors.white,
+                                            size: 24,
                                           ),
                                         ),
-                                        Text(
-                                          'Record 15-20 sec video',
-                                          style: TextStyle(
-                                            color: Colors.blue.withOpacity(0.8),
-                                            fontSize: 11,
-                                          ),
+                                        const SizedBox(width: 12),
+                                        Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Video Capture (60 frames)',
+                                              style: TextStyle(
+                                                color: Colors.blue,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Record 15-20 sec video',
+                                              style: TextStyle(
+                                                color: Colors.blue
+                                                    .withOpacity(0.8),
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 12),
+                                GestureDetector(
+                                  onTap: _openPhoto360CaptureScreen,
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.orange.withOpacity(0.08),
+                                          Colors.orange.withOpacity(0.12),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.orange.withOpacity(0.5),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.orange,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.photo_camera,
+                                            color: Colors.white,
+                                            size: 24,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Photo Capture (16 frames)',
+                                              style: TextStyle(
+                                                color: Colors.orange,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Capture 16 angles using your camera',
+                                              style: TextStyle(
+                                                color: Colors.orange
+                                                    .withOpacity(0.8),
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             )
                           else
                             Container(
