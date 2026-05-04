@@ -169,7 +169,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: any) {
       title: 'Payment Successful',
       message: `Your payment of ${(amount / 100).toFixed(2)} PKR has been processed successfully.`,
       relatedId: transactionId,
-      isRead: false,
+      read: false,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   }
@@ -207,7 +207,7 @@ async function handlePaymentIntentFailed(paymentIntent: any) {
       title: 'Payment Failed',
       message: 'Your payment could not be processed. Please try again.',
       relatedId: transactionId,
-      isRead: false,
+      read: false,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   }
@@ -270,7 +270,7 @@ async function handlePayoutPaid(payout: any) {
       title: 'Payout Successful',
       message: `Your profit payout has been processed successfully.`,
       relatedId: transactionId,
-      isRead: false,
+      read: false,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   }
@@ -307,7 +307,7 @@ async function handlePayoutFailed(payout: any) {
       title: 'Payout Failed',
       message: 'Your profit payout could not be processed. Please contact support.',
       relatedId: transactionId,
-      isRead: false,
+      read: false,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   }

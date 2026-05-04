@@ -1145,7 +1145,7 @@ class _PostAdCarState extends State<PostAdCar> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '360° View Photos',
+                                  '360° View',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -1173,7 +1173,7 @@ class _PostAdCarState extends State<PostAdCar> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_360PreviewImages.isNotEmpty)
+                          if (_video360FrameUrls != null && _video360FrameUrls!.isNotEmpty)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
@@ -1191,90 +1191,10 @@ class _PostAdCarState extends State<PostAdCar> {
                                 ),
                               ],
                             ),
-                          if (_360PreviewImages.isEmpty ||
-                              _360PreviewImages.every((img) => img == null))
-                            // Capture options: Photo or Video
+                          if (_video360FrameUrls == null || _video360FrameUrls!.isEmpty)
+                            // Video-based capture
                             Column(
                               children: [
-                                // Photo-based capture
-                                GestureDetector(
-                                  onTap: _open360CaptureScreen,
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 20,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.camera_alt,
-                                            color: Colors.white,
-                                            size: 20,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Photo Capture (16 angles)',
-                                                style: TextStyle(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                'Take 16 photos around car',
-                                                style: TextStyle(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withOpacity(0.5),
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Icon(
-                                          Icons.arrow_forward_ios,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                          size: 16,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
                                 const SizedBox(height: 12),
                                 // Video-based capture
                                 GestureDetector(
@@ -1375,13 +1295,11 @@ class _PostAdCarState extends State<PostAdCar> {
                               ],
                             )
                           else
-                            // Preview captured images (16 angles)
+                            // Preview video-generated frames
                             Builder(
                               builder: (context) {
-                                final capturedImages = _360PreviewImages
-                                    .where((img) => img != null)
-                                    .toList();
-                                final capturedCount = capturedImages.length;
+                                final frameUrls = _video360FrameUrls ?? [];
+                                final frameCount = frameUrls.length;
 
                                 return Column(
                                   children: [
@@ -1394,14 +1312,14 @@ class _PostAdCarState extends State<PostAdCar> {
                                       child: ListView.separated(
                                         scrollDirection: Axis.horizontal,
                                         padding: const EdgeInsets.all(8),
-                                        itemCount: capturedCount + 1,
+                                        itemCount: frameCount + 1,
                                         separatorBuilder: (_, __) =>
                                             const SizedBox(width: 8),
                                         itemBuilder: (context, index) {
-                                          if (index == capturedCount) {
-                                            // Add more button
+                                          if (index == frameCount) {
+                                            // Edit button
                                             return GestureDetector(
-                                              onTap: _open360CaptureScreen,
+                                              onTap: _openVideo360CaptureScreen,
                                               child: Container(
                                                 width: 80,
                                                 decoration: BoxDecoration(
@@ -1440,11 +1358,19 @@ class _PostAdCarState extends State<PostAdCar> {
                                                 BorderRadius.circular(8),
                                             child: Stack(
                                               children: [
-                                                Image.memory(
-                                                  capturedImages[index]!,
+                                                Image.network(
+                                                  frameUrls[index],
                                                   width: 80,
                                                   height: 84,
                                                   fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return Container(
+                                                      width: 80,
+                                                      height: 84,
+                                                      color: Colors.grey[300],
+                                                      child: const Icon(Icons.broken_image),
+                                                    );
+                                                  },
                                                 ),
                                                 Positioned(
                                                   top: 4,
@@ -1499,14 +1425,14 @@ class _PostAdCarState extends State<PostAdCar> {
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
-                                            '$capturedCount/16 angles captured',
+                                            '$frameCount frames captured',
                                             style: TextStyle(
                                               color: Colors.green.shade700,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                           const Spacer(),
-                                          if (capturedCount == 16)
+                                          if (frameCount > 0)
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
@@ -2230,32 +2156,11 @@ class _PostAdCarState extends State<PostAdCar> {
                                     }
                                   }
 
-                                  // Upload 360° images if captured (16 angles)
+                                  // Use video-generated 360° frame URLs
                                   List<String>? images360Urls;
-                                  if (_captured360Set != null &&
-                                      _captured360Set!.capturedCount > 0) {
-                                    try {
-                                      setState(() => _isUploading360 = true);
-                                      images360Urls =
-                                          await _car360Service.uploadCar360Set(
-                                        _captured360Set!,
-                                        onProgress: (current, total) {
-                                          // Optional: show progress
-                                        },
-                                      );
-                                    } catch (e) {
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                            content: Text(
-                                                'Failed to upload 360° images: $e')),
-                                      );
-                                      // Continue without 360 images
-                                    } finally {
-                                      if (mounted)
-                                        setState(() => _isUploading360 = false);
-                                    }
+                                  if (_video360FrameUrls != null && _video360FrameUrls!.isNotEmpty) {
+                                    // Video frames are already processed and available as URLs
+                                    images360Urls = _video360FrameUrls;
                                   }
 
                                   // Use selected location coordinates or get current location
@@ -2369,142 +2274,49 @@ class _PostAdCarState extends State<PostAdCar> {
                                       ),
                                     );
 
-                        // Use video-generated 360° frame URLs
-                        List<String>? images360Urls;
-                        if (_video360FrameUrls != null && _video360FrameUrls!.isNotEmpty) {
-                          // Video frames are already processed and available as URLs
-                          images360Urls = _video360FrameUrls;
-                        }
-
-                        // Use selected location coordinates or get current location
-                        Map<String, double>? locationCoords;
-                        if (selectedLocationCoords != null) {
-                          // Use the precise location selected by user
-                          locationCoords = {
-                            'lat': selectedLocationCoords!.latitude,
-                            'lng': selectedLocationCoords!.longitude,
-                          };
-                        } else {
-                          // Fallback to current location if no precise location selected
-                          try {
-                          LocationPermission permission = await Geolocator.checkPermission();
-                          if (permission == LocationPermission.denied) {
-                            permission = await Geolocator.requestPermission();
-                          }
-                          
-                          if (permission == LocationPermission.whileInUse ||
-                              permission == LocationPermission.always) {
-                            Position position = await Geolocator.getCurrentPosition(
-                              desiredAccuracy: LocationAccuracy.medium,
-                            );
-                            locationCoords = {
-                              'lat': position.latitude,
-                              'lng': position.longitude,
-                            };
-                          }
-                        } catch (e) {
-                          print('Error getting location: $e');
-                          // Continue without location coordinates
-                          }
-                        }
-
-                        // Prepare vehicle verification data
-                        // Normalize registration number for consistent duplicate checking
-                        final plainRegistrationNo = _registrationNoController.text
-                            .trim()
-                            .toUpperCase()
-                            .replaceAll('*', '')
-                            .replaceAll(' ', '')
-                            .replaceAll(RegExp(r'[^\w\-]'), '');
-                        final vehicleData = {
-                          'registrationNo': plainRegistrationNo,
-                          'registrationDate': _registrationDateController.text.trim(),
-                          'chassisNo': _chassisNoController.text.trim(),
-                          'ownerName': _ownerNameController.text.trim(),
-                        };
-
-                        // Encrypt sensitive vehicle data
-                        final encryptedVehicleData = EncryptionService.encryptFields(vehicleData);
-                        
-                        // Add plain registration number temporarily for duplicate checking
-                        // This will be removed before storing in Firestore
-                        encryptedVehicleData['_plainRegistrationNo'] = plainRegistrationNo;
-
-                        // Create ad with image URLs and encrypted vehicle data
-                        final newAd = AdModel(
-                          title: _titleController.text,
-                          price: _priceController.text,
-                          location: selectedLocationAddress.isNotEmpty 
-                              ? selectedLocationAddress 
-                              : selectedLocation ?? _locationController.text,
-                          year: selectedCarModel ?? '',
-                          mileage: _mileageController.text,
-                          fuel: _fuelController.text,
-                          description: _descriptionController.text,
-                          carBrand: _selectedBrand?.displayName ?? '',
-                          carName: _carNameController.text.trim(),
-                          bodyColor: _bodyColorController.text,
-                          kmsDriven: _mileageController
-                              .text, // Use mileage for kmsDriven
-                          registeredIn: selectedRegisteredIn,
-                          name: _nameController.text,
-                          phone: _phoneController.text,
-                          imageUrls: imageUrls.isNotEmpty ? imageUrls : null,
-                          locationCoordinates: locationCoords,
-                          images360Urls: images360Urls != null && images360Urls.isNotEmpty
-                              ? images360Urls
-                              : null,
-                        );
-
-                        try {
-                          // Add ad with encrypted vehicle data and auto-approve (status = 'active')
-                          await GlobalAdStore().addAdWithVerification(newAd, encryptedVehicleData);
-
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text(
-                                  'Vehicle verified successfully! Your ad has been posted.'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-
-                          await Future.delayed(const Duration(seconds: 1));
-                          if (!mounted) return;
-                          Navigator.pushReplacementNamed(context, '/myads');
-                        } catch (e) {
-                          if (!mounted) return;
-                          final errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('Failed to add verified ad: ', '');
-                          final isDuplicateError = errorMessage.contains('already exists');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(errorMessage),
-                              backgroundColor: isDuplicateError ? Colors.orange : Colors.red,
-                              duration: const Duration(seconds: 5),
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    child: (_isUploadingImages || _isUploading360)
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                _isUploading360 ? "Uploading 360° images..." : "Uploading...",
-                                style: const TextStyle(fontSize: 16, color: Colors.white),
+                                    await Future.delayed(const Duration(seconds: 1));
+                                    if (!mounted) return;
+                                    Navigator.pushReplacementNamed(context, '/myads');
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    final errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('Failed to add verified ad: ', '');
+                                    final isDuplicateError = errorMessage.contains('already exists');
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(errorMessage),
+                                        backgroundColor: isDuplicateError ? Colors.orange : Colors.red,
+                                        duration: const Duration(seconds: 5),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                        child: (_isUploadingImages || _isUploading360)
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    _isUploading360 ? "Uploading 360° images..." : "Uploading...",
+                                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                                  ),
+                                ],
+                              )
+                            : const Text(
+                                'Post Ad',
+                                style: TextStyle(fontSize: 18, color: Colors.white),
                               ),
                       ),
-                    )),
+                    ),
+                    ),
               ),
               const SizedBox(height: 40),
             ],

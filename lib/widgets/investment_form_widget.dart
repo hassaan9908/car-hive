@@ -392,27 +392,30 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
                               _getInvestmentAmount() != null
                           ? '${((_getInvestmentAmount()! / widget.vehicle.totalInvestmentGoal) * 100).toStringAsFixed(2)}%'
                           : '0%',
-                child: RadioListTile<String>(
-                  title: Text(
-                    _getPaymentMethodName(method),
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontWeight: _selectedPaymentMethod == method
-                          ? FontWeight.w600
-                          : FontWeight.normal,
                     ),
-                  ),
-                  value: method,
-                  groupValue: _selectedPaymentMethod,
-                  activeColor: const Color(0xFF4CAF50),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedPaymentMethod = value;
-                    });
-                  },
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                    RadioListTile<String>(
+                      title: Text(
+                        _getPaymentMethodName(method),
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: _selectedPaymentMethod == method
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      value: method,
+                      groupValue: _selectedPaymentMethod,
+                      activeColor: const Color(0xFF4CAF50),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedPaymentMethod = value;
+                        });
+                      },
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ],
                 ),
               );
             }),
