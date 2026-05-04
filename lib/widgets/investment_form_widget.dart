@@ -37,14 +37,15 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
 
   bool _isSubmitting = false;
   String? _selectedPaymentMethod;
-  
+
   // Payment methods - exclude Stripe on web since payment sheet doesn't work on web
   List<String> get _paymentMethods => [
-    'jazzcash',
-    'easypay',
-    'bank_transfer',
-    if (!kIsWeb) 'stripe', // Stripe only on mobile (payment sheet not supported on web)
-  ];
+        'jazzcash',
+        'easypay',
+        'bank_transfer',
+        if (!kIsWeb)
+          'stripe', // Stripe only on mobile (payment sheet not supported on web)
+      ];
 
   @override
   void dispose() {
@@ -73,9 +74,10 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
 
     // Get the effective minimum: if remaining amount is less than minimum,
     // allow investing the exact remaining amount
-    final effectiveMinimum = widget.vehicle.remainingAmount < widget.vehicle.minimumContribution
-        ? widget.vehicle.remainingAmount
-        : widget.vehicle.minimumContribution;
+    final effectiveMinimum =
+        widget.vehicle.remainingAmount < widget.vehicle.minimumContribution
+            ? widget.vehicle.remainingAmount
+            : widget.vehicle.minimumContribution;
 
     if (amount < effectiveMinimum) {
       if (widget.vehicle.remainingAmount < widget.vehicle.minimumContribution) {
@@ -118,16 +120,36 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
       _isSubmitting = true;
     });
 
+    String? transactionId;
+    String? investmentId;
+    bool createdPendingInvestment = false;
+
     try {
-      // Create investment record
-      final investmentId = await _investmentService.createInvestment(
-        vehicleInvestmentId: widget.vehicle.id,
-        amount: amount,
-        totalInvestmentGoal: widget.vehicle.totalInvestmentGoal,
+      final existingInvestment =
+          await _investmentService.getUserInvestmentForVehicle(
+        user.uid,
+        widget.vehicle.id,
       );
+      final hasExistingInvestment = existingInvestment?.status == 'active';
+
+      if (hasExistingInvestment && existingInvestment != null) {
+        investmentId = existingInvestment.id;
+      } else {
+        if (existingInvestment != null &&
+            existingInvestment.status == 'pending') {
+          await _investmentService.deleteInvestment(existingInvestment.id);
+        }
+
+        investmentId = await _investmentService.createInvestment(
+          vehicleInvestmentId: widget.vehicle.id,
+          amount: amount,
+          totalInvestmentGoal: widget.vehicle.totalInvestmentGoal,
+        );
+        createdPendingInvestment = true;
+      }
 
       // Create transaction record
-      final transactionId = await _transactionService.createTransaction(
+      transactionId = await _transactionService.createTransaction(
         vehicleInvestmentId: widget.vehicle.id,
         investmentId: investmentId,
         userId: user.uid,
@@ -158,8 +180,12 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
           paymentResult['reference'] ?? '',
         );
 
-        // Activate investment
-        await _investmentService.activateInvestment(investmentId);
+        await _investmentService.finalizeInvestmentContribution(
+          investmentId: investmentId,
+          contributionAmount: amount,
+          totalInvestmentGoal: widget.vehicle.totalInvestmentGoal,
+          hasExistingInvestment: hasExistingInvestment,
+        );
 
         // Update vehicle current investment
         await _vehicleService.updateCurrentInvestment(
@@ -189,6 +215,10 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
           notes: paymentResult['error'] ?? 'Payment failed',
         );
 
+        if (createdPendingInvestment) {
+          await _investmentService.deleteInvestment(investmentId);
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -200,6 +230,17 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
         }
       }
     } catch (e) {
+      if (transactionId != null) {
+        await _transactionService.markTransactionFailed(
+          transactionId,
+          notes: e.toString(),
+        );
+      }
+
+      if (createdPendingInvestment && investmentId != null) {
+        await _investmentService.deleteInvestment(investmentId);
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -358,64 +399,38 @@ class _InvestmentFormWidgetState extends State<InvestmentFormWidget> {
                     width: _selectedPaymentMethod == method ? 2 : 1,
                   ),
                 ),
-                child: Column(
-                  children: [
-                    // Show effective minimum (remaining if less than minimum)
-                    _buildInfoRow(
-                      'Minimum',
-                      widget.vehicle.remainingAmount < widget.vehicle.minimumContribution
-                          ? '${widget.vehicle.remainingAmount.toStringAsFixed(0)} PKR (remaining)'
-                          : '${widget.vehicle.minimumContribution.toStringAsFixed(0)} PKR',
+                child: RadioListTile<String>(
+                  title: Text(
+                    _getPaymentMethodName(method),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: _selectedPaymentMethod == method
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
-                    const SizedBox(height: 4),
-                    _buildInfoRow(
-                      'Remaining',
-                      '${widget.vehicle.remainingAmount.toStringAsFixed(0)} PKR',
-                    ),
-                    const SizedBox(height: 4),
-                    // Show USD equivalent if Stripe is selected
-                    if (_selectedPaymentMethod == 'stripe' && 
-                        _amountController.text.isNotEmpty &&
-                        _getInvestmentAmount() != null) ...[
-                      _buildInfoRow(
-                        'Amount (USD)',
-                        CurrencyConverterService.formatCurrency(
-                          CurrencyConverterService.convertPkrToUsd(_getInvestmentAmount()!),
-                          currency: 'USD',
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                    ],
-                    _buildInfoRow(
-                      'Your Share',
-                      _amountController.text.isNotEmpty &&
-                              _getInvestmentAmount() != null
-                          ? '${((_getInvestmentAmount()! / widget.vehicle.totalInvestmentGoal) * 100).toStringAsFixed(2)}%'
-                          : '0%',
-                    ),
-                    RadioListTile<String>(
-                      title: Text(
-                        _getPaymentMethodName(method),
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface,
-                          fontWeight: _selectedPaymentMethod == method
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                      ),
-                      value: method,
-                      groupValue: _selectedPaymentMethod,
-                      activeColor: const Color(0xFF4CAF50),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedPaymentMethod = value;
-                        });
-                      },
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ],
+                  ),
+                  subtitle: method == 'stripe' &&
+                          _amountController.text.isNotEmpty &&
+                          _getInvestmentAmount() != null
+                      ? Text(
+                          'Charged as ${CurrencyConverterService.formatCurrency(CurrencyConverterService.convertPkrToUsd(_getInvestmentAmount()!), currency: 'USD')}',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                      : null,
+                  value: method,
+                  groupValue: _selectedPaymentMethod,
+                  activeColor: const Color(0xFF4CAF50),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedPaymentMethod = value;
+                    });
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                 ),
               );
             }),

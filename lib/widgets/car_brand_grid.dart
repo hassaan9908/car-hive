@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+
 import '../models/car_brand_model.dart';
 import '../services/car_brand_service.dart';
 
-class CarBrandGrid extends StatefulWidget {
-  final Function(CarBrand)? onBrandSelected;
+class CarBrandGrid extends StatelessWidget {
+  final ValueChanged<CarBrand>? onBrandSelected;
   final String? selectedBrandId;
 
   const CarBrandGrid({
@@ -12,128 +13,261 @@ class CarBrandGrid extends StatefulWidget {
     this.selectedBrandId,
   });
 
-  @override
-  State<CarBrandGrid> createState() => _CarBrandGridState();
-}
+  static const List<_FeaturedBrandConfig> _featuredBrandConfigs = [
+    _FeaturedBrandConfig(id: 'mercedes_benz', label: 'Mercedes'),
+    _FeaturedBrandConfig(id: 'audi', label: 'Audi'),
+    _FeaturedBrandConfig(id: 'tesla', label: 'Tesla'),
+    _FeaturedBrandConfig(id: 'bmw', label: 'BMW'),
+    _FeaturedBrandConfig(
+      id: 'ferrari',
+      label: 'Ferrari',
+      fallbackText: 'F',
+      fallbackBackground: Color(0xFFFFECE8),
+      fallbackForeground: Color(0xFFB71C1C),
+    ),
+    _FeaturedBrandConfig(id: 'toyota', label: 'Toyota'),
+    _FeaturedBrandConfig(id: 'honda', label: 'Honda'),
+    _FeaturedBrandConfig(id: 'suzuki', label: 'Suzuki'),
+    _FeaturedBrandConfig(id: 'chevrolet', label: 'Chevrolet'),
+    _FeaturedBrandConfig(id: 'byd', label: 'BYD'),
+  ];
 
-class _CarBrandGridState extends State<CarBrandGrid> {
-  final CarBrandService _brandService = CarBrandService();
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
-  static const int _brandsPerPage = 8; // 2 rows × 4 columns
+  List<_BrandPresentation> _buildFeaturedBrands() {
+    final brandService = CarBrandService();
+    final allBrands = {
+      for (final brand in brandService.getAllBrands()) brand.id: brand,
+    };
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+    return _featuredBrandConfigs.map((config) {
+      final serviceBrand = allBrands[config.id];
+      final brand = serviceBrand ??
+          CarBrand(
+            id: config.id,
+            displayName: config.label,
+            logoPath: '',
+          );
+
+      return _BrandPresentation(
+        brand: brand,
+        label: config.label,
+        logoPath: serviceBrand?.logoPath ?? '',
+        fallbackText: config.fallbackText,
+        fallbackBackground:
+            config.fallbackBackground ?? const Color(0xFFF2F2F2),
+        fallbackForeground:
+            config.fallbackForeground ?? const Color(0xFF5A5A5A),
+      );
+    }).toList(growable: false);
+  }
+
+  List<_BrandPresentation> _buildAllBrands() {
+    final brandService = CarBrandService();
+    final brands = brandService
+        .getAllBrands()
+        .map(
+          (brand) => _BrandPresentation(
+            brand: brand,
+            label: brand.displayName,
+            logoPath: brand.logoPath,
+            fallbackBackground: const Color(0xFFF2F2F2),
+            fallbackForeground: const Color(0xFF5A5A5A),
+          ),
+        )
+        .toList();
+
+    final hasFerrari = brands.any((brand) => brand.brand.id == 'ferrari');
+    if (!hasFerrari) {
+      brands.add(
+        const _BrandPresentation(
+          brand: CarBrand(
+            id: 'ferrari',
+            displayName: 'Ferrari',
+            logoPath: '',
+          ),
+          label: 'Ferrari',
+          logoPath: '',
+          fallbackText: 'F',
+          fallbackBackground: Color(0xFFFFECE8),
+          fallbackForeground: Color(0xFFB71C1C),
+        ),
+      );
+    }
+
+    brands.sort(
+      (first, second) =>
+          first.label.toLowerCase().compareTo(second.label.toLowerCase()),
+    );
+
+    return brands;
+  }
+
+  Future<void> _showAllBrandsSheet(BuildContext context) async {
+    final theme = Theme.of(context);
+    final allBrands = _buildAllBrands();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.outlineVariant,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Text(
+                        'All Brands',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ) ??
+                            TextStyle(
+                              color: theme.colorScheme.onSurface,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 18,
+                    children: [
+                      for (final brand in allBrands)
+                        _BrandCircleCard(
+                          brand: brand,
+                          isSelected: selectedBrandId == brand.brand.id,
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            onBrandSelected?.call(brand.brand);
+                          },
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final brands = _brandService.getAllBrands();
-    final pageCount = (brands.length / _brandsPerPage).ceil();
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final featuredBrands = _buildFeaturedBrands();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            'Browse by Brand',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 240, // Fixed height for 2 rows with proper spacing
-          child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-            },
-            itemCount: pageCount,
-            itemBuilder: (context, pageIndex) {
-              final startIndex = pageIndex * _brandsPerPage;
-              final endIndex = (startIndex + _brandsPerPage).clamp(0, brands.length);
-              final pageBrands = brands.sublist(startIndex, endIndex);
-
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: GridView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.85,
-                  ),
-                  itemCount: pageBrands.length,
-                  itemBuilder: (context, index) {
-                    final brand = pageBrands[index];
-                    final isSelected = widget.selectedBrandId == brand.id;
-
-                    return _BrandCard(
-                      brand: brand,
-                      isSelected: isSelected,
-                      onTap: () {
-                        widget.onBrandSelected?.call(brand);
-                      },
-                    );
-                  },
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Row(
+            children: [
+              Text(
+                'All Brands',
+                style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ) ??
+                    TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () => _showAllBrandsSheet(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.primary,
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 3),
-        // Page indicators (dots)
-        if (pageCount > 1)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  pageCount,
-                  (index) => _buildDotIndicator(index == _currentPage, theme),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View All',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ],
                 ),
               ),
-            ),
+            ],
           ),
+        ),
+        const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              for (int index = 0; index < featuredBrands.length; index++)
+                Padding(
+                  padding: EdgeInsets.only(
+                    right: index == featuredBrands.length - 1 ? 0 : 14,
+                  ),
+                  child: _BrandCircleCard(
+                    brand: featuredBrands[index],
+                    isSelected:
+                        selectedBrandId == featuredBrands[index].brand.id,
+                    onTap: () =>
+                        onBrandSelected?.call(featuredBrands[index].brand),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
-    );
-  }
-
-  Widget _buildDotIndicator(bool isActive, ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      width: isActive ? 24 : 8,
-      height: 8,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        color: isActive
-            ? theme.colorScheme.primary
-            : theme.colorScheme.primary.withOpacity(0.3),
-      ),
     );
   }
 }
 
-class _BrandCard extends StatelessWidget {
-  final CarBrand brand;
+class _BrandCircleCard extends StatelessWidget {
+  final _BrandPresentation brand;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _BrandCard({
+  const _BrandCircleCard({
     required this.brand,
     required this.isSelected,
     required this.onTap,
@@ -142,78 +276,183 @@ class _BrandCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final circleBorderColor =
+        isSelected ? theme.colorScheme.primary : theme.colorScheme.outline;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary.withOpacity(0.1)
-              : (isDark ? Colors.grey[900] : Colors.white),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
-            width: isSelected ? 2 : 1,
+    return SizedBox(
+      width: 78,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: circleBorderColor,
+                      width: isSelected ? 2.4 : 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.shadow.withValues(alpha: 0.12),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                      if (isSelected)
+                        BoxShadow(
+                          color:
+                              theme.colorScheme.primary.withValues(alpha: 0.2),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: _BrandLogo(brand: brand),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  brand.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        height: 1.15,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                      ) ??
+                      TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 11,
+                        height: 1.15,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                ),
+              ],
+            ),
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Image.asset(
-                  brand.logoPath,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.directions_car,
-                      size: 32,
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
-                    );
-                  },
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Text(
-                brand.displayName,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : (isDark ? Colors.white70 : Colors.black87),
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
         ),
       ),
     );
-    
   }
 }
 
+class _BrandLogo extends StatelessWidget {
+  final _BrandPresentation brand;
+
+  const _BrandLogo({
+    required this.brand,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (brand.logoPath.isNotEmpty) {
+      return Image.asset(
+        brand.logoPath,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (context, error, stackTrace) => _BrandFallbackIcon(
+          text: brand.fallbackText,
+          backgroundColor: brand.fallbackBackground,
+          foregroundColor: brand.fallbackForeground,
+        ),
+      );
+    }
+
+    return _BrandFallbackIcon(
+      text: brand.fallbackText,
+      backgroundColor: brand.fallbackBackground,
+      foregroundColor: brand.fallbackForeground,
+    );
+  }
+}
+
+class _BrandFallbackIcon extends StatelessWidget {
+  final String? text;
+  final Color backgroundColor;
+  final Color foregroundColor;
+
+  const _BrandFallbackIcon({
+    required this.text,
+    required this.backgroundColor,
+    required this.foregroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (text != null && text!.isNotEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          text!,
+          style: TextStyle(
+            color: foregroundColor,
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      );
+    }
+
+    return Icon(
+      Icons.directions_car_filled_rounded,
+      size: 28,
+      color: foregroundColor,
+    );
+  }
+}
+
+class _FeaturedBrandConfig {
+  final String id;
+  final String label;
+  final String? fallbackText;
+  final Color? fallbackBackground;
+  final Color? fallbackForeground;
+
+  const _FeaturedBrandConfig({
+    required this.id,
+    required this.label,
+    this.fallbackText,
+    this.fallbackBackground,
+    this.fallbackForeground,
+  });
+}
+
+class _BrandPresentation {
+  final CarBrand brand;
+  final String label;
+  final String logoPath;
+  final String? fallbackText;
+  final Color fallbackBackground;
+  final Color fallbackForeground;
+
+  const _BrandPresentation({
+    required this.brand,
+    required this.label,
+    required this.logoPath,
+    this.fallbackText,
+    required this.fallbackBackground,
+    required this.fallbackForeground,
+  });
+}

@@ -7,12 +7,14 @@ class InvestmentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final ShareMarketplaceService _marketplaceService = ShareMarketplaceService();
+  static const Set<String> _contributableStatuses = {'pending', 'active'};
 
   // Get all investments for a user
   Stream<List<InvestmentModel>> getUserInvestments(String userId) {
     return _firestore
         .collection('investments')
         .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -27,6 +29,7 @@ class InvestmentService {
         .collection('investments')
         .where('userId', isEqualTo: userId)
         .where('status', isEqualTo: 'active')
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -41,6 +44,7 @@ class InvestmentService {
     return _firestore
         .collection('investments')
         .where('vehicleInvestmentId', isEqualTo: vehicleInvestmentId)
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -56,6 +60,7 @@ class InvestmentService {
         .collection('investments')
         .where('vehicleInvestmentId', isEqualTo: vehicleInvestmentId)
         .where('status', isEqualTo: 'active')
+        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
@@ -72,6 +77,38 @@ class InvestmentService {
       return InvestmentModel.fromFirestore(doc.data()!, doc.id);
     } catch (e) {
       print('Error getting investment: $e');
+      return null;
+    }
+  }
+
+  Future<InvestmentModel?> getUserInvestmentForVehicle(
+    String userId,
+    String vehicleInvestmentId,
+  ) async {
+    try {
+      final snapshot = await _firestore
+          .collection('investments')
+          .where('userId', isEqualTo: userId)
+          .where('vehicleInvestmentId', isEqualTo: vehicleInvestmentId)
+          .get();
+
+      InvestmentModel? pendingInvestment;
+      for (final doc in snapshot.docs) {
+        final investment = InvestmentModel.fromFirestore(doc.data(), doc.id);
+        if (!_contributableStatuses.contains(investment.status)) {
+          continue;
+        }
+
+        if (investment.status == 'active') {
+          return investment;
+        }
+
+        pendingInvestment ??= investment;
+      }
+
+      return pendingInvestment;
+    } catch (e) {
+      print('Error getting user investment for vehicle: $e');
       return null;
     }
   }
@@ -110,6 +147,40 @@ class InvestmentService {
       return docRef.id;
     } catch (e) {
       print('Error creating investment: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> finalizeInvestmentContribution({
+    required String investmentId,
+    required double contributionAmount,
+    required double totalInvestmentGoal,
+    required bool hasExistingInvestment,
+  }) async {
+    try {
+      final docRef = _firestore.collection('investments').doc(investmentId);
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) {
+          throw Exception('Investment not found');
+        }
+
+        final data = snapshot.data()!;
+        final currentAmount = (data['amount'] as num?)?.toDouble() ?? 0.0;
+        final targetAmount = hasExistingInvestment
+            ? currentAmount + contributionAmount
+            : currentAmount;
+
+        transaction.update(docRef, {
+          'amount': targetAmount,
+          'investmentRatio':
+              calculateInvestmentRatio(targetAmount, totalInvestmentGoal),
+          'status': 'active',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      });
+    } catch (e) {
+      print('Error finalizing investment contribution: $e');
       rethrow;
     }
   }

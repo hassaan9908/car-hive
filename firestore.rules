@@ -15,10 +15,24 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(uid));
     }
 
+    function isAdminRole(role) {
+      return role in [
+        'admin',
+        'Admin',
+        'ADMIN',
+        'super_admin',
+        'superadmin',
+        'super admin',
+        'super-admin',
+        'Super Admin',
+        'SUPER ADMIN',
+        'SUPER_ADMIN',
+        'Super_Admin',
+      ];
+    }
+
     function isAdmin() {
-      return isSignedIn() &&
-        (userDoc(currentUid()).data.role == 'admin' ||
-         userDoc(currentUid()).data.role == 'super_admin');
+      return isSignedIn() && isAdminRole(userDoc(currentUid()).data.role);
     }
 
     // PHONE NUMBERS collection for uniqueness checking
@@ -69,6 +83,11 @@ service cloud.firestore {
         // No updates needed
         allow update: if false;
       }
+
+      // User-scoped inspection reports/drafts
+      match /inspections/{inspectionId} {
+        allow read, create, update, delete: if isSignedIn() && uid == currentUid();
+      }
     }
 
     // ADS - SIMPLIFIED RULES
@@ -97,20 +116,24 @@ service cloud.firestore {
             // SOLD: only status and previousStatus (optional clear)
             (
               request.resource.data.status == 'sold' &&
-              request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','previousStatus']) &&
+              request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','previousStatus','soldAt']) &&
+              request.resource.data.soldAt is timestamp &&
               (!('previousStatus' in request.resource.data) || request.resource.data.previousStatus == null)
             ) ||
             // REMOVED: may set previousStatus (string)
             (
               request.resource.data.status == 'removed' &&
-              request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','previousStatus']) &&
+              request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','previousStatus','expiredAt','expirationReason']) &&
+              (!('expiredAt' in request.resource.data) || request.resource.data.expiredAt is timestamp) &&
+              (!('expirationReason' in request.resource.data) || request.resource.data.expirationReason is string) &&
               (request.resource.data.previousStatus is string)
             ) ||
             // REACTIVATE from removed: restore status to active/pending and clear previousStatus
             (
               resource.data.status == 'removed' &&
-              request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','previousStatus']) &&
+              request.resource.data.diff(resource.data).changedKeys().hasOnly(['status','previousStatus','expiresAt']) &&
               request.resource.data.status in ['active','pending'] &&
+              request.resource.data.expiresAt is timestamp &&
               request.resource.data.previousStatus == null
             ) ||
             // Other updates: cannot touch status, previousStatus, moderation fields
@@ -137,6 +160,88 @@ service cloud.firestore {
         // This allows tracking analytics from any user viewing/interacting with ads
         allow write: if isSignedIn();
       }
+    }
+
+    // MARKETPULSE aggregate cache
+    match /marketpulse_cache/{cacheId} {
+      allow read: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // MARKETPULSE analytics tracking
+    match /analytics_views/{eventId} {
+      allow read: if isSignedIn();
+      allow create: if
+        request.resource.data.adId is string &&
+        request.resource.data.eventType in ['view', 'click'] &&
+        request.resource.data.timestamp is timestamp &&
+        (
+          (!('userId' in request.resource.data) || request.resource.data.userId == null) ||
+          (isSignedIn() && request.resource.data.userId == currentUid())
+        );
+      allow update, delete: if isAdmin();
+    }
+
+    match /analytics_searches/{eventId} {
+      allow read: if isSignedIn();
+      allow create: if
+        request.resource.data.query is string &&
+        request.resource.data.timestamp is timestamp &&
+        (
+          (!('userId' in request.resource.data) || request.resource.data.userId == null) ||
+          (isSignedIn() && request.resource.data.userId == currentUid())
+        );
+      allow update, delete: if isAdmin();
+    }
+
+    match /search_logs/{eventId} {
+      allow read: if isSignedIn();
+      allow create: if
+        request.resource.data.query is string &&
+        request.resource.data.timestamp is timestamp &&
+        (
+          (!('userId' in request.resource.data) || request.resource.data.userId == null) ||
+          (isSignedIn() && request.resource.data.userId == currentUid())
+        );
+      allow update, delete: if isAdmin();
+    }
+
+    match /analytics_filters/{eventId} {
+      allow read: if isSignedIn();
+      allow create: if
+        request.resource.data.filterType is string &&
+        request.resource.data.value is string &&
+        request.resource.data.timestamp is timestamp &&
+        (
+          (!('userId' in request.resource.data) || request.resource.data.userId == null) ||
+          (isSignedIn() && request.resource.data.userId == currentUid())
+        );
+      allow update, delete: if isAdmin();
+    }
+
+    match /analytics_deals/{eventId} {
+      allow read: if isSignedIn();
+      allow create: if
+        request.resource.data.adId is string &&
+        request.resource.data.price is number &&
+        request.resource.data.timestamp is timestamp &&
+        (
+          (!('userId' in request.resource.data) || request.resource.data.userId == null) ||
+          (isSignedIn() && request.resource.data.userId == currentUid())
+        );
+      allow update, delete: if isAdmin();
+    }
+
+    match /ad_promotions/{promotionId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn()
+        && request.resource.data.userId == currentUid()
+        && request.resource.data.adId is string
+        && request.resource.data.amount is number
+        && request.resource.data.packageId is string
+        && request.resource.data.timestamp is timestamp;
+      allow update, delete: if isAdmin();
     }
 
     // REVIEWS collection (separate collection)
@@ -212,6 +317,22 @@ service cloud.firestore {
       // Allow everyone to read blogs (public content)
       allow read: if true;
       // Only admins can create, update, and delete blogs
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ANNOUNCEMENT BANNERS collection
+    match /announcement_banners/{bannerId} {
+      // Everyone can read announcement banners used on the public home page
+      allow read: if true;
+      // Only admins can create, update, and delete banners
+      allow create, update, delete: if isAdmin();
+    }
+
+    // FUEL PRICES collection
+    match /fuel_prices/{fuelId} {
+      // Home screen reads are public
+      allow read: if true;
+      // Only admins can manage prices
       allow create, update, delete: if isAdmin();
     }
 
@@ -395,7 +516,7 @@ service cloud.firestore {
       
       // System can create notifications (users can't create their own)
       // In production, this should be done via Cloud Functions
-      allow create: if isSignedIn() && request.resource.data.userId == currentUid();
+      allow create: if isSignedIn();
       
       // Users can update their own notifications (to mark as read)
       allow update: if isSignedIn() && 
@@ -408,6 +529,207 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (
         resource.data.userId == currentUid() || isAdmin()
       );
+    }
+
+    // VISIT SCHEDULES collection
+    match /visitSchedules/{scheduleId} {
+      // Book Visit screen reads city/area/date/slot data from here
+      allow read: if true;
+
+      // Only admins can manage schedules
+      allow create, update, delete: if isAdmin();
+    }
+
+    // VISITS collection
+    match /visits/{visitId} {
+      // Users can read their own visits, admins can read all
+      allow read: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+
+      // Users can create their own visit booking records
+      allow create: if isSignedIn()
+        && request.resource.data.userId == currentUid()
+        && request.resource.data.city is string
+        && request.resource.data.area is string
+        && request.resource.data.date is timestamp
+        && request.resource.data.dateKey is string
+        && request.resource.data.timeSlot is string
+        && request.resource.data.paymentMethod is string
+        && request.resource.data.amount is number
+        && request.resource.data.status == 'booked';
+
+      // Owners can only update reschedule-request metadata on their own visits.
+      // Admins can update anything (accept/reject requests, move booking, mark complete).
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (
+          resource.data.userId == currentUid()
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.city == resource.data.city
+          && request.resource.data.area == resource.data.area
+          && request.resource.data.date == resource.data.date
+          && request.resource.data.dateKey == resource.data.dateKey
+          && request.resource.data.timeSlot == resource.data.timeSlot
+          && request.resource.data.paymentMethod == resource.data.paymentMethod
+          && request.resource.data.amount == resource.data.amount
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+            'rescheduleStatus',
+            'pendingRescheduleRequestId',
+            'requestedRescheduleDate',
+            'requestedRescheduleDateKey',
+            'requestedRescheduleTimeSlot',
+            'updatedAt'
+          ])
+        )
+      );
+
+      // Only admins can delete visit records
+      allow delete: if isAdmin();
+    }
+
+    // RESCHEDULE REQUESTS collection
+    match /rescheduleRequests/{requestId} {
+      // Users can read their own requests, admins can read all
+      allow read: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+
+      // Users can create reschedule requests for themselves
+      allow create: if isSignedIn()
+        && request.resource.data.userId == currentUid()
+        && request.resource.data.visitId is string
+        && request.resource.data.requestedDate is timestamp
+        && request.resource.data.requestedDateKey is string
+        && request.resource.data.requestedTimeSlot is string
+        && request.resource.data.status == 'pending';
+
+      // Admin reviews requests by changing status to accepted/rejected
+      allow update: if isAdmin();
+
+      // Admin can remove requests if needed
+      allow delete: if isAdmin();
+    }
+
+    // VISIT NOTIFICATIONS collection
+    match /visitNotifications/{notificationId} {
+      // Users can read their own notifications, admins can read all
+      allow read: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+
+      // Admin actions create notifications for users
+      allow create: if isAdmin()
+        && request.resource.data.userId is string
+        && request.resource.data.type is string
+        && request.resource.data.title is string
+        && request.resource.data.message is string;
+
+      // Users can update only lightweight notification state on their own docs
+      allow update: if isSignedIn()
+        && resource.data.userId == currentUid()
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'status',
+          'readAt'
+        ]);
+
+      // Users can delete their own notifications, admins can delete any
+      allow delete: if isSignedIn() && (
+        resource.data.userId == currentUid() || isAdmin()
+      );
+    }
+
+    // LIVE SUPPORT CHAT
+    match /supportChats/{userId} {
+      // Users can access their own support ticket; admins can access all tickets.
+      allow read: if isSignedIn() && (userId == currentUid() || isAdmin());
+
+      // Users create/update their own support ticket metadata.
+      // Admins update tickets when replying, reading, or resolving.
+      allow create, update: if isSignedIn() && (
+        userId == currentUid() || isAdmin()
+      );
+
+      allow delete: if isAdmin();
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && (
+          userId == currentUid() || isAdmin()
+        );
+
+        allow create: if isSignedIn() && (
+          (
+            userId == currentUid()
+            && request.resource.data.senderId == currentUid()
+            && request.resource.data.senderType == 'user'
+            && request.resource.data.text is string
+            && request.resource.data.timestamp is timestamp
+            && request.resource.data.isRead is bool
+          ) ||
+          (
+            isAdmin()
+            && request.resource.data.senderId == currentUid()
+            && request.resource.data.senderType == 'admin'
+            && request.resource.data.text is string
+            && request.resource.data.timestamp is timestamp
+            && request.resource.data.isRead is bool
+          )
+        );
+
+        // Users/admins may only toggle isRead on messages they received.
+        allow update: if isSignedIn() && (
+          (
+            userId == currentUid()
+            && resource.data.senderType == 'admin'
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly(['isRead'])
+          ) ||
+          (
+            isAdmin()
+            && resource.data.senderType == 'user'
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly(['isRead'])
+          )
+        );
+
+        allow delete: if isSignedIn() && (
+          userId == currentUid() || isAdmin()
+        );
+      }
+    }
+
+    // SUPPORT QUICK REPLIES: admin-managed instant answers before live chat
+    match /supportQuickReplies/{topicId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+
+      match /questions/{questionId} {
+        allow read: if true;
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    // SUPPORT CONFIG: online status and ticket counter
+    match /config/{configId} {
+      allow read: if configId == 'supportStatus' || configId == 'ticketCounter';
+
+      // Admin panel writes online/away state.
+      allow create, update: if configId == 'supportStatus' && isAdmin();
+
+      // Users may increment ticket counter when creating support tickets.
+      // The client uses a Firestore transaction to avoid race conditions.
+      allow create, update: if configId == 'ticketCounter' && isSignedIn();
+
+      allow delete: if isAdmin();
+    }
+
+    // Optional notification queue used when the callable FCM function is unavailable.
+    match /support_notification_requests/{requestId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.userId is string
+        && request.resource.data.title is string
+        && request.resource.data.body is string;
     }
 
     // SYSTEM notifications generated by backend triggers

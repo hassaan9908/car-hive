@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 // ignore: unused_import
 import 'package:provider/provider.dart';
@@ -17,6 +18,8 @@ class AdminInsightMetricsPage extends StatefulWidget {
 
 class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
     with SingleTickerProviderStateMixin {
+  static const Color _kAccent = Color(0xFFf48c25);
+
   late TabController _tabController;
   bool _isLoading = true;
   String? _errorMessage;
@@ -26,7 +29,6 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   Map<String, int> _locationStats = {};
   Map<String, int> _priceRangeStats = {};
   Map<String, int> _yearStats = {};
-  Map<String, int> _dailyViews = {};
   Map<String, int> _dailyListings = {};
   int _totalViews = 0;
   int _totalMessages = 0;
@@ -52,6 +54,214 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
     _tabController.dispose();
     super.dispose();
   }
+
+  BoxDecoration _sectionDecoration(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return BoxDecoration(
+      color: theme.cardColor,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(
+        color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 18,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    );
+  }
+
+  String _asString(dynamic value) {
+    if (value == null) return '';
+    if (value is String) return value.trim();
+    return value.toString().trim();
+  }
+
+  String _extractAdTitle(Map<String, dynamic> data) {
+    final explicitTitle = _asString(data['title']);
+    final brand = _asString(data['carBrand']);
+    final model = _asString(data['carName']);
+    final year = _asString(data['year']);
+
+    final parts = <String>[];
+    if (brand.isNotEmpty) {
+      parts.add(brand);
+    }
+    if (model.isNotEmpty) {
+      final normalizedBrand = brand.toLowerCase();
+      final normalizedModel = model.toLowerCase();
+      if (normalizedBrand.isEmpty ||
+          (!normalizedModel.startsWith(normalizedBrand) &&
+              normalizedModel != normalizedBrand)) {
+        parts.add(model);
+      } else if (parts.isEmpty) {
+        parts.add(model);
+      }
+    }
+    if (year.isNotEmpty && !parts.join(' ').contains(year)) {
+      parts.add(year);
+    }
+
+    if (parts.isNotEmpty) {
+      return parts.join(' ');
+    }
+
+    return explicitTitle.isNotEmpty ? explicitTitle : 'Unknown Vehicle';
+  }
+
+  String _formatPrice(dynamic value) {
+    final raw = _asString(value);
+    if (raw.isEmpty) {
+      return 'Price not available';
+    }
+
+    if (raw.toLowerCase().contains('pkr')) {
+      return raw;
+    }
+
+    return 'PKR $raw';
+  }
+
+  String? _extractThumbnailUrl(Map<String, dynamic> data) {
+    final imageUrls = data['imageUrls'];
+    if (imageUrls is List) {
+      for (final entry in imageUrls) {
+        final value = _asString(entry);
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+    }
+
+    final imageUrl = _asString(data['imageUrl']);
+    return imageUrl.isEmpty ? null : imageUrl;
+  }
+
+  String _resolveCityName(Map<String, dynamic> data) {
+    final directCityName = _extractCityNameFromValue(data['cityName']);
+    if (directCityName != null) {
+      return directCityName;
+    }
+
+    final locationString = _extractCityNameFromValue(data['locationString']);
+    if (locationString != null) {
+      return locationString;
+    }
+
+    final location = data['location'];
+    final nestedLocation = _extractCityNameFromValue(location);
+    if (nestedLocation != null) {
+      return nestedLocation;
+    }
+
+    final coords = _extractCoordinates(location);
+    if (coords != null) {
+      return _nearestPakistaniCity(coords.$1, coords.$2);
+    }
+
+    return 'Unknown City';
+  }
+
+  String? _extractCityNameFromValue(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) {
+        return null;
+      }
+      final city = trimmed.split(',').first.trim();
+      if (city.isEmpty ||
+          city.startsWith('{lat:') ||
+          city.startsWith('{lng:') ||
+          city.contains('GeoPoint')) {
+        return null;
+      }
+      return city;
+    }
+
+    if (value is Map) {
+      for (final key in ['cityName', 'city', 'name', 'title', 'value']) {
+        final nested = _extractCityNameFromValue(value[key]);
+        if (nested != null) {
+          return nested;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  (double, double)? _extractCoordinates(dynamic value) {
+    if (value is GeoPoint) {
+      return (value.latitude, value.longitude);
+    }
+
+    if (value is Map) {
+      final lat = value['lat'] ?? value['latitude'];
+      final lng = value['lng'] ?? value['longitude'];
+      if (lat is num && lng is num) {
+        return (lat.toDouble(), lng.toDouble());
+      }
+    }
+
+    return null;
+  }
+
+  String _nearestPakistaniCity(double lat, double lng) {
+    const cities = <({String name, double lat, double lng})>[
+      (name: 'Karachi', lat: 24.8607, lng: 67.0011),
+      (name: 'Lahore', lat: 31.5204, lng: 74.3587),
+      (name: 'Islamabad', lat: 33.6844, lng: 73.0479),
+      (name: 'Rawalpindi', lat: 33.5651, lng: 73.0169),
+      (name: 'Faisalabad', lat: 31.4504, lng: 73.1350),
+      (name: 'Multan', lat: 30.1575, lng: 71.5249),
+      (name: 'Peshawar', lat: 34.0151, lng: 71.5249),
+      (name: 'Quetta', lat: 30.1798, lng: 66.9750),
+      (name: 'Hyderabad', lat: 25.3960, lng: 68.3578),
+      (name: 'Gujranwala', lat: 32.1877, lng: 74.1945),
+      (name: 'Sialkot', lat: 32.4945, lng: 74.5229),
+      (name: 'Abbottabad', lat: 34.1688, lng: 73.2215),
+    ];
+
+    double? closestDistance;
+    String closestCity = 'Unknown City';
+
+    for (final city in cities) {
+      final distance = _distanceInKm(lat, lng, city.lat, city.lng);
+      if (closestDistance == null || distance < closestDistance) {
+        closestDistance = distance;
+        closestCity = city.name;
+      }
+    }
+
+    if (closestDistance == null || closestDistance > 120) {
+      return 'Unknown City';
+    }
+
+    return closestCity;
+  }
+
+  double _distanceInKm(double lat1, double lng1, double lat2, double lng2) {
+    const earthRadiusKm = 6371.0;
+    final dLat = _degToRad(lat2 - lat1);
+    final dLng = _degToRad(lng2 - lng1);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degToRad(lat1)) *
+            math.cos(_degToRad(lat2)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadiusKm * c;
+  }
+
+  double _degToRad(double deg) => deg * (math.pi / 180);
 
   Future<void> _loadAllData() async {
     if (!mounted) return;
@@ -101,9 +311,8 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         }
 
         // Location stats
-        final location = data['location']?.toString() ?? 'Unknown';
-        final city = location.split(',').first.trim();
-        if (city.isNotEmpty && city != 'Unknown') {
+        final city = _resolveCityName(data);
+        if (city.isNotEmpty && city != 'Unknown City') {
           locationCounts[city] = (locationCounts[city] ?? 0) + 1;
         }
 
@@ -169,13 +378,14 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         if (data['status'] == 'active') {
           adsWithInsights.add({
             'id': doc.id,
-            'title': data['title'] ?? data['carBrand'] ?? 'Unknown',
+            'title': _extractAdTitle(data),
             'views': adViews,
             'messages': adMessages,
             'contacts': adContacts,
             'saves': adSaves,
-            'price': data['price'] ?? '0',
-            'location': data['location'] ?? 'Unknown',
+            'price': _formatPrice(data['price']),
+            'location': city,
+            'thumbnailUrl': _extractThumbnailUrl(data),
           });
         }
       }
@@ -256,7 +466,6 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         _totalConversions = totalConversions;
         _topPerformingAds = adsWithInsights.take(5).toList();
         _dailyListings = dailyStats['listings'] ?? {};
-        _dailyViews = dailyStats['views'] ?? {};
         _viewsWeeklyChange = weeklyChanges['views'] ?? 0.0;
         _messagesWeeklyChange = weeklyChanges['messages'] ?? 0.0;
         _avgTimeToSell = avgTimeToSell;
@@ -325,8 +534,6 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
     try {
       final now = DateTime.now();
       final weekAgo = now.subtract(const Duration(days: 7));
-      final twoWeeksAgo = now.subtract(const Duration(days: 14));
-
       int thisWeekViews = 0;
       int lastWeekViews = 0;
       int thisWeekMessages = 0;
@@ -496,7 +703,7 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildKeyMetricsSection(),
             const SizedBox(height: 24),
@@ -525,10 +732,10 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
                 ? 3
                 : (veryWide ? 4 : 3);
         final aspectRatio = isCompact
-            ? 1.05
+            ? 1.38
             : isTablet
-                ? 1.2
-                : (veryWide ? 1.35 : 1.15);
+                ? 1.55
+                : (veryWide ? 1.75 : 1.5);
         final textScale = isCompact
             ? 0.94
             : isTablet
@@ -598,90 +805,73 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   Widget _buildMetricCard(String title, String value, IconData icon,
       Color color, String subtitle, bool isPositive,
       {double scale = 1}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-              : [Colors.grey.shade100, Colors.grey.shade200],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+      decoration: _sectionDecoration(context),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: 14 * scale,
+          vertical: 12 * scale,
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Container(
-        padding: EdgeInsets.all(12 * scale),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              color.withOpacity(0.1),
-              color.withOpacity(0.05),
-            ],
-          ),
-        ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(6 * scale),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, color: color, size: 20 * scale),
-                ),
-                Icon(
-                  isPositive ? Icons.trending_up : Icons.trending_down,
-                  color: isPositive ? Colors.green : Colors.red,
-                  size: 16 * scale,
-                ),
-              ],
+            Container(
+              padding: EdgeInsets.all(8 * scale),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20 * scale),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 26 * scale,
-                    fontWeight: FontWeight.bold,
-                    color: color,
+            SizedBox(width: 12 * scale),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 22 * scale,
+                      fontWeight: FontWeight.w800,
+                      color: color,
+                    ),
                   ),
-                ),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13 * scale,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey,
+                  SizedBox(height: 2 * scale),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12 * scale,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 11 * scale,
-                    color: isPositive ? Colors.green : Colors.red,
+                  SizedBox(height: 2 * scale),
+                  Row(
+                    children: [
+                      Icon(
+                        isPositive ? Icons.trending_up : Icons.trending_down,
+                        color: isPositive ? Colors.green : Colors.red,
+                        size: 14 * scale,
+                      ),
+                      SizedBox(width: 4 * scale),
+                      Expanded(
+                        child: Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 10.5 * scale,
+                            color: isPositive ? Colors.green : Colors.red,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -794,6 +984,8 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   }
 
   Widget _buildTopPerformingAdsSection() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -806,8 +998,11 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: theme.cardColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+              ),
             ),
             child: const Center(
               child: Column(
@@ -822,70 +1017,71 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         else
           ...List.generate(_topPerformingAds.length, (index) {
             final ad = _topPerformingAds[index];
-            final isDark = Theme.of(context).brightness == Brightness.dark;
             return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDark
-                      ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-                      : [Colors.grey.shade100, Colors.grey.shade200],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.06)
-                      : Colors.grey.shade400,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 16,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: const Color(0xFFf48c25).withOpacity(0.2),
-                  child: Text(
-                    '${index + 1}',
-                    style: const TextStyle(
-                      color: Color(0xFFf48c25),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                title: Text(
-                  ad['title']?.toString() ?? 'Unknown',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text('PKR ${ad['price']}'),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: _sectionDecoration(context),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.visibility,
-                            size: 12, color: Colors.blue),
-                        const SizedBox(width: 2),
-                        Text('${ad['views']}',
-                            style: const TextStyle(fontSize: 11)),
-                      ],
+                    Container(
+                      width: 34,
+                      height: 34,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: _kAccent.withValues(alpha: 0.14),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${index + 1}',
+                        style: const TextStyle(
+                          color: _kAccent,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                    Row(
+                    const SizedBox(width: 12),
+                    _buildTopAdThumbnail(ad['thumbnailUrl']?.toString()),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ad['title']?.toString() ?? 'Unknown Vehicle',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            ad['price']?.toString() ?? 'Price not available',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.message,
-                            size: 12, color: Colors.purple),
-                        const SizedBox(width: 2),
-                        Text('${ad['messages']}',
-                            style: const TextStyle(fontSize: 11)),
+                        _buildAdMetricPill(
+                          icon: Icons.visibility_outlined,
+                          color: Colors.blue,
+                          value: '${ad['views'] ?? 0}',
+                        ),
+                        const SizedBox(height: 6),
+                        _buildAdMetricPill(
+                          icon: Icons.message_outlined,
+                          color: Colors.purple,
+                          value: '${ad['messages'] ?? 0}',
+                        ),
                       ],
                     ),
                   ],
@@ -897,6 +1093,64 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
     );
   }
 
+  Widget _buildTopAdThumbnail(String? imageUrl) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final resolvedImageUrl = imageUrl?.trim();
+    final validUrl = resolvedImageUrl != null && resolvedImageUrl.isNotEmpty;
+
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: validUrl
+          ? Image.network(
+              resolvedImageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.directions_car_outlined,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            )
+          : Icon(
+              Icons.directions_car_outlined,
+              color: colorScheme.onSurfaceVariant,
+            ),
+    );
+  }
+
+  Widget _buildAdMetricPill({
+    required IconData icon,
+    required Color color,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTrendsTab() {
     return RefreshIndicator(
       onRefresh: _loadAllData,
@@ -904,7 +1158,7 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildDailyActivityChart(),
             const SizedBox(height: 24),
@@ -921,31 +1175,13 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
     final maxValue = _dailyListings.values.isEmpty
         ? 1.0
         : (_dailyListings.values.reduce((a, b) => a > b ? a : b)).toDouble();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isEmpty =
+        _dailyListings.isEmpty || _dailyListings.values.every((v) => v == 0);
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-              : [Colors.grey.shade100, Colors.grey.shade200],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: _sectionDecoration(context),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -953,11 +1189,10 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
               'Daily Listings (Last 7 Days)',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             SizedBox(
-              height: 200,
-              child: _dailyListings.isEmpty ||
-                      _dailyListings.values.every((v) => v == 0)
+              height: isEmpty ? 124 : 200,
+              child: isEmpty
                   ? const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -1055,31 +1290,10 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
       const Color(0xFF607D8B),
       const Color(0xFFCDDC39),
     ];
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-              : [Colors.grey.shade100, Colors.grey.shade200],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: _sectionDecoration(context),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1174,31 +1388,11 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
 
   Widget _buildPriceRangeChart() {
     final total = _priceRangeStats.values.fold(0, (a, b) => a + b);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-              : [Colors.grey.shade100, Colors.grey.shade200],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: _sectionDecoration(context),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1256,7 +1450,7 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildLocationPerformanceSection(),
             const SizedBox(height: 24),
@@ -1270,30 +1464,10 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   }
 
   Widget _buildLocationPerformanceSection() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-              : [Colors.grey.shade100, Colors.grey.shade200],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: _sectionDecoration(context),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1373,30 +1547,10 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   }
 
   Widget _buildYearDistributionSection() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-              : [Colors.grey.shade100, Colors.grey.shade200],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: _sectionDecoration(context),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1508,31 +1662,10 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         .map((s) => s['value'] as double)
         .fold<double>(0, (a, b) => b > a ? b : a);
     final safeMax = maxValue <= 0 ? 1 : maxValue;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-              : [Colors.grey.shade100, Colors.grey.shade200],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: _sectionDecoration(context),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1602,7 +1735,7 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildSearchAnalyticsSection(),
             const SizedBox(height: 24),
@@ -1616,30 +1749,11 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   }
 
   Widget _buildSearchAnalyticsSection() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-              : [Colors.grey.shade100, Colors.grey.shade200],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      width: double.infinity,
+      decoration: _sectionDecoration(context),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1685,31 +1799,11 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
         ? ((_totalMessages + _totalContacts + _totalSaves) / _totalViews * 100)
         : 0.0;
     final saveRate = _totalViews > 0 ? (_totalSaves / _totalViews * 100) : 0.0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-              : [Colors.grey.shade100, Colors.grey.shade200],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: _sectionDecoration(context),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1768,30 +1862,10 @@ class _AdminInsightMetricsPageState extends State<AdminInsightMetricsPage>
   }
 
   Widget _buildMarketInsightsSection() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF111827), const Color(0xFF0B1220)]
-              : [Colors.grey.shade100, Colors.grey.shade200],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.06) : Colors.grey.shade400,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: _sectionDecoration(context),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(

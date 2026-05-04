@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/services/payment_service.dart';
+import 'package:carhive/services/market_pulse_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
@@ -18,6 +20,7 @@ class _PromoteAdPageState extends State<PromoteAdPage>
   String? selectedPackage;
   bool _isProcessing = false;
   final PaymentService _paymentService = PaymentService();
+  final MarketPulseService _marketPulseService = MarketPulseService();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -26,6 +29,7 @@ class _PromoteAdPageState extends State<PromoteAdPage>
       'id': 'basic',
       'name': 'Basic Boost',
       'price': 1500,
+      'days': 3,
       'duration': '3 Days',
       'features': [
         'Featured in search results',
@@ -40,6 +44,7 @@ class _PromoteAdPageState extends State<PromoteAdPage>
       'id': 'premium',
       'name': 'Premium Spotlight',
       'price': 3500,
+      'days': 7,
       'duration': '7 Days',
       'features': [
         'Top of search results',
@@ -57,6 +62,7 @@ class _PromoteAdPageState extends State<PromoteAdPage>
       'id': 'ultimate',
       'name': 'Ultimate Package',
       'price': 6000,
+      'days': 14,
       'duration': '14 Days',
       'features': [
         'Guaranteed top position',
@@ -99,6 +105,9 @@ class _PromoteAdPageState extends State<PromoteAdPage>
     final package =
         promotionPackages.firstWhere((p) => p['id'] == selectedPackage);
     final amount = package['price'] as int;
+    final durationDays = package['days'] as int;
+    final promotionStartedAt = DateTime.now();
+    final promotedUntil = promotionStartedAt.add(Duration(days: durationDays));
 
     setState(() {
       _isProcessing = true;
@@ -160,7 +169,27 @@ class _PromoteAdPageState extends State<PromoteAdPage>
             ),
           );
 
-          // TODO: Update ad status in Firestore to mark as promoted
+          if (widget.ad.id != null && widget.ad.id!.isNotEmpty) {
+            await FirebaseFirestore.instance
+                .collection('ads')
+                .doc(widget.ad.id)
+                .set({
+              'isPromoted': true,
+              'promotionPackage': package['id'],
+              'promotionAmount': amount,
+              'promotionDurationDays': durationDays,
+              'promotionStartedAt': Timestamp.fromDate(promotionStartedAt),
+              'promotedAt': Timestamp.fromDate(promotionStartedAt),
+              'promotedUntil': Timestamp.fromDate(promotedUntil),
+              'promotionPurchasedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+
+            await _marketPulseService.trackPromotionPurchase(
+              adId: widget.ad.id!,
+              amount: amount,
+              packageId: package['id'].toString(),
+            );
+          }
 
           await Future.delayed(const Duration(seconds: 2));
           if (mounted) {

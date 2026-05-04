@@ -28,6 +28,12 @@ class PostAdCar extends StatefulWidget {
 class _PostAdCarState extends State<PostAdCar> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  bool _isEditing = false;
+  String? _editingAdId;
+  bool _routeArgsProcessed = false;
+  List<String> _existingImageUrls = [];
+  List<String> _existing360ImageUrls = [];
+
   String? selectedLocation;
   String? selectedCarModel;
   String? selectedRegisteredIn;
@@ -38,6 +44,365 @@ class _PostAdCarState extends State<PostAdCar> {
   void initState() {
     super.initState();
     _loadUserProfile();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_routeArgsProcessed) return;
+    _routeArgsProcessed = true;
+    _loadEditDataFromRoute();
+  }
+
+  String _stringValue(dynamic value) {
+    if (value == null) return '';
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  List<String> _stringList(dynamic value) {
+    if (value is List) {
+      return value
+          .map((item) => _stringValue(item).trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+    return const [];
+  }
+
+  Future<void> _loadEditDataFromRoute() async {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is! Map<String, dynamic>) {
+      return;
+    }
+
+    final adId = _stringValue(args['adId']).trim();
+    if (adId.isEmpty) {
+      return;
+    }
+
+    final adDataRaw = args['adData'];
+    if (adDataRaw is Map) {
+      _applyAdData(Map<String, dynamic>.from(adDataRaw));
+    }
+
+    if (mounted) {
+      setState(() {
+        _isEditing = true;
+        _editingAdId = adId;
+      });
+    }
+
+    try {
+      final adDoc =
+          await FirebaseFirestore.instance.collection('ads').doc(adId).get();
+      if (!adDoc.exists || !mounted) return;
+      final liveData = adDoc.data();
+      if (liveData != null) {
+        _applyAdData(liveData);
+      }
+    } catch (_) {
+      // If live fetch fails, form still uses route payload fallback.
+    }
+  }
+
+  void _applyAdData(Map<String, dynamic> adData) {
+    final carBrandName = _stringValue(adData['carBrand']).trim().toLowerCase();
+    CarBrand? matchedBrand;
+    if (carBrandName.isNotEmpty) {
+      for (final brand in CarBrandService().getAllBrands()) {
+        if (brand.displayName.toLowerCase() == carBrandName) {
+          matchedBrand = brand;
+          break;
+        }
+      }
+    }
+
+    final imageUrls = _stringList(adData['imageUrls']);
+    final images360Urls = _stringList(adData['images360Urls']);
+
+    final locationRaw = adData['location'];
+    final locationCoordinatesRaw = adData['locationCoordinates'];
+    LatLng? routeLocationCoords;
+    if (locationRaw is Map) {
+      final lat = locationRaw['lat'];
+      final lng = locationRaw['lng'];
+      if (lat is num && lng is num) {
+        routeLocationCoords = LatLng(lat.toDouble(), lng.toDouble());
+      }
+    } else if (locationCoordinatesRaw is Map) {
+      final lat = locationCoordinatesRaw['lat'];
+      final lng = locationCoordinatesRaw['lng'];
+      if (lat is num && lng is num) {
+        routeLocationCoords = LatLng(lat.toDouble(), lng.toDouble());
+      }
+    }
+
+    final encryptedVehicleRaw = adData['vehicleVerification'];
+    Map<String, dynamic> vehicleVerification = {};
+    if (encryptedVehicleRaw is Map) {
+      vehicleVerification = EncryptionService.decryptFields(
+        Map<String, dynamic>.from(encryptedVehicleRaw),
+      );
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _titleController.text = _stringValue(adData['title']);
+      _priceController.text = _stringValue(adData['price']);
+      _mileageController.text = _stringValue(adData['mileage']);
+      _fuelController.text = _stringValue(adData['fuel']);
+      _descriptionController.text = _stringValue(adData['description']);
+      _carNameController.text = _stringValue(adData['carName']);
+      _bodyColorController.text = _stringValue(adData['bodyColor']);
+      _nameController.text = _stringValue(adData['name']);
+      _phoneController.text = _stringValue(adData['phone']);
+
+      selectedCarModel = _stringValue(adData['year']).isNotEmpty
+          ? _stringValue(adData['year'])
+          : selectedCarModel;
+      selectedRegisteredIn = _stringValue(adData['registeredIn']).isNotEmpty
+          ? _stringValue(adData['registeredIn'])
+          : selectedRegisteredIn;
+
+      final locationString = _stringValue(
+        adData['locationString'] ?? adData['location'],
+      );
+      if (locationString.isNotEmpty) {
+        selectedLocation = locationString.split(',').first.trim();
+        selectedLocationAddress = locationString;
+      }
+      if (routeLocationCoords != null) {
+        selectedLocationCoords = routeLocationCoords;
+      }
+
+      if (matchedBrand != null) {
+        _selectedBrand = matchedBrand;
+      }
+
+      if (imageUrls.isNotEmpty) {
+        _existingImageUrls = imageUrls;
+      }
+      if (images360Urls.isNotEmpty) {
+        _existing360ImageUrls = images360Urls;
+      }
+
+      _registrationNoController.text =
+          _stringValue(vehicleVerification['registrationNo']);
+      _registrationDateController.text =
+          _stringValue(vehicleVerification['registrationDate']);
+      _chassisNoController.text =
+          _stringValue(vehicleVerification['chassisNo']);
+      _ownerNameController.text =
+          _stringValue(vehicleVerification['ownerName']);
+    });
+  }
+
+  Future<void> _handleAdSubmit() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Verifying vehicle details...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    final isVerified = await _verifyVehicleDetails();
+
+    if (!isVerified) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Vehicle verification failed. Please ensure all details match the official records.'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    List<String> uploadedImageUrls = [];
+    if (_images.isNotEmpty || _webImages.isNotEmpty) {
+      try {
+        uploadedImageUrls = await _uploadImages();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload images: $e')),
+        );
+        return;
+      }
+    }
+
+    final uploaded360Urls =
+        (_video360FrameUrls != null && _video360FrameUrls!.isNotEmpty)
+            ? List<String>.from(_video360FrameUrls!)
+            : null;
+
+    Map<String, double>? locationCoords;
+    if (selectedLocationCoords != null) {
+      locationCoords = {
+        'lat': selectedLocationCoords!.latitude,
+        'lng': selectedLocationCoords!.longitude,
+      };
+    } else {
+      try {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+
+        if (permission == LocationPermission.whileInUse ||
+            permission == LocationPermission.always) {
+          final position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+          );
+          locationCoords = {
+            'lat': position.latitude,
+            'lng': position.longitude,
+          };
+        }
+      } catch (_) {
+        // Keep location null if unavailable.
+      }
+    }
+
+    final plainRegistrationNo = _registrationNoController.text
+        .trim()
+        .toUpperCase()
+        .replaceAll('*', '')
+        .replaceAll(' ', '')
+        .replaceAll(RegExp(r'[^\w\-]'), '');
+
+    final vehicleData = {
+      'registrationNo': plainRegistrationNo,
+      'registrationDate': _registrationDateController.text.trim(),
+      'chassisNo': _chassisNoController.text.trim(),
+      'ownerName': _ownerNameController.text.trim(),
+    };
+
+    final encryptedVehicleData = EncryptionService.encryptFields(vehicleData);
+    encryptedVehicleData['_plainRegistrationNo'] = plainRegistrationNo;
+
+    final mergedImageUrls = [
+      ..._existingImageUrls,
+      ...uploadedImageUrls,
+    ];
+    final merged360Urls = [
+      ..._existing360ImageUrls,
+      ...?uploaded360Urls,
+    ];
+
+    final adPayload = <String, dynamic>{
+      'title': _titleController.text,
+      'price': _priceController.text,
+      'year': selectedCarModel ?? '',
+      'mileage': _mileageController.text,
+      'fuel': _fuelController.text,
+      'description': _descriptionController.text,
+      'carBrand': _selectedBrand?.displayName ?? '',
+      'carName': _carNameController.text.trim(),
+      'bodyColor': _bodyColorController.text,
+      'kmsDriven': _mileageController.text,
+      'registeredIn': selectedRegisteredIn,
+      'name': _nameController.text,
+      'phone': _phoneController.text,
+      'imageUrls': mergedImageUrls,
+      'images360Urls': merged360Urls,
+      'vehicleVerification': Map<String, dynamic>.from(encryptedVehicleData)
+        ..remove('_plainRegistrationNo'),
+      'registrationNoHash':
+          EncryptionService.hashRegistrationNo(plainRegistrationNo),
+      'isVerified': true,
+      'verifiedAt': Timestamp.now(),
+      'updatedAt': Timestamp.now(),
+    };
+
+    final resolvedLocation = selectedLocationAddress.isNotEmpty
+        ? selectedLocationAddress
+        : (selectedLocation ?? _locationController.text);
+    final resolvedCityName = resolvedLocation.split(',').first.trim();
+    if (locationCoords != null) {
+      adPayload['location'] = {
+        'lat': locationCoords['lat'],
+        'lng': locationCoords['lng'],
+      };
+      adPayload['locationString'] = resolvedLocation;
+    } else {
+      adPayload['location'] = resolvedLocation;
+      adPayload['locationString'] = resolvedLocation;
+    }
+    if (resolvedCityName.isNotEmpty) {
+      adPayload['cityName'] = resolvedCityName;
+    }
+
+    try {
+      if (_isEditing && _editingAdId != null && _editingAdId!.isNotEmpty) {
+        await GlobalAdStore().updateAd(_editingAdId!, adPayload);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ad updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        final newAd = AdModel(
+          title: _titleController.text,
+          price: _priceController.text,
+          location: resolvedLocation,
+          year: selectedCarModel ?? '',
+          mileage: _mileageController.text,
+          fuel: _fuelController.text,
+          description: _descriptionController.text,
+          carBrand: _selectedBrand?.displayName ?? '',
+          carName: _carNameController.text.trim(),
+          bodyColor: _bodyColorController.text,
+          kmsDriven: _mileageController.text,
+          registeredIn: selectedRegisteredIn,
+          name: _nameController.text,
+          phone: _phoneController.text,
+          imageUrls: mergedImageUrls.isNotEmpty ? mergedImageUrls : null,
+          locationCoordinates: locationCoords,
+          images360Urls: merged360Urls.isNotEmpty ? merged360Urls : null,
+        );
+
+        await GlobalAdStore()
+            .addAdWithVerification(newAd, encryptedVehicleData);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Vehicle verified successfully! Your ad has been posted.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/myads');
+    } catch (e) {
+      if (!mounted) return;
+      final errorMessage = e
+          .toString()
+          .replaceAll('Exception: ', '')
+          .replaceAll('Failed to add verified ad: ', '');
+      final isDuplicateError = errorMessage.contains('already exists');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: isDuplicateError ? Colors.orange : Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -74,19 +439,6 @@ class _PostAdCarState extends State<PostAdCar> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _mileageController = TextEditingController();
   final TextEditingController _fuelController = TextEditingController();
-
-// @override
-// void dispose () {
-//   _titleController.dispose();
-//   _priceController.dispose();
-//   _locationController.dispose();
-//   _yearController.dispose();
-//   _mileageController.dispose();
-//   _fuelController.dispose();
-//   super.dispose();
-
-// }
-// // relted to postinf add to prevent memory leaks
 
   final List<File> _images = [];
   final List<Uint8List> _webImages = [];
@@ -126,7 +478,7 @@ class _PostAdCarState extends State<PostAdCar> {
   bool _isUploadingImages = false;
   double _uploadProgress = 0.0;
   final CloudinaryService _cloudinaryService = CloudinaryService();
-  
+
   // 360° video capture state
   List<String>? _video360FrameUrls;
   bool _isUploading360 = false;
@@ -203,19 +555,6 @@ class _PostAdCarState extends State<PostAdCar> {
 
     return imageUrls;
   }
-
-  // this is for mobiel image picker ==========
-
-  // Future<void> _pickImage() async {
-  //   final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-  //   if (picked != null && _images.length < 20) {
-  //     setState(() {
-  //       _images.add(File(picked.path));
-  //     });
-  //   }
-  // }
-
-//  this is added to test on both web and mobile =-=--=-=-=-=-=-=-=-=-=-=-=-==-=-=
 
   void _openLocationSelector() {
     showModalBottomSheet(
@@ -722,7 +1061,7 @@ class _PostAdCarState extends State<PostAdCar> {
       setState(() {
         _video360FrameUrls = result;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -766,7 +1105,7 @@ class _PostAdCarState extends State<PostAdCar> {
     if (currentUser == null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("Sell Your Car"),
+          title: Text(_isEditing ? 'Edit Ad' : 'Sell Your Car'),
           leading: const BackButton(),
           backgroundColor: Colors.transparent,
           bottom: PreferredSize(
@@ -803,7 +1142,7 @@ class _PostAdCarState extends State<PostAdCar> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Sell Your Car",
+          _isEditing ? 'Edit Ad' : 'Sell Your Car',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             color: Theme.of(context).colorScheme.primary,
@@ -833,7 +1172,6 @@ class _PostAdCarState extends State<PostAdCar> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ========== Photos & 360° View Section ==========
-              // Container wrapping section header and all photo/360° content
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -909,46 +1247,9 @@ class _PostAdCarState extends State<PostAdCar> {
                             color:
                                 Theme.of(context).colorScheme.surfaceContainer,
                           ),
-
-                          // --==== this is for mobile code of image picker
-                          // child: _images.isEmpty
-                          //     ? const Center(
-                          //         child: Column(
-                          //           mainAxisAlignment: MainAxisAlignment.center,
-                          //           children: [
-                          //             Icon(Icons.camera_alt_outlined,
-                          //                 size: 30, color: Colors.blue),
-                          //             SizedBox(height: 8),
-                          //             Text("Add Photo",
-                          //                 style: TextStyle(color: Colors.blue)),
-                          //           ],
-                          //         ),
-                          //       )
-                          //     : ListView.separated(
-                          //         scrollDirection: Axis.horizontal,
-                          //         padding: const EdgeInsets.all(8),
-                          //         itemCount: _images.length + 1,
-                          //         itemBuilder: (context, index) {
-                          //           if (index == _images.length &&
-                          //               _images.length < 20) {
-                          //             return GestureDetector(
-                          //               onTap: _pickImage,
-                          //               child: Container(
-                          //                 width: 100,
-                          //                 color: Colors.grey.shade200,
-                          //                 child: const Icon(Icons.add),
-                          //               ),
-                          //             );
-                          //           }
-                          //           if (index >= _images.length) return Container();
-                          //           return Image.file(_images[index],
-                          //               width: 100, fit: BoxFit.cover);
-                          //         },
-                          //         separatorBuilder: (_, __) =>
-                          //             const SizedBox(width: 8),
-                          //       ),
-
-                          child: _images.isEmpty && _webImages.isEmpty
+                          child: _images.isEmpty &&
+                                  _webImages.isEmpty &&
+                                  _existingImageUrls.isEmpty
                               ? Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -981,11 +1282,14 @@ class _PostAdCarState extends State<PostAdCar> {
                               : ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   padding: const EdgeInsets.all(12),
-                                  itemCount:
-                                      (_images.length + _webImages.length) + 1,
+                                  itemCount: (_existingImageUrls.length +
+                                          _images.length +
+                                          _webImages.length) +
+                                      1,
                                   itemBuilder: (context, index) {
-                                    final total =
-                                        _images.length + _webImages.length;
+                                    final total = _existingImageUrls.length +
+                                        _images.length +
+                                        _webImages.length;
                                     if (index == total && total < 20) {
                                       return GestureDetector(
                                         onTap: _pickImage,
@@ -1025,13 +1329,69 @@ class _PostAdCarState extends State<PostAdCar> {
                                         ),
                                       );
                                     }
-                                    if (index < _webImages.length) {
+                                    if (index < _existingImageUrls.length) {
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Stack(
+                                          children: [
+                                            Image.network(
+                                              _existingImageUrls[index],
+                                              width: 110,
+                                              height: double.infinity,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                return Container(
+                                                  width: 110,
+                                                  color: Colors.grey.shade300,
+                                                  child: const Icon(
+                                                      Icons.broken_image),
+                                                );
+                                              },
+                                            ),
+                                            Positioned(
+                                              top: 4,
+                                              right: 4,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black54,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: IconButton(
+                                                  icon: const Icon(
+                                                    Icons.close,
+                                                    color: Colors.white,
+                                                    size: 18,
+                                                  ),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    minWidth: 32,
+                                                    minHeight: 32,
+                                                  ),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _existingImageUrls
+                                                          .removeAt(index);
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+
+                                    final webStart = _existingImageUrls.length;
+                                    if (index < webStart + _webImages.length) {
+                                      final webIndex = index - webStart;
                                       return ClipRRect(
                                         borderRadius: BorderRadius.circular(12),
                                         child: Stack(
                                           children: [
                                             Image.memory(
-                                              _webImages[index],
+                                              _webImages[webIndex],
                                               width: 110,
                                               height: double.infinity,
                                               fit: BoxFit.cover,
@@ -1059,7 +1419,7 @@ class _PostAdCarState extends State<PostAdCar> {
                                                   onPressed: () {
                                                     setState(() {
                                                       _webImages
-                                                          .removeAt(index);
+                                                          .removeAt(webIndex);
                                                     });
                                                   },
                                                 ),
@@ -1070,7 +1430,7 @@ class _PostAdCarState extends State<PostAdCar> {
                                       );
                                     } else {
                                       final imgIndex =
-                                          index - _webImages.length;
+                                          index - webStart - _webImages.length;
                                       return ClipRRect(
                                         borderRadius: BorderRadius.circular(12),
                                         child: Stack(
@@ -1169,133 +1529,100 @@ class _PostAdCarState extends State<PostAdCar> {
 
                       const SizedBox(height: 16),
 
-                      // 360° Capture Options
+                      // 360 capture options
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_video360FrameUrls != null && _video360FrameUrls!.isNotEmpty)
+                          // RESOLVED: keep multi-line style from main
+                          if (_video360FrameUrls != null &&
+                              _video360FrameUrls!.isNotEmpty)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 TextButton.icon(
                                   onPressed: _clear360Images,
                                   icon: const Icon(Icons.clear, size: 18),
-                                  label: const Text('Clear 360°'),
+                                  label: const Text('Clear'),
                                   style: TextButton.styleFrom(
                                     foregroundColor: Colors.red,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          if (_video360FrameUrls == null || _video360FrameUrls!.isEmpty)
-                            // Video-based capture
-                            Column(
-                              children: [
-                                const SizedBox(height: 12),
-                                // Video-based capture
-                                GestureDetector(
-                                  onTap: _openVideo360CaptureScreen,
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 20,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
+                          const SizedBox(height: 8),
+                          Text(
+                            'Record a 15-20 second video walking around your car for a smooth 360-degree view with zoom functionality',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          if (_video360FrameUrls == null ||
+                              _video360FrameUrls!.isEmpty)
+                            GestureDetector(
+                              onTap: _openVideo360CaptureScreen,
+                              child: Container(
+                                width: double.infinity,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.blue.withOpacity(0.1),
+                                      Colors.blue.withOpacity(0.2),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.blue.withOpacity(0.5),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: const BoxDecoration(
                                         color: Colors.blue,
-                                        width: 1,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.videocam,
+                                        color: Colors.white,
+                                        size: 24,
                                       ),
                                     ),
-                                    child: Row(
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: const BoxDecoration(
+                                        const Text(
+                                          'Video Capture (60 frames)',
+                                          style: TextStyle(
                                             color: Colors.blue,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.videocam,
-                                            color: Colors.white,
-                                            size: 20,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
                                           ),
                                         ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  const Text(
-                                                    'Video Capture (60 frames)',
-                                                    style: TextStyle(
-                                                      color: Colors.blue,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontSize: 14,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                      horizontal: 6,
-                                                      vertical: 2,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.green,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                    ),
-                                                    child: const Text(
-                                                      'NEW',
-                                                      style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 9,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                'Record 15-20 sec video',
-                                                style: TextStyle(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withOpacity(0.5),
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                            ],
+                                        Text(
+                                          'Record 15-20 sec video',
+                                          style: TextStyle(
+                                            color: Colors.blue.withOpacity(0.8),
+                                            fontSize: 11,
                                           ),
-                                        ),
-                                        Icon(
-                                          Icons.arrow_forward_ios,
-                                          color: Colors.blue,
-                                          size: 16,
                                         ),
                                       ],
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             )
+                          // RESOLVED: use feature2's richer frame-preview UI
                           else
-                            // Preview video-generated frames
                             Builder(
                               builder: (context) {
                                 final frameUrls = _video360FrameUrls ?? [];
@@ -1328,9 +1655,10 @@ class _PostAdCarState extends State<PostAdCar> {
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                   border: Border.all(
-                                                      color: const Color(
-                                                              0xFFf48c25)
-                                                          .withOpacity(0.5)),
+                                                    color:
+                                                        const Color(0xFFf48c25)
+                                                            .withOpacity(0.5),
+                                                  ),
                                                 ),
                                                 child: Column(
                                                   mainAxisAlignment:
@@ -1363,12 +1691,14 @@ class _PostAdCarState extends State<PostAdCar> {
                                                   width: 80,
                                                   height: 84,
                                                   fit: BoxFit.cover,
-                                                  errorBuilder: (context, error, stackTrace) {
+                                                  errorBuilder: (context, error,
+                                                      stackTrace) {
                                                     return Container(
                                                       width: 80,
                                                       height: 84,
                                                       color: Colors.grey[300],
-                                                      child: const Icon(Icons.broken_image),
+                                                      child: const Icon(
+                                                          Icons.broken_image),
                                                     );
                                                   },
                                                 ),
@@ -1469,8 +1799,7 @@ class _PostAdCarState extends State<PostAdCar> {
 
               const SizedBox(height: 24),
 
-              // ========== Section Header: Car Information ==========
-              // Container wrapping all car information fields
+              // ========== Car Information Section ==========
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1721,7 +2050,6 @@ class _PostAdCarState extends State<PostAdCar> {
               const SizedBox(height: 24),
 
               // ========== Description Section ==========
-              // Container wrapping description fields
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1849,7 +2177,6 @@ class _PostAdCarState extends State<PostAdCar> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Section header inside container
                       Row(
                         children: [
                           Container(
@@ -1895,7 +2222,6 @@ class _PostAdCarState extends State<PostAdCar> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      // User profile information display
                       if (_isLoadingProfile)
                         const Center(child: CircularProgressIndicator())
                       else ...[
@@ -1931,7 +2257,6 @@ class _PostAdCarState extends State<PostAdCar> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Section header inside container
                       Row(
                         children: [
                           Container(
@@ -2064,259 +2389,81 @@ class _PostAdCarState extends State<PostAdCar> {
                 ),
 
               const SizedBox(height: 20),
+
+              // ========== Submit Button ==========
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SizedBox(
-                    width: double.infinity,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFFF6B35),
-                            Color(0xFFFF8C42),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF6B35).withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
+                  width: double.infinity,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFFF6B35),
+                          Color(0xFFFF8C42),
                         ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6B35).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
                         ),
-                        onPressed: (_isUploadingImages ||
-                                _isUploading360 ||
-                                _isVerifying)
-                            ? null
-                            : () async {
-                                if (_formKey.currentState!.validate()) {
-                                  // Verify vehicle details first
-                                  if (!mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content:
-                                          Text('Verifying vehicle details...'),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-
-                                  final isVerified =
-                                      await _verifyVehicleDetails();
-
-                                  if (!isVerified) {
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Vehicle verification failed. Please ensure all details match the official records.'),
-                                        backgroundColor: Colors.red,
-                                        duration: Duration(seconds: 4),
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  // Verification successful, proceed with upload
-                                  List<String> imageUrls = [];
-
-                                  // Upload images to Cloudinary
-                                  if (_images.isNotEmpty ||
-                                      _webImages.isNotEmpty) {
-                                    try {
-                                      imageUrls = await _uploadImages();
-                                      if (imageUrls.isEmpty) {
-                                        if (!mounted) return;
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                                'No images were uploaded. Please try again.'),
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                    } catch (e) {
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                              'Failed to upload images: $e'),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                  }
-
-                                  // Use video-generated 360° frame URLs
-                                  List<String>? images360Urls;
-                                  if (_video360FrameUrls != null && _video360FrameUrls!.isNotEmpty) {
-                                    // Video frames are already processed and available as URLs
-                                    images360Urls = _video360FrameUrls;
-                                  }
-
-                                  // Use selected location coordinates or get current location
-                                  Map<String, double>? locationCoords;
-                                  if (selectedLocationCoords != null) {
-                                    // Use the precise location selected by user
-                                    locationCoords = {
-                                      'lat': selectedLocationCoords!.latitude,
-                                      'lng': selectedLocationCoords!.longitude,
-                                    };
-                                  } else {
-                                    // Fallback to current location if no precise location selected
-                                    try {
-                                      LocationPermission permission =
-                                          await Geolocator.checkPermission();
-                                      if (permission ==
-                                          LocationPermission.denied) {
-                                        permission = await Geolocator
-                                            .requestPermission();
-                                      }
-
-                                      if (permission ==
-                                              LocationPermission.whileInUse ||
-                                          permission ==
-                                              LocationPermission.always) {
-                                        Position position =
-                                            await Geolocator.getCurrentPosition(
-                                          desiredAccuracy:
-                                              LocationAccuracy.medium,
-                                        );
-                                        locationCoords = {
-                                          'lat': position.latitude,
-                                          'lng': position.longitude,
-                                        };
-                                      }
-                                    } catch (e) {
-                                      print('Error getting location: $e');
-                                      // Continue without location coordinates
-                                    }
-                                  }
-
-                                  // Prepare vehicle verification data
-                                  // Normalize registration number for consistent duplicate checking
-                                  final plainRegistrationNo =
-                                      _registrationNoController.text
-                                          .trim()
-                                          .toUpperCase()
-                                          .replaceAll('*', '')
-                                          .replaceAll(' ', '')
-                                          .replaceAll(RegExp(r'[^\w\-]'), '');
-                                  final vehicleData = {
-                                    'registrationNo': plainRegistrationNo,
-                                    'registrationDate':
-                                        _registrationDateController.text.trim(),
-                                    'chassisNo':
-                                        _chassisNoController.text.trim(),
-                                    'ownerName':
-                                        _ownerNameController.text.trim(),
-                                  };
-
-                                  // Encrypt sensitive vehicle data
-                                  final encryptedVehicleData =
-                                      EncryptionService.encryptFields(
-                                          vehicleData);
-
-                                  // Add plain registration number temporarily for duplicate checking
-                                  // This will be removed before storing in Firestore
-                                  encryptedVehicleData['_plainRegistrationNo'] =
-                                      plainRegistrationNo;
-
-                                  // Create ad with image URLs and encrypted vehicle data
-                                  final newAd = AdModel(
-                                    title: _titleController.text,
-                                    price: _priceController.text,
-                                    location: selectedLocationAddress.isNotEmpty
-                                        ? selectedLocationAddress
-                                        : selectedLocation ??
-                                            _locationController.text,
-                                    year: selectedCarModel ?? '',
-                                    mileage: _mileageController.text,
-                                    fuel: _fuelController.text,
-                                    description: _descriptionController.text,
-                                    carBrand: _selectedBrand?.displayName ?? '',
-                                    carName: _carNameController.text.trim(),
-                                    bodyColor: _bodyColorController.text,
-                                    kmsDriven: _mileageController
-                                        .text, // Use mileage for kmsDriven
-                                    registeredIn: selectedRegisteredIn,
-                                    name: _nameController.text,
-                                    phone: _phoneController.text,
-                                    imageUrls:
-                                        imageUrls.isNotEmpty ? imageUrls : null,
-                                    locationCoordinates: locationCoords,
-                                    images360Urls: images360Urls != null &&
-                                            images360Urls.isNotEmpty
-                                        ? images360Urls
-                                        : null,
-                                  );
-
-                                  try {
-                                    // Add ad with encrypted vehicle data and auto-approve (status = 'active')
-                                    await GlobalAdStore().addAdWithVerification(
-                                        newAd, encryptedVehicleData);
-
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Text(
-                                            'Vehicle verified successfully! Your ad has been posted.'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-
-                                    await Future.delayed(const Duration(seconds: 1));
-                                    if (!mounted) return;
-                                    Navigator.pushReplacementNamed(context, '/myads');
-                                  } catch (e) {
-                                    if (!mounted) return;
-                                    final errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('Failed to add verified ad: ', '');
-                                    final isDuplicateError = errorMessage.contains('already exists');
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(errorMessage),
-                                        backgroundColor: isDuplicateError ? Colors.orange : Colors.red,
-                                        duration: const Duration(seconds: 5),
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                        child: (_isUploadingImages || _isUploading360)
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    _isUploading360 ? "Uploading 360° images..." : "Uploading...",
-                                    style: const TextStyle(fontSize: 16, color: Colors.white),
-                                  ),
-                                ],
-                              )
-                            : const Text(
-                                'Post Ad',
-                                style: TextStyle(fontSize: 18, color: Colors.white),
-                              ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
+                      onPressed: (_isUploadingImages ||
+                              _isUploading360 ||
+                              _isVerifying)
+                          ? null
+                          : _handleAdSubmit,
+                      // RESOLVED: use feature2's label ("Update Ad" vs "Post Ad")
+                      // combined with main's clean loading indicator structure
+                      child: (_isUploadingImages || _isUploading360)
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  _isUploading360
+                                      ? 'Uploading 360° images...'
+                                      : 'Uploading...',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Text(
+                              _isEditing ? 'Update Ad' : 'Post Ad',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
-                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 40),
             ],
@@ -2371,11 +2518,17 @@ class _PostAdCarState extends State<PostAdCar> {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withOpacity(0.4),
               ),
               prefixIcon: Icon(
                 icon,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withOpacity(0.6),
               ),
               filled: true,
               fillColor: Theme.of(context).colorScheme.surfaceContainer,
@@ -2432,7 +2585,10 @@ class _PostAdCarState extends State<PostAdCar> {
             decoration: InputDecoration(
               hintText: 'Select car brand',
               hintStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withOpacity(0.4),
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -2465,7 +2621,10 @@ class _PostAdCarState extends State<PostAdCar> {
               ),
               prefixIcon: Icon(
                 Icons.directions_car,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withOpacity(0.6),
                 size: 20,
               ),
             ),
@@ -2504,7 +2663,10 @@ class _PostAdCarState extends State<PostAdCar> {
             },
             icon: Icon(
               Icons.arrow_drop_down,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withOpacity(0.6),
             ),
             dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
             style: TextStyle(
@@ -2549,8 +2711,10 @@ class _PostAdCarState extends State<PostAdCar> {
                 subtitle,
                 style: TextStyle(
                   fontSize: 12,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.5),
                 ),
               ),
             ),
@@ -2583,7 +2747,8 @@ class _PostAdCarState extends State<PostAdCar> {
             onTap: onTap,
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(16),
@@ -2656,7 +2821,8 @@ class _PostAdCarState extends State<PostAdCar> {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(16),
@@ -2672,8 +2838,10 @@ class _PostAdCarState extends State<PostAdCar> {
               children: [
                 Icon(
                   icon,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.6),
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -2688,12 +2856,14 @@ class _PostAdCarState extends State<PostAdCar> {
                               .onSurface
                               .withOpacity(0.4),
                       fontSize: 15,
-                      fontStyle: hasValue ? FontStyle.normal : FontStyle.italic,
+                      fontStyle:
+                          hasValue ? FontStyle.normal : FontStyle.italic,
                     ),
                   ),
                 ),
                 if (hasValue)
-                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  const Icon(Icons.check_circle,
+                      color: Colors.green, size: 20),
               ],
             ),
           ),
@@ -2729,40 +2899,3 @@ class _FullScreenPopup extends StatelessWidget {
     );
   }
 }
-
-
-// i added these code twice 
-
-// import 'package:flutter/material.dart';
-
-// // ignore: unused_element
-// class _FullScreenPopup extends StatelessWidget {
-//   final String title;
-//   final Widget? content;
-
-//   // ignore: unused_element_parameter
-//   const _FullScreenPopup({required this.title, this.content});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return SizedBox(
-//       height: MediaQuery.of(context).size.height * 0.95,
-//       child: Scaffold(
-//         appBar: AppBar(
-//           automaticallyImplyLeading: false,
-//           title: Text(title),
-//           actions: [
-//             IconButton(
-//               icon: const Icon(Icons.close),
-//               onPressed: () => Navigator.pop(context),
-//             )
-//           ],
-//         ),
-//         body: content ??
-//             const Center(
-//               child: Text("Custom List or Search will go here."),
-//             ),
-//       ),
-//     );
-//   }
-// }

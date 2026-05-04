@@ -7,10 +7,18 @@ class Conversation {
   final String lastMessage;
   final DateTime lastMessageTime;
   final String lastMessageSenderId;
-  final int unreadCount1; // Unread count for participant1
-  final int unreadCount2; // Unread count for participant2
+  final int unreadCount1;
+  final int unreadCount2;
   final DateTime createdAt;
   final DateTime updatedAt;
+  // Optional ad context (set when conversation is started from a listing)
+  final String? adId;
+  final String? adTitle;
+  final String? adPrice;
+  final String? adImageUrl;
+  final String? adStatus;
+  final String? buyerId;  // uid of the user who initiated (the buyer)
+  final String? sellerId; // uid of the ad owner (the seller)
 
   Conversation({
     required this.id,
@@ -23,9 +31,17 @@ class Conversation {
     this.unreadCount2 = 0,
     required this.createdAt,
     required this.updatedAt,
+    this.adId,
+    this.adTitle,
+    this.adPrice,
+    this.adImageUrl,
+    this.adStatus,
+    this.buyerId,
+    this.sellerId,
   });
 
-  factory Conversation.fromFirestore(Map<String, dynamic> data, String documentId) {
+  factory Conversation.fromFirestore(
+      Map<String, dynamic> data, String documentId) {
     return Conversation(
       id: documentId,
       participant1Id: data['participant1Id'] ?? '',
@@ -43,6 +59,13 @@ class Conversation {
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
+      adId: data['adId']?.toString(),
+      adTitle: data['adTitle']?.toString(),
+      adPrice: data['adPrice']?.toString(),
+      adImageUrl: data['adImageUrl']?.toString(),
+      adStatus: data['adStatus']?.toString(),
+      buyerId: data['buyerId']?.toString(),
+      sellerId: data['sellerId']?.toString(),
     );
   }
 
@@ -57,17 +80,21 @@ class Conversation {
       'unreadCount2': unreadCount2,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      if (adId != null) 'adId': adId,
+      if (adTitle != null) 'adTitle': adTitle,
+      if (adPrice != null) 'adPrice': adPrice,
+      if (adImageUrl != null) 'adImageUrl': adImageUrl,
+      if (adStatus != null) 'adStatus': adStatus,
+      if (buyerId != null) 'buyerId': buyerId,
+      if (sellerId != null) 'sellerId': sellerId,
     };
   }
 
-  // Helper method to get the other participant's ID
   String getOtherParticipantId(String currentUserId) {
     return currentUserId == participant1Id ? participant2Id : participant1Id;
   }
 
-  // Helper method to get unread count for current user
   int getUnreadCountForUser(String currentUserId) {
     return currentUserId == participant1Id ? unreadCount1 : unreadCount2;
   }
 }
-

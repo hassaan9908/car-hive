@@ -7,6 +7,7 @@ import 'package:carhive/pages/chat.dart';
 import 'package:carhive/pages/profilepage.dart';
 import 'package:carhive/pages/upload.dart';
 import 'package:carhive/pages/car_details_page.dart';
+import 'package:carhive/pages/market_pulse_page.dart';
 import 'package:carhive/pages/map_view_screen.dart';
 import 'package:carhive/pages/saved_ads_page.dart';
 import 'package:carhive/models/ad_model.dart';
@@ -30,7 +31,9 @@ import 'widgets/gradient_scaffold_wrapper.dart';
 import 'pages/blog_list_page.dart';
 import 'pages/video_list_page.dart';
 import 'pages/help_page.dart';
+import 'pages/support_chat_page.dart';
 import 'pages/chat_detail_page.dart';
+import 'pages/my_visits_page.dart';
 import 'screens/video_capture_360_screen.dart';
 import 'screens/debug_360_screen.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
@@ -173,6 +176,7 @@ class MyApp extends StatelessWidget {
               '/myads': (context) => const Myads(),
               '/profile': (context) => const Profilepage(),
               '/help': (context) => const HelpPage(),
+              '/support-chat': (context) => const SupportChatPage(),
               '/notifications': (context) => const Chat(),
               '/chat-detail': (context) {
                 final args = ModalRoute.of(context)?.settings.arguments;
@@ -188,6 +192,7 @@ class MyApp extends StatelessWidget {
                 );
               },
               '/investment': (context) => const Mutualinvestment(),
+              '/marketpulse': (context) => const MarketPulsePage(),
               '/upload': (context) => const Upload(),
               'loginscreen': (context) => const Loginscreen(),
               '/admin': (context) => const AdminMain(),
@@ -196,6 +201,7 @@ class MyApp extends StatelessWidget {
               '/videos': (context) => const VideoListPage(), // Add this route
               '/saved-ads': (context) =>
                   const SavedAdsPage(), // Add saved ads route
+              '/my-visits': (context) => const MyVisitsPage(),
               '/video-360-capture': (context) => const VideoCapture360Screen(),
               '/debug-360': (context) => const Debug360Screen(),
               '/car-details': (context) {

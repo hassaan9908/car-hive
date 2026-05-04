@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/pages/insightmetricsscreen.dart';
 import 'package:carhive/pages/promote_ad_page.dart';
@@ -27,6 +29,25 @@ class _MyadsState extends State<Myads> {
   final int _selectedIndex = 1;
 
   final List<String> _tabs = ['Ads', 'Sold', 'Removed'];
+  Timer? _promotionRefreshTimer;
+
+  static const Duration _promotionRefreshInterval = Duration(seconds: 10);
+
+  @override
+  void initState() {
+    super.initState();
+    _promotionRefreshTimer = Timer.periodic(_promotionRefreshInterval, (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _promotionRefreshTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -263,6 +284,7 @@ class _MyadsState extends State<Myads> {
             final activeAds = activeSnapshot.data ?? [];
             final pendingAds = pendingSnapshot.data ?? [];
             final allAds = [...activeAds, ...pendingAds];
+            allAds.sort(_compareAdsForDisplay);
 
             if (allAds.isEmpty) {
               return _buildAdPlaceholder(
@@ -387,504 +409,470 @@ class _MyadsState extends State<Myads> {
   }
 
   Widget _buildAdCard(AdModel ad) {
-    final cs = Theme.of(context).colorScheme;
-
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isPromoted = _isPromotionActive(ad);
     Color statusColor;
     String statusLabel;
-    IconData statusIcon;
     switch (ad.status) {
       case 'active':
-        statusColor = Colors.green;
+        statusColor = const Color(0xFF2ECC71);
         statusLabel = 'Active';
-        statusIcon = Icons.check_circle;
         break;
       case 'pending':
-        statusColor = Colors.amber[700]!;
-        statusLabel = 'Pending Review';
-        statusIcon = Icons.hourglass_bottom;
+        statusColor = const Color(0xFFF5B041);
+        statusLabel = 'Pending';
         break;
       case 'sold':
-        statusColor = Colors.blue;
+        statusColor = const Color(0xFF5DADE2);
         statusLabel = 'Sold';
-        statusIcon = Icons.sell;
         break;
       case 'removed':
-        statusColor = Colors.red;
+        statusColor = colorScheme.error;
         statusLabel = 'Expired';
-        statusIcon = Icons.cancel;
         break;
       default:
-        statusColor = cs.onSurfaceVariant;
+        statusColor = colorScheme.onSurfaceVariant;
         statusLabel = ad.status;
-        statusIcon = Icons.info_outline;
     }
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      elevation: 1,
-      color: cs.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top content row (thumbnail + details + price)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
-                      ? Image.network(
-                          ad.imageUrls!.first,
-                          width: 96,
-                          height: 80,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              width: 96,
-                              height: 80,
-                              color: cs.surfaceContainerHighest,
-                              child: Icon(Icons.directions_car_filled,
-                                  size: 32, color: cs.onSurfaceVariant),
-                            );
-                          },
-                        )
-                      : Container(
-                          width: 96,
-                          height: 80,
-                          color: cs.surfaceContainerHighest,
-                          child: Icon(Icons.directions_car_filled,
-                              size: 32, color: cs.onSurfaceVariant),
-                        ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        (ad.title.isNotEmpty
-                            ? ad.title
-                            : (ad.carBrand ?? 'Car')),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: cs.onSurface,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${ad.year}  •  ${ad.mileage} km',
-                              style: TextStyle(
-                                  color: cs.onSurfaceVariant, fontSize: 15),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color:
+              isPromoted ? const Color(0xFFFFD700) : colorScheme.outlineVariant,
+          width: isPromoted ? 2.0 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.12),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child:
+          _buildAdCardContent(ad, colorScheme, theme, statusColor, statusLabel),
+    );
+  }
+
+  Widget _buildAdCardContent(
+    AdModel ad,
+    ColorScheme colorScheme,
+    ThemeData theme,
+    Color statusColor,
+    String statusLabel,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Stack(
+                  children: [
+                    (ad.imageUrls != null && ad.imageUrls!.isNotEmpty)
+                        ? Image.network(
+                            ad.imageUrls!.first,
+                            width: 92,
+                            height: 92,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 92,
+                                height: 92,
+                                color: colorScheme.surfaceContainerHighest,
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  Icons.directions_car_filled,
+                                  color: colorScheme.onSurfaceVariant,
+                                  size: 30,
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            width: 92,
+                            height: 92,
+                            color: colorScheme.surfaceContainerHighest,
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.directions_car_filled,
+                              color: colorScheme.onSurfaceVariant,
+                              size: 30,
                             ),
                           ),
-                          // Status pill for sold ads only
-                          if (ad.status == 'sold')
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: statusColor.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(statusIcon,
-                                      color: statusColor, size: 12),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    statusLabel,
-                                    style: TextStyle(
-                                        color: statusColor,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'PKR ${ad.price}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: cs.primary,
-                          fontWeight: FontWeight.w700,
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        height: 30,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Color(0x99000000),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Bottom action row (status + actions) - Split into two rows for better layout
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // First row: Status pill and edit/delete icons (not for sold ads)
-                if (ad.status != 'sold')
-                  Row(
-                    children: [
-                      // Status pill
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(statusIcon, color: statusColor, size: 14),
-                            const SizedBox(width: 6),
-                            Text(
-                              statusLabel,
-                              style: TextStyle(
-                                  color: statusColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Spacer(),
-
-                      // Edit and Delete buttons
-                      // Edit icon
-                      _roundIconButton(
-                        icon: Icons.edit,
-                        onPressed: () {
-                          // Navigate directly to PostAdCar screen with ad data for editing
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const PostAdCar(),
-                              settings: RouteSettings(
-                                arguments: {
-                                  'isEditing': true,
-                                  'adId': ad.id,
-                                  'adData': {
-                                    'title': ad.title,
-                                    'carBrand': ad.carBrand,
-                                    'year': ad.year,
-                                    'price': ad.price,
-                                    'mileage': ad.mileage,
-                                    'fuel': ad.fuel,
-                                    'description': ad.description,
-                                    'location': ad.location,
-                                    'imageUrls': ad.imageUrls,
-                                    'registeredIn': ad.registeredIn,
-                                    'bodyColor': ad.bodyColor,
-                                    'kmsDriven': ad.kmsDriven,
-                                  },
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      // Delete or Remove depending on status
-                      _roundIconButton(
-                        icon: ad.status == 'removed'
-                            ? Icons.delete_forever
-                            : Icons.delete,
-                        onPressed: () async {
-                          if (ad.status == 'removed') {
-                            // Permanently delete removed ads
-                            try {
-                              await GlobalAdStore().deleteAd(ad.id!);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Ad deleted permanently')),
-                              );
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text('Failed to delete ad: $e')),
-                              );
-                            }
-                          } else if (ad.status == 'active') {
-                            // Show popup for active ads asking if sold or removed
-                            _showDeleteActiveAdDialog(ad);
-                          } else if (ad.status == 'pending') {
-                            // Pending ads can only be removed
-                            try {
-                              await GlobalAdStore()
-                                  .updateAdStatus(ad.id!, 'removed');
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Ad moved to removed')),
-                              );
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text('Failed to remove ad: $e')),
-                              );
-                            }
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-
-                // Additional info for sold ads or insights/promote buttons for other statuses
-                if (ad.status == 'sold') ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: cs.outline.withOpacity(0.2),
-                        width: 1,
                       ),
                     ),
-                    child: Column(
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildInfoColumn(
-                                context,
-                                Icons.location_on,
-                                'Location',
-                                ad.location,
-                              ),
+                        Expanded(
+                          child: Text(
+                            ad.title.isNotEmpty
+                                ? ad.title
+                                : (ad.carBrand ?? 'Car'),
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
                             ),
-                            Container(
-                              width: 1,
-                              height: 40,
-                              color: cs.outline.withOpacity(0.2),
-                            ),
-                            Expanded(
-                              child: _buildInfoColumn(
-                                context,
-                                Icons.local_gas_station,
-                                'Fuel',
-                                ad.fuel.isNotEmpty ? ad.fuel : 'N/A',
-                              ),
-                            ),
-                            if (ad.bodyColor != null &&
-                                ad.bodyColor!.isNotEmpty) ...[
-                              Container(
-                                width: 1,
-                                height: 40,
-                                color: cs.outline.withOpacity(0.2),
-                              ),
-                              Expanded(
-                                child: _buildInfoColumn(
-                                  context,
-                                  Icons.palette,
-                                  'Color',
-                                  ad.bodyColor!,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.purple,
-                            borderRadius: BorderRadius.circular(18),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          child: ElevatedButton.icon(
+                        ),
+                        if (ad.status != 'sold') ...[
+                          const SizedBox(width: 8),
+                          _hoverActionIcon(
+                            icon: Icons.edit_outlined,
+                            color: colorScheme.onSurfaceVariant,
                             onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => InsightMetricsScreen(ad: ad),
+                                  builder: (context) => const PostAdCar(),
+                                  settings: RouteSettings(
+                                    arguments: {
+                                      'isEditing': true,
+                                      'adId': ad.id,
+                                      'adData': {
+                                        'title': ad.title,
+                                        'carBrand': ad.carBrand,
+                                        'carName': ad.carName,
+                                        'year': ad.year,
+                                        'price': ad.price,
+                                        'mileage': ad.mileage,
+                                        'fuel': ad.fuel,
+                                        'description': ad.description,
+                                        'location': ad.location,
+                                        'locationCoordinates':
+                                            ad.locationCoordinates,
+                                        'imageUrls': ad.imageUrls,
+                                        'images360Urls': ad.images360Urls,
+                                        'registeredIn': ad.registeredIn,
+                                        'bodyColor': ad.bodyColor,
+                                        'kmsDriven': ad.kmsDriven,
+                                        'name': ad.name,
+                                        'phone': ad.phone,
+                                      },
+                                    },
+                                  ),
                                 ),
                               );
                             },
-                            icon: const Icon(Icons.analytics,
-                                size: 16, color: Colors.white),
-                            label: const Text(
-                              'View Stats',
-                              style:
-                                  TextStyle(fontSize: 13, color: Colors.white),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              elevation: 0,
-                            ),
                           ),
+                          const SizedBox(width: 6),
+                        ],
+                        _hoverActionIcon(
+                          icon: ad.status == 'removed'
+                              ? Icons.delete_forever_outlined
+                              : Icons.delete_outline,
+                          color: colorScheme.error,
+                          onPressed: () async {
+                            if (ad.status == 'sold' || ad.status == 'removed') {
+                              try {
+                                await GlobalAdStore().deleteAd(ad.id!);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('Ad deleted permanently')),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text('Failed to delete ad: $e')),
+                                );
+                              }
+                            } else if (ad.status == 'active') {
+                              _showDeleteActiveAdDialog(ad);
+                            } else if (ad.status == 'pending') {
+                              try {
+                                await GlobalAdStore()
+                                    .updateAdStatus(ad.id!, 'removed');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('Ad moved to removed')),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text('Failed to remove ad: $e')),
+                                );
+                              }
+                            }
+                          },
                         ),
                       ],
                     ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${ad.year.isNotEmpty ? ad.year : 'Model'}  •  ${ad.mileage} km',
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'PKR ${ad.price}',
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: statusColor.withValues(alpha: 0.7),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Divider(
+            color: colorScheme.outlineVariant,
+            height: 1,
+            thickness: 1,
+          ),
+          const SizedBox(height: 12),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 38,
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => InsightMetricsScreen(ad: ad),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.analytics_outlined, size: 15),
+                    label: const Text('Insights'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF9B59B6),
+                      side: const BorderSide(
+                        color: Color(0xFF9B59B6),
+                        width: 1,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                    ),
                   ),
-                ] else ...[
-                  // Second row: Insights and Promote buttons
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 40,
-                    child: Row(
-                      children: [
-                        // VIEW INSIGHTS BUTTON
-                        Expanded(
-                          child: Container(
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.purple,
-                              borderRadius: BorderRadius.circular(20),
+                ),
+                if (ad.status != 'sold') ...[
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        if (ad.status == 'removed') {
+                          try {
+                            final previousStatus =
+                                ad.previousStatus ?? 'active';
+                            await GlobalAdStore().reactivateAd(ad.id!,
+                                previousStatus: previousStatus);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Ad relisted')),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content: Text('Failed to relist ad: $e')),
+                            );
+                          }
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PromoteAdPage(ad: ad),
                             ),
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        InsightMetricsScreen(ad: ad),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.analytics, size: 16),
-                              label: const Text("Insights",
-                                  style: TextStyle(fontSize: 13)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 0),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20)),
-                                textStyle: const TextStyle(
-                                    fontWeight: FontWeight.w600),
-                                elevation: 0,
-                                minimumSize: const Size(0, 40),
-                                maximumSize: const Size(double.infinity, 40),
-                              ),
-                            ),
-                          ),
+                          );
+                        }
+                      },
+                      icon: Icon(
+                        ad.status == 'removed'
+                            ? Icons.refresh_rounded
+                            : Icons.rocket_launch_outlined,
+                        size: 15,
+                      ),
+                      label:
+                          Text(ad.status == 'removed' ? 'Relist' : 'Promote'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: colorScheme.onPrimary,
+                        backgroundColor: colorScheme.primary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(width: 12),
-                        // Promote / Relist CTA
-                        Expanded(
-                          child: Container(
-                            height: 40,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      const Color(0xFFFF6B35).withOpacity(0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                if (ad.status == 'removed') {
-                                  try {
-                                    // Use the actual previousStatus from the ad, fallback to 'active' if not available
-                                    final previousStatus =
-                                        ad.previousStatus ?? 'active';
-                                    await GlobalAdStore().reactivateAd(ad.id!,
-                                        previousStatus: previousStatus);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text('Ad relisted')),
-                                    );
-                                  } catch (e) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content:
-                                              Text('Failed to relist ad: $e')),
-                                    );
-                                  }
-                                } else {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          PromoteAdPage(ad: ad),
-                                    ),
-                                  );
-                                }
-                              },
-                              icon: Icon(
-                                  ad.status == 'removed'
-                                      ? Icons.refresh
-                                      : Icons.rocket_launch,
-                                  size: 16),
-                              label: Text(
-                                ad.status == 'removed' ? 'Relist' : 'Promote',
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 0),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20)),
-                                textStyle: const TextStyle(
-                                    fontWeight: FontWeight.w600),
-                                elevation: 0,
-                                minimumSize: const Size(0, 40),
-                                maximumSize: const Size(double.infinity, 40),
-                              ),
-                            ),
-                          ),
+                        textStyle: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
                         ),
-                      ],
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                      ),
                     ),
                   ),
                 ],
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _roundIconButton(
-      {required IconData icon, required VoidCallback onPressed}) {
-    final cs = Theme.of(context).colorScheme;
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: Material(
-        color: cs.surfaceContainerHighest,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: Icon(icon, size: 18, color: cs.onSurfaceVariant),
-        ),
+  bool _isPromotionActive(AdModel ad) {
+    final promotedUntil = _resolvePromotionExpiry(ad);
+    if (promotedUntil == null) {
+      return false;
+    }
+
+    return DateTime.now().isBefore(promotedUntil);
+  }
+
+  DateTime? _resolvePromotionExpiry(AdModel ad) {
+    final promotedUntil = ad.promotedUntil;
+    if (promotedUntil != null) {
+      return promotedUntil;
+    }
+
+    final purchasedAt = ad.promotionPurchasedAt;
+    final durationDays = ad.promotionDurationDays ??
+        _promotionDurationDaysFromPackage(ad.promotionPackage);
+    if (purchasedAt != null && durationDays != null) {
+      return purchasedAt.add(Duration(days: durationDays));
+    }
+
+    return null;
+  }
+
+  int? _promotionDurationDaysFromPackage(String? packageId) {
+    switch (packageId) {
+      case 'basic':
+        return 3;
+      case 'premium':
+        return 7;
+      case 'ultimate':
+        return 14;
+      default:
+        return null;
+    }
+  }
+
+  int _compareAdsForDisplay(AdModel a, AdModel b) {
+    final aPromoted = _isPromotionActive(a);
+    final bPromoted = _isPromotionActive(b);
+
+    if (aPromoted != bPromoted) {
+      return aPromoted ? -1 : 1;
+    }
+
+    if (aPromoted && bPromoted) {
+      final aPromotedUntil =
+          a.promotedUntil ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bPromotedUntil =
+          b.promotedUntil ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final promotedCompare = bPromotedUntil.compareTo(aPromotedUntil);
+      if (promotedCompare != 0) {
+        return promotedCompare;
+      }
+    }
+
+    final aCreatedAt = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bCreatedAt = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return bCreatedAt.compareTo(aCreatedAt);
+  }
+
+  Widget _hoverActionIcon({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      splashRadius: 18,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+      style: ButtonStyle(
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          final isHovered = states.contains(WidgetState.hovered);
+          return color.withValues(alpha: isHovered ? 1 : 0.7);
+        }),
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
       ),
     );
   }
