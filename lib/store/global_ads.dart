@@ -61,9 +61,16 @@ class GlobalAdStore {
         return true;
       }).toList();
 
-      // Sort in memory instead of in Firestore to avoid index requirements
-      activeAds.sort((a, b) => (b.createdAt ?? DateTime.now())
-          .compareTo(a.createdAt ?? DateTime.now()));
+      // Sort in memory: promoted ads first, then by createdAt
+      activeAds.sort((a, b) {
+        final aIsPromoted =
+            a.promotedUntil != null && a.promotedUntil!.isAfter(now);
+        final bIsPromoted =
+            b.promotedUntil != null && b.promotedUntil!.isAfter(now);
+        if (aIsPromoted && !bIsPromoted) return -1;
+        if (!aIsPromoted && bIsPromoted) return 1;
+        return (b.createdAt ?? now).compareTo(a.createdAt ?? now);
+      });
       return activeAds;
     });
   }
@@ -129,9 +136,7 @@ class GlobalAdStore {
         return true;
       }).toList();
 
-      // Sort in memory
-      userAds.sort((a, b) => (b.createdAt ?? DateTime.now())
-          .compareTo(a.createdAt ?? DateTime.now()));
+      // Don't sort here - let the caller handle sorting based on their needs
       return userAds;
     });
   }
@@ -163,9 +168,7 @@ class GlobalAdStore {
         return true;
       }).toList();
 
-      // Sort in memory
-      userAdsByStatus.sort((a, b) => (b.createdAt ?? DateTime.now())
-          .compareTo(a.createdAt ?? DateTime.now()));
+      // Don't sort here - let the caller handle sorting based on their needs
       return userAdsByStatus;
     });
   }
@@ -197,8 +200,7 @@ class GlobalAdStore {
         return true;
       }).toList();
 
-      userAds.sort((a, b) => (b.createdAt ?? DateTime.now())
-          .compareTo(a.createdAt ?? DateTime.now()));
+      // Don't sort here - let the caller handle sorting based on their needs
       return userAds;
     });
   }

@@ -29,6 +29,7 @@ class _PromoteAdPageState extends State<PromoteAdPage>
       'id': 'basic',
       'name': 'Basic Boost',
       'price': 1500,
+      'days': 3,
       'duration': '3 Days',
       'features': [
         'Featured in search results',
@@ -43,6 +44,7 @@ class _PromoteAdPageState extends State<PromoteAdPage>
       'id': 'premium',
       'name': 'Premium Spotlight',
       'price': 3500,
+      'days': 7,
       'duration': '7 Days',
       'features': [
         'Top of search results',
@@ -60,6 +62,7 @@ class _PromoteAdPageState extends State<PromoteAdPage>
       'id': 'ultimate',
       'name': 'Ultimate Package',
       'price': 6000,
+      'days': 14,
       'duration': '14 Days',
       'features': [
         'Guaranteed top position',
@@ -102,6 +105,9 @@ class _PromoteAdPageState extends State<PromoteAdPage>
     final package =
         promotionPackages.firstWhere((p) => p['id'] == selectedPackage);
     final amount = package['price'] as int;
+    final durationDays = package['days'] as int;
+    final promotionStartedAt = DateTime.now();
+    final promotedUntil = promotionStartedAt.add(Duration(days: durationDays));
 
     setState(() {
       _isProcessing = true;
@@ -171,6 +177,10 @@ class _PromoteAdPageState extends State<PromoteAdPage>
               'isPromoted': true,
               'promotionPackage': package['id'],
               'promotionAmount': amount,
+              'promotionDurationDays': durationDays,
+              'promotionStartedAt': Timestamp.fromDate(promotionStartedAt),
+              'promotedAt': Timestamp.fromDate(promotionStartedAt),
+              'promotedUntil': Timestamp.fromDate(promotedUntil),
               'promotionPurchasedAt': FieldValue.serverTimestamp(),
             }, SetOptions(merge: true));
 
