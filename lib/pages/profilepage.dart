@@ -124,10 +124,6 @@ class Profilepage extends StatelessWidget {
                       onTap: () => _showThemeBottomSheet(context),
                     );
                   }),
-                  _dividerInset(context),
-                  _settingsTile(context, Icons.language, 'Choose Language',
-                      onTap: () {}),
-                  _dividerInset(context),
                 ]),
 
                 const SizedBox(height: 16),
@@ -157,10 +153,7 @@ class Profilepage extends StatelessWidget {
                     _dividerInset(context),
                     _settingsTile(context, Icons.ondemand_video, 'Videos',
                         onTap: () => _navigateToVideos(context)),
-                    _dividerInset(context),
                   ],
-                  _settingsTile(context, Icons.directions_car, 'Cool Rides',
-                      onTap: () {}),
                 ]),
 
                 const SizedBox(height: 16),
@@ -179,10 +172,6 @@ class Profilepage extends StatelessWidget {
                         onTap: () => _navigateToMyVisits(context)),
                     _dividerInset(context),
                   ],
-                  _settingsTile(
-                      context, Icons.reviews_outlined, 'Rate & Review',
-                      onTap: () {}),
-                  _dividerInset(context),
                   _settingsTile(context, Icons.help_outline, 'Help',
                       onTap: () => Navigator.pushNamed(context, '/help')),
                 ]),

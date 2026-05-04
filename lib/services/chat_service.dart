@@ -69,6 +69,90 @@ class ChatService {
     return conversationId;
   }
 
+  // Get or create a conversation linked to a specific ad listing.
+  // Records the current user as buyerId and stores ad metadata.
+  Future<String> getOrCreateConversationForAd(
+    String otherUserId, {
+    String? adId,
+    String? adTitle,
+    String? adPrice,
+    String? adImageUrl,
+    String? adStatus,
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) throw Exception('User not authenticated');
+
+    final currentUserId = currentUser.uid;
+    final String participant1Id;
+    final String participant2Id;
+    if (currentUserId.compareTo(otherUserId) < 0) {
+      participant1Id = currentUserId;
+      participant2Id = otherUserId;
+    } else {
+      participant1Id = otherUserId;
+      participant2Id = currentUserId;
+    }
+
+    final conversationId = '${participant1Id}_$participant2Id';
+
+    try {
+      final doc = await _firestore
+          .collection('conversations')
+          .doc(conversationId)
+          .get();
+      if (doc.exists) {
+        // Patch missing fields without overwriting existing ones
+        final data = doc.data()!;
+        final updates = <String, dynamic>{};
+        if (data['buyerId'] == null) updates['buyerId'] = currentUserId;
+        if (data['sellerId'] == null) updates['sellerId'] = otherUserId;
+        if (data['adId'] == null && adId != null) {
+          updates['adId'] = adId;
+          if (adTitle != null) updates['adTitle'] = adTitle;
+          if (adPrice != null) updates['adPrice'] = adPrice;
+          if (adImageUrl != null) updates['adImageUrl'] = adImageUrl;
+          updates['adStatus'] = adStatus ?? 'active';
+        }
+        if (updates.isNotEmpty) {
+          await _firestore
+              .collection('conversations')
+              .doc(conversationId)
+              .update(updates);
+        }
+        return conversationId;
+      }
+    } catch (e) {
+      print('Could not read conversation, will try to create: $e');
+    }
+
+    final now = DateTime.now();
+    final data = <String, dynamic>{
+      'participant1Id': participant1Id,
+      'participant2Id': participant2Id,
+      'lastMessage': '',
+      'lastMessageTime': Timestamp.fromDate(now),
+      'lastMessageSenderId': '',
+      'unreadCount1': 0,
+      'unreadCount2': 0,
+      'createdAt': Timestamp.fromDate(now),
+      'updatedAt': Timestamp.fromDate(now),
+      'buyerId': currentUserId,
+      'sellerId': otherUserId,
+      if (adId != null) 'adId': adId,
+      if (adTitle != null) 'adTitle': adTitle,
+      if (adPrice != null) 'adPrice': adPrice,
+      if (adImageUrl != null) 'adImageUrl': adImageUrl,
+      'adStatus': adStatus ?? 'active',
+    };
+
+    await _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .set(data, SetOptions(merge: true));
+
+    return conversationId;
+  }
+
   // Send a message
   Future<void> sendMessage(String receiverId, String message) async {
     final currentUser = _auth.currentUser;
@@ -299,26 +383,55 @@ class ChatService {
     await batch.commit();
   }
 
-  /// Get total unread message count across all conversations for current user
+  /// Get total unread message count across all conversations for current user.
+  /// Combines participant1 and participant2 queries to match the data model.
   Stream<int> getTotalUnreadCount() {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      return Stream.value(0);
+    if (currentUser == null) return Stream.value(0);
+
+    final uid = currentUser.uid;
+
+    final stream1 = _firestore
+        .collection('conversations')
+        .where('participant1Id', isEqualTo: uid)
+        .snapshots()
+        .map((s) => s.docs.fold<int>(
+            0, (sum, d) => sum + ((d.data()['unreadCount1'] ?? 0) as int)));
+
+    final stream2 = _firestore
+        .collection('conversations')
+        .where('participant2Id', isEqualTo: uid)
+        .snapshots()
+        .map((s) => s.docs.fold<int>(
+            0, (sum, d) => sum + ((d.data()['unreadCount2'] ?? 0) as int)));
+
+    final controller = StreamController<int>();
+    int total1 = 0, total2 = 0;
+    bool has1 = false, has2 = false;
+
+    void emit() {
+      if (has1 && has2 && !controller.isClosed) {
+        controller.add(total1 + total2);
+      }
     }
 
-    return _firestore
-        .collection('conversations')
-        .where('participants', arrayContains: currentUser.uid)
-        .snapshots()
-        .map((snapshot) {
-      int totalUnread = 0;
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final unreadCount = data['unreadCount'] as Map<String, dynamic>? ?? {};
-        totalUnread += (unreadCount[currentUser.uid] ?? 0) as int;
-      }
-      return totalUnread;
-    });
+    final sub1 = stream1.listen((t) {
+      total1 = t;
+      has1 = true;
+      emit();
+    }, onError: (_) {});
+    final sub2 = stream2.listen((t) {
+      total2 = t;
+      has2 = true;
+      emit();
+    }, onError: (_) {});
+
+    controller.onCancel = () {
+      sub1.cancel();
+      sub2.cancel();
+    };
+
+    return controller.stream;
   }
 
   // Helper method to determine if current user is participant1
