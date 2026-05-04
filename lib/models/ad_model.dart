@@ -26,6 +26,11 @@ class AdModel {
   final Map<String, double>? locationCoordinates;
   final List<String>? images360Urls;
   final DateTime? expiresAt;
+  final DateTime? promotedAt;
+  final DateTime? promotedUntil;
+  final DateTime? promotionPurchasedAt;
+  final int? promotionDurationDays;
+  final String? promotionPackage;
 
   AdModel({
     required this.title,
@@ -53,6 +58,11 @@ class AdModel {
     this.locationCoordinates,
     this.images360Urls,
     this.expiresAt,
+    this.promotedAt,
+    this.promotedUntil,
+    this.promotionPurchasedAt,
+    this.promotionDurationDays,
+    this.promotionPackage,
   });
 
   // -----------------------------
@@ -305,6 +315,17 @@ class AdModel {
       locationCoordinates: locationCoords,
       images360Urls: images360UrlsList,
       expiresAt: _parseCreatedAt(data['expiresAt']),
+      promotedAt: _parseCreatedAt(data['promotedAt']),
+      promotedUntil: _parseCreatedAt(data['promotedUntil']),
+      promotionPurchasedAt: _parseCreatedAt(data['promotionPurchasedAt']),
+      promotionDurationDays: data['promotionDurationDays'] is int
+          ? data['promotionDurationDays'] as int
+          : (data['promotionDurationDays'] is num
+              ? (data['promotionDurationDays'] as num).toInt()
+              : null),
+      promotionPackage: _asString(data['promotionPackage']).isEmpty
+          ? null
+          : _asString(data['promotionPackage']),
     );
   }
 
@@ -336,6 +357,14 @@ class AdModel {
       'imageUrls': imageUrls,
       'images360Urls': images360Urls,
       'expiresAt': expiresAt != null ? Timestamp.fromDate(expiresAt!) : null,
+      'promotedAt': promotedAt != null ? Timestamp.fromDate(promotedAt!) : null,
+      'promotedUntil':
+          promotedUntil != null ? Timestamp.fromDate(promotedUntil!) : null,
+      'promotionPurchasedAt': promotionPurchasedAt != null
+          ? Timestamp.fromDate(promotionPurchasedAt!)
+          : null,
+      'promotionDurationDays': promotionDurationDays,
+      'promotionPackage': promotionPackage,
     };
 
     if (locationCoordinates != null) {

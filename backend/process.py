@@ -15,6 +15,7 @@ import uuid
 from pathlib import Path
 import requests
 import base64
+import imageio_ffmpeg
 
 app = FastAPI()
 
@@ -43,11 +44,13 @@ CLOUDINARY_CLOUD_NAME = "dkcpilqiq"
 CLOUDINARY_UPLOAD_PRESET = "unsigned_preset"
 CLOUDINARY_UPLOAD_URL = f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload"
 
-# FFmpeg configuration
-# If FFmpeg is not in PATH, specify the full path here
-# Example: FFMPEG_PATH = r"C:\ffmpeg\bin\ffmpeg.exe"
-FFMPEG_PATH = r"C:\Users\Administrator\AppData\Local\ffmpeg-2025-12-04-git-d6458f6a8b-essentials_build\bin\ffmpeg.exe"  # Direct path to FFmpeg executable
-# Alternative: Set environment variable FFMPEG_PATH and use: FFMPEG_PATH = os.getenv('FFMPEG_PATH', None)
+# FFmpeg configuration - use bundled ffmpeg from imageio-ffmpeg package
+try:
+    FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
+    print(f"Using bundled FFmpeg: {FFMPEG_PATH}")
+except Exception as e:
+    print(f"Warning: Could not get bundled ffmpeg: {e}")
+    FFMPEG_PATH = None
 
 
 def extract_frames(video_path, output_dir):
@@ -132,11 +135,12 @@ def extract_frames(video_path, output_dir):
         output_pattern = os.path.join(output_dir, "frame_%04d.jpg")
         
         # Build FFmpeg command - use full path to FFmpeg
+        # Use fps=15 for faster processing (reduced from 30)
         cmd = [
             ffmpeg_exe,
             '-i', video_path,
-            '-vf', 'fps=30',
-            '-qscale:v', '2',
+            '-vf', 'fps=15',
+            '-qscale:v', '3',  # Slightly lower quality (3 instead of 2) for speed
             '-y',  # Overwrite output files
             output_pattern
         ]
@@ -173,7 +177,7 @@ def extract_frames(video_path, output_dir):
 
 
 def stabilize_frames(input_dir, output_dir):
-    """Stabilize frames using optical flow."""
+    """Stabilize frames using optical flow with resized frames for speed."""
     os.makedirs(output_dir, exist_ok=True)
     
     frames = sorted([f for f in os.listdir(input_dir) if f.endswith('.jpg')])
@@ -184,6 +188,11 @@ def stabilize_frames(input_dir, output_dir):
     if prev is None:
         raise Exception(f"Failed to read first frame: {frames[0]}")
     
+    # Resize for faster optical flow computation (50% scale)
+    original_h, original_w = prev.shape[:2]
+    scale_factor = 0.5
+    prev = cv2.resize(prev, (int(original_w * scale_factor), int(original_h * scale_factor)))
+    
     prev_gray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
     
     transforms = []
@@ -193,6 +202,9 @@ def stabilize_frames(input_dir, output_dir):
         curr = cv2.imread(os.path.join(input_dir, frames[idx]))
         if curr is None:
             continue
+        
+        # Resize for faster computation
+        curr = cv2.resize(curr, (int(original_w * scale_factor), int(original_h * scale_factor)))
         
         curr_gray = cv2.cvtColor(curr, cv2.COLOR_BGR2GRAY)
         
@@ -247,7 +259,7 @@ def stabilize_frames(input_dir, output_dir):
     else:
         smoothed = [(0.0, 0.0)] * len(transforms)
     
-    # Apply stabilization
+    # Apply stabilization to original-sized frames
     cumulative_dx = 0.0
     cumulative_dy = 0.0
     
@@ -258,8 +270,11 @@ def stabilize_frames(input_dir, output_dir):
         
         if idx > 0:
             dx, dy = smoothed[idx - 1]
-            cumulative_dx += dx
-            cumulative_dy += dy
+            # Scale up transforms back to original frame size
+            dx_scaled = dx / scale_factor
+            dy_scaled = dy / scale_factor
+            cumulative_dx += dx_scaled
+            cumulative_dy += dy_scaled
             
             # Create transformation matrix
             M = np.float32([[1, 0, -cumulative_dx], [0, 1, -cumulative_dy]])
@@ -269,7 +284,7 @@ def stabilize_frames(input_dir, output_dir):
 
 
 def compute_rotation_positions(stabilized_dir):
-    """Compute rotation positions from stabilized frames."""
+    """Compute rotation positions from stabilized frames (using resized frames for speed)."""
     files = sorted([f for f in os.listdir(stabilized_dir) if f.endswith('.jpg')])
     if not files:
         raise Exception("No stabilized frames found")
@@ -280,6 +295,9 @@ def compute_rotation_positions(stabilized_dir):
     if prev is None:
         raise Exception("Failed to read first stabilized frame")
     
+    # Resize for faster optical flow computation (50% scale)
+    scale_factor = 0.5
+    prev = cv2.resize(prev, (int(prev.shape[1] * scale_factor), int(prev.shape[0] * scale_factor)))
     prev_gray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
     
     for f in files[1:]:
@@ -287,6 +305,9 @@ def compute_rotation_positions(stabilized_dir):
         if curr is None:
             positions.append(positions[-1])
             continue
+        
+        # Resize for faster computation
+        curr = cv2.resize(curr, (int(curr.shape[1] * scale_factor), int(curr.shape[0] * scale_factor)))
         
         curr_gray = cv2.cvtColor(curr, cv2.COLOR_BGR2GRAY)
         
@@ -335,7 +356,7 @@ def compute_rotation_positions(stabilized_dir):
     return files, norm
 
 
-def resample_to_360(files, positions, target_frames=90):
+def resample_to_360(files, positions, target_frames=60):
     """Resample frames to target number for smooth 360 rotation."""
     positions = np.array(positions)
     desired = np.linspace(0, 1, target_frames)
@@ -478,8 +499,8 @@ async def process_360_video(file: UploadFile = File(...)):
         # Step 3: Compute rotation positions
         files, positions = compute_rotation_positions(str(stabilized_session_dir))
         
-        # Step 4: Resample to 90 frames
-        output_files = resample_to_360(files, positions, target_frames=90)
+        # Step 4: Resample to 60 frames (reduced from 90 for faster processing)
+        output_files = resample_to_360(files, positions, target_frames=60)
         
         # Step 5: Export final frames
         exported_files = export_frames(
