@@ -499,7 +499,7 @@ class _InspectionResultPageState extends State<InspectionResultPage> {
       try {
         final chatService = ChatService();
         final conversationId =
-            await chatService.getOrCreateConversation(widget.sellerId);
+            await chatService.getOrCreateConversationForAd(widget.sellerId);
 
         Navigator.push(
           context,

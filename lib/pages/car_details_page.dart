@@ -198,7 +198,16 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
       try {
         final chatService = ChatService();
         final conversationId =
-            await chatService.getOrCreateConversation(sellerId);
+            await chatService.getOrCreateConversationForAd(
+          sellerId,
+          adId: widget.ad.id,
+          adTitle: widget.ad.title,
+          adPrice: widget.ad.price,
+          adImageUrl: widget.ad.imageUrls?.isNotEmpty == true
+              ? widget.ad.imageUrls![0]
+              : null,
+          adStatus: widget.ad.status,
+        );
 
         Navigator.push(
           context,
@@ -207,6 +216,13 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
               conversationId: conversationId,
               otherUserId: sellerId,
               otherUserName: sellerName,
+              adId: widget.ad.id,
+              adTitle: widget.ad.title,
+              adPrice: widget.ad.price,
+              adImageUrl: widget.ad.imageUrls?.isNotEmpty == true
+                  ? widget.ad.imageUrls![0]
+                  : null,
+              adStatus: widget.ad.status,
             ),
           ),
         );
