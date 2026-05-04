@@ -443,9 +443,9 @@ class _Viewer360ScreenState extends State<Viewer360Screen>
     if (provider == null) {
       // Show loading only if initial precache not complete
       if (!_initialPrecacheComplete) {
-        return const Center(
-          child: CircularProgressIndicator(),
-        );
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
       }
       // Otherwise show black background while loading
       return Container(color: Colors.black);
@@ -455,10 +455,10 @@ class _Viewer360ScreenState extends State<Viewer360Screen>
         scale: _scale,
         alignment: Alignment.center,  // Scale from center to prevent shifting
         child: Image(
-          image: provider,
-          fit: BoxFit.contain,
+      image: provider,
+      fit: BoxFit.contain,
           alignment: Alignment.center,  // Center the image content
-          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
             // Show image if loaded, or if initial precache is complete (will show cached version)
             if (wasSynchronouslyLoaded || frame != null || isLoaded || _initialPrecacheComplete) {
               return child;
@@ -473,12 +473,12 @@ class _Viewer360ScreenState extends State<Viewer360Screen>
                 ),
               ),
             );
-          },
-          errorBuilder: (context, error, stackTrace) =>
-              const Center(child: Icon(Icons.broken_image, color: Colors.white70)),
+      },
+      errorBuilder: (context, error, stackTrace) =>
+          const Center(child: Icon(Icons.broken_image, color: Colors.white70)),
         ),
-      );
-    }
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -506,15 +506,15 @@ class _Viewer360ScreenState extends State<Viewer360Screen>
           onScaleStart: _onScaleStart,
           onScaleUpdate: _onScaleUpdate,
           onScaleEnd: _onScaleEnd,
-          child: Center(
+        child: Center(
             child: SizedBox(
               width: double.infinity,
               height: double.infinity,
-              child: AspectRatio(
-                aspectRatio: 1,
+          child: AspectRatio(
+            aspectRatio: 1,
                 child: ClipRect(
-                  child: _buildCurrentFrame(),
-                ),
+            child: _buildCurrentFrame(),
+          ),
               ),
             ),
           ),

@@ -440,19 +440,6 @@ class _PostAdCarState extends State<PostAdCar> {
   final TextEditingController _mileageController = TextEditingController();
   final TextEditingController _fuelController = TextEditingController();
 
-// @override
-// void dispose () {
-//   _titleController.dispose();
-//   _priceController.dispose();
-//   _locationController.dispose();
-//   _yearController.dispose();
-//   _mileageController.dispose();
-//   _fuelController.dispose();
-//   super.dispose();
-
-// }
-// // relted to postinf add to prevent memory leaks
-
   final List<File> _images = [];
   final List<Uint8List> _webImages = [];
 
@@ -568,19 +555,6 @@ class _PostAdCarState extends State<PostAdCar> {
 
     return imageUrls;
   }
-
-  // this is for mobiel image picker ==========
-
-  // Future<void> _pickImage() async {
-  //   final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-  //   if (picked != null && _images.length < 20) {
-  //     setState(() {
-  //       _images.add(File(picked.path));
-  //     });
-  //   }
-  // }
-
-//  this is added to test on both web and mobile =-=--=-=-=-=-=-=-=-=-=-=-=-==-=-=
 
   void _openLocationSelector() {
     showModalBottomSheet(
@@ -1198,7 +1172,6 @@ class _PostAdCarState extends State<PostAdCar> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ========== Photos & 360° View Section ==========
-              // Container wrapping section header and all photo/360° content
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1274,45 +1247,6 @@ class _PostAdCarState extends State<PostAdCar> {
                             color:
                                 Theme.of(context).colorScheme.surfaceContainer,
                           ),
-
-                          // --==== this is for mobile code of image picker
-                          // child: _images.isEmpty
-                          //     ? const Center(
-                          //         child: Column(
-                          //           mainAxisAlignment: MainAxisAlignment.center,
-                          //           children: [
-                          //             Icon(Icons.camera_alt_outlined,
-                          //                 size: 30, color: Colors.blue),
-                          //             SizedBox(height: 8),
-                          //             Text("Add Photo",
-                          //                 style: TextStyle(color: Colors.blue)),
-                          //           ],
-                          //         ),
-                          //       )
-                          //     : ListView.separated(
-                          //         scrollDirection: Axis.horizontal,
-                          //         padding: const EdgeInsets.all(8),
-                          //         itemCount: _images.length + 1,
-                          //         itemBuilder: (context, index) {
-                          //           if (index == _images.length &&
-                          //               _images.length < 20) {
-                          //             return GestureDetector(
-                          //               onTap: _pickImage,
-                          //               child: Container(
-                          //                 width: 100,
-                          //                 color: Colors.grey.shade200,
-                          //                 child: const Icon(Icons.add),
-                          //               ),
-                          //             );
-                          //           }
-                          //           if (index >= _images.length) return Container();
-                          //           return Image.file(_images[index],
-                          //               width: 100, fit: BoxFit.cover);
-                          //         },
-                          //         separatorBuilder: (_, __) =>
-                          //             const SizedBox(width: 8),
-                          //       ),
-
                           child: _images.isEmpty &&
                                   _webImages.isEmpty &&
                                   _existingImageUrls.isEmpty
@@ -1571,7 +1505,7 @@ class _PostAdCarState extends State<PostAdCar> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '360° View Photos',
+                                  '360° View',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -1599,6 +1533,7 @@ class _PostAdCarState extends State<PostAdCar> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // RESOLVED: keep multi-line style from main
                           if (_video360FrameUrls != null &&
                               _video360FrameUrls!.isNotEmpty)
                             Row(
@@ -1686,53 +1621,174 @@ class _PostAdCarState extends State<PostAdCar> {
                                 ),
                               ),
                             )
+                          // RESOLVED: use feature2's richer frame-preview UI
                           else
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.green.withOpacity(0.1),
-                                border: Border.all(
-                                  color: Colors.green.withOpacity(0.5),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          '360 Video Captured',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${_video360FrameUrls!.length} frames generated',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
+                            Builder(
+                              builder: (context) {
+                                final frameUrls = _video360FrameUrls ?? [];
+                                final frameCount = frameUrls.length;
+
+                                return Column(
+                                  children: [
+                                    Container(
+                                      height: 100,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        color: Colors.grey.shade100,
+                                      ),
+                                      child: ListView.separated(
+                                        scrollDirection: Axis.horizontal,
+                                        padding: const EdgeInsets.all(8),
+                                        itemCount: frameCount + 1,
+                                        separatorBuilder: (_, __) =>
+                                            const SizedBox(width: 8),
+                                        itemBuilder: (context, index) {
+                                          if (index == frameCount) {
+                                            // Edit button
+                                            return GestureDetector(
+                                              onTap: _openVideo360CaptureScreen,
+                                              child: Container(
+                                                width: 80,
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFf48c25)
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                    color:
+                                                        const Color(0xFFf48c25)
+                                                            .withOpacity(0.5),
+                                                  ),
+                                                ),
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(Icons.edit,
+                                                        color: const Color(
+                                                            0xFFf48c25)),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      'Edit',
+                                                      style: TextStyle(
+                                                        color: const Color(
+                                                            0xFFf48c25),
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          return ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            child: Stack(
+                                              children: [
+                                                Image.network(
+                                                  frameUrls[index],
+                                                  width: 80,
+                                                  height: 84,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error,
+                                                      stackTrace) {
+                                                    return Container(
+                                                      width: 80,
+                                                      height: 84,
+                                                      color: Colors.grey[300],
+                                                      child: const Icon(
+                                                          Icons.broken_image),
+                                                    );
+                                                  },
+                                                ),
+                                                Positioned(
+                                                  top: 4,
+                                                  left: 4,
+                                                  child: Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black54,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              10),
+                                                    ),
+                                                    child: Text(
+                                                      '${index + 1}',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    onPressed: _openVideo360CaptureScreen,
-                                    tooltip: 'Re-capture',
-                                  ),
-                                ],
-                              ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                            color: Colors.green.shade300),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green.shade700,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            '$frameCount frames captured',
+                                            style: TextStyle(
+                                              color: Colors.green.shade700,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          if (frameCount > 0)
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 4,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green.shade700,
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              child: const Text(
+                                                '360° Ready',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                         ],
                       ),
@@ -1743,8 +1799,7 @@ class _PostAdCarState extends State<PostAdCar> {
 
               const SizedBox(height: 24),
 
-              // ========== Section Header: Car Information ==========
-              // Container wrapping all car information fields
+              // ========== Car Information Section ==========
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1995,7 +2050,6 @@ class _PostAdCarState extends State<PostAdCar> {
               const SizedBox(height: 24),
 
               // ========== Description Section ==========
-              // Container wrapping description fields
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -2123,7 +2177,6 @@ class _PostAdCarState extends State<PostAdCar> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Section header inside container
                       Row(
                         children: [
                           Container(
@@ -2169,7 +2222,6 @@ class _PostAdCarState extends State<PostAdCar> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      // User profile information display
                       if (_isLoadingProfile)
                         const Center(child: CircularProgressIndicator())
                       else ...[
@@ -2205,7 +2257,6 @@ class _PostAdCarState extends State<PostAdCar> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Section header inside container
                       Row(
                         children: [
                           Container(
@@ -2338,6 +2389,8 @@ class _PostAdCarState extends State<PostAdCar> {
                 ),
 
               const SizedBox(height: 20),
+
+              // ========== Submit Button ==========
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: SizedBox(
@@ -2364,6 +2417,7 @@ class _PostAdCarState extends State<PostAdCar> {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       onPressed: (_isUploadingImages ||
@@ -2371,6 +2425,8 @@ class _PostAdCarState extends State<PostAdCar> {
                               _isVerifying)
                           ? null
                           : _handleAdSubmit,
+                      // RESOLVED: use feature2's label ("Update Ad" vs "Post Ad")
+                      // combined with main's clean loading indicator structure
                       child: (_isUploadingImages || _isUploading360)
                           ? Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -2388,7 +2444,7 @@ class _PostAdCarState extends State<PostAdCar> {
                                 const SizedBox(width: 12),
                                 Text(
                                   _isUploading360
-                                      ? 'Uploading 360 images...'
+                                      ? 'Uploading 360° images...'
                                       : 'Uploading...',
                                   style: const TextStyle(
                                     fontSize: 16,
@@ -2462,11 +2518,17 @@ class _PostAdCarState extends State<PostAdCar> {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withOpacity(0.4),
               ),
               prefixIcon: Icon(
                 icon,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withOpacity(0.6),
               ),
               filled: true,
               fillColor: Theme.of(context).colorScheme.surfaceContainer,
@@ -2523,7 +2585,10 @@ class _PostAdCarState extends State<PostAdCar> {
             decoration: InputDecoration(
               hintText: 'Select car brand',
               hintStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withOpacity(0.4),
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -2556,7 +2621,10 @@ class _PostAdCarState extends State<PostAdCar> {
               ),
               prefixIcon: Icon(
                 Icons.directions_car,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withOpacity(0.6),
                 size: 20,
               ),
             ),
@@ -2595,7 +2663,10 @@ class _PostAdCarState extends State<PostAdCar> {
             },
             icon: Icon(
               Icons.arrow_drop_down,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withOpacity(0.6),
             ),
             dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
             style: TextStyle(
@@ -2640,8 +2711,10 @@ class _PostAdCarState extends State<PostAdCar> {
                 subtitle,
                 style: TextStyle(
                   fontSize: 12,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.5),
                 ),
               ),
             ),
@@ -2674,7 +2747,8 @@ class _PostAdCarState extends State<PostAdCar> {
             onTap: onTap,
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(16),
@@ -2747,7 +2821,8 @@ class _PostAdCarState extends State<PostAdCar> {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(16),
@@ -2763,8 +2838,10 @@ class _PostAdCarState extends State<PostAdCar> {
               children: [
                 Icon(
                   icon,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withOpacity(0.6),
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -2779,12 +2856,14 @@ class _PostAdCarState extends State<PostAdCar> {
                               .onSurface
                               .withOpacity(0.4),
                       fontSize: 15,
-                      fontStyle: hasValue ? FontStyle.normal : FontStyle.italic,
+                      fontStyle:
+                          hasValue ? FontStyle.normal : FontStyle.italic,
                     ),
                   ),
                 ),
                 if (hasValue)
-                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                  const Icon(Icons.check_circle,
+                      color: Colors.green, size: 20),
               ],
             ),
           ),
@@ -2820,39 +2899,3 @@ class _FullScreenPopup extends StatelessWidget {
     );
   }
 }
-
-// i added these code twice
-
-// import 'package:flutter/material.dart';
-
-// // ignore: unused_element
-// class _FullScreenPopup extends StatelessWidget {
-//   final String title;
-//   final Widget? content;
-
-//   // ignore: unused_element_parameter
-//   const _FullScreenPopup({required this.title, this.content});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return SizedBox(
-//       height: MediaQuery.of(context).size.height * 0.95,
-//       child: Scaffold(
-//         appBar: AppBar(
-//           automaticallyImplyLeading: false,
-//           title: Text(title),
-//           actions: [
-//             IconButton(
-//               icon: const Icon(Icons.close),
-//               onPressed: () => Navigator.pop(context),
-//             )
-//           ],
-//         ),
-//         body: content ??
-//             const Center(
-//               child: Text("Custom List or Search will go here."),
-//             ),
-//       ),
-//     );
-//   }
-// }

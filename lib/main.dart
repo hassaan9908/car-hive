@@ -15,6 +15,7 @@ import 'package:carhive/store/global_ads.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/light_theme.dart';
 import 'theme/dark_theme.dart';
@@ -38,6 +39,8 @@ import 'screens/debug_360_screen.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'config/stripe_config.dart';
+import 'services/remote_keys_service.dart';
+import 'services/notification_service.dart';
 
 /// Custom route generator that maintains gradient during transitions
 class GradientPageRoute<T> extends PageRouteBuilder<T> {
@@ -62,6 +65,9 @@ class GradientPageRoute<T> extends PageRouteBuilder<T> {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FirebaseMessaging.onBackgroundMessage(
+      NotificationService.firebaseBackgroundHandler);
+  RemoteKeys remoteKeys = const RemoteKeys(stripeKey: '', mapsKey: '');
 
   // Initialize Firebase with error handling
   try {
@@ -78,6 +84,19 @@ void main() async {
     GlobalAdStore().cleanupExpiredAds().catchError((e) {
       print('Error cleaning up expired ads on startup: $e');
     });
+
+    // Load runtime keys from Firebase Realtime Database
+    remoteKeys = await RemoteKeysService.loadKeys();
+
+    if (remoteKeys.stripeKey.isNotEmpty) {
+      StripeConfig.setPublishableKey(remoteKeys.stripeKey);
+    }
+
+    if (remoteKeys.mapsKey.isNotEmpty) {
+      print('Maps key loaded from Firebase Realtime Database');
+    } else {
+      print('Maps key not found in Firebase Realtime Database');
+    }
   } catch (e, stackTrace) {
     print('Firebase initialization failed: $e');
     print('Stack trace: $stackTrace');
@@ -87,6 +106,12 @@ void main() async {
 
   // Initialize Stripe
   try {
+    if (StripeConfig.publishableKey.isEmpty) {
+      throw Exception(
+        'Stripe key is empty. Add stripe_key to Firebase Realtime Database root.',
+      );
+    }
+
     Stripe.publishableKey = StripeConfig.publishableKey;
 
     // Only set merchant identifier and apply settings on mobile platforms
@@ -129,6 +154,7 @@ class MyApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {
           return MaterialApp(
+            navigatorKey: NotificationService.navigatorKey,
             title: 'CarHive',
             theme: lightTheme,
             darkTheme: darkTheme,
@@ -255,6 +281,9 @@ class _AppInitializerState extends State<AppInitializer> {
           _isInitialized = true;
         });
       }
+
+      // Initialize push notifications once startup bootstrap is complete.
+      await NotificationService.instance.initialize();
     } catch (e) {
       print('Error checking startup status: $e');
       if (mounted) {

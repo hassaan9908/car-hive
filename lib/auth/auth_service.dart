@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../services/trust_rank_service.dart';
+import '../services/notification_service.dart';
 
 class AuthService {
   final _auth = FirebaseAuth.instance;
@@ -93,6 +94,8 @@ class AuthService {
         },
       );
 
+      await NotificationService.instance.syncTokenForUser(cred.user!.uid);
+
       return cred.user;
     } on FirebaseAuthException catch (e) {
       // Handle specific Firebase Auth errors
@@ -173,6 +176,8 @@ class AuthService {
         });
       }
 
+      await NotificationService.instance.syncTokenForUser(cred.user!.uid);
+
       return cred.user;
     } on FirebaseAuthException catch (e) {
       // Handle specific Firebase Auth errors
@@ -197,6 +202,12 @@ class AuthService {
 
   Future<void> signout() async {
     try {
+      final currentUserId = _auth.currentUser?.uid;
+      if (currentUserId != null && currentUserId.isNotEmpty) {
+        await NotificationService.instance.removeCurrentTokenForUser(
+          currentUserId,
+        );
+      }
       await _auth.signOut();
     } catch (e) {
       print("Sign out error: $e");
@@ -311,6 +322,10 @@ class AuthService {
         } catch (e) {
           print('Error computing trust rank: $e');
         }
+      }
+
+      if (result.user != null) {
+        await NotificationService.instance.syncTokenForUser(result.user!.uid);
       }
 
       return result;
