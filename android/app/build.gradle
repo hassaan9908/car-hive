@@ -28,7 +28,7 @@ android {
     namespace = "com.example.carhive"
     // Pin to SDK 36 to satisfy camera_android and tflite_flutter requirements
     compileSdk = 36
-    ndkVersion "26.1.10909125"
+    ndkVersion "26.3.11579264"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -46,7 +46,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // Firestore 26.x requires minSdk 23+
-        minSdkVersion flutter.minSdkVersion
+        minSdkVersion 23
         targetSdkVersion 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
