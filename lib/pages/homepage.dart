@@ -172,15 +172,15 @@ class _HomepageState extends State<Homepage> {
             centerTitle: true,
             // Prevent showing a back arrow when arriving from auth flow
             automaticallyImplyLeading: false,
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Container(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey[800]
-                    : Colors.grey[400],
-                height: 1,
-              ),
-            ),
+            // bottom: PreferredSize(
+            //   preferredSize: const Size.fromHeight(1),
+            //   child: Container(
+            //     color: Theme.of(context).brightness == Brightness.dark
+            //         ? Colors.grey[800]
+            //         : Colors.grey[400],
+            //     height: 1,
+            //   ),
+            // ),
             actions: [
               // Admin Panel button (web only)
               if (kIsWeb)

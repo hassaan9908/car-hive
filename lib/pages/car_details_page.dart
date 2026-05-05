@@ -752,15 +752,17 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Text(
-                              ad.location,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                            Flexible(
+                              child: Text(
+                                ad.location,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
                             ),
                           ],
                         ),

@@ -197,10 +197,10 @@ class _ChatState extends State<Chat> with SingleTickerProviderStateMixin {
         },
       ),
       actions: const [],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(0.5),
-        child: Container(height: 0.5, color: Colors.white12),
-      ),
+      // bottom: PreferredSize(
+      //   preferredSize: const Size.fromHeight(0.5),
+      //   child: Container(height: 0.5, color: Colors.white12),
+      // ),
     );
   }
 

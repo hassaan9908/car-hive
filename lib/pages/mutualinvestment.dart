@@ -29,6 +29,8 @@ class _MutualinvestmentState extends State<Mutualinvestment>
   ];
 
   late TabController _tabController;
+  int _selectedTabIndex = 0;
+  final List<String> _tabs = ['Available', 'My Investments', 'Marketplace'];
   final InvestmentVehicleService _vehicleService = InvestmentVehicleService();
   final InvestmentService _investmentService = InvestmentService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -37,6 +39,14 @@ class _MutualinvestmentState extends State<Mutualinvestment>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      if (mounted) {
+        setState(() {
+          _selectedTabIndex = _tabController.index;
+        });
+      }
+    });
   }
 
   @override
@@ -53,6 +63,73 @@ class _MutualinvestmentState extends State<Mutualinvestment>
     } else {
       Navigator.pushReplacementNamed(context, _navRoutes[index]);
     }
+  }
+
+  void _onTopTabChanged(int index) {
+    setState(() {
+      _selectedTabIndex = index;
+    });
+    _tabController.animateTo(index);
+  }
+
+  Widget _buildTopTabs() {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(_tabs.length, (index) {
+          final isSelected = _selectedTabIndex == index;
+          return Padding(
+            padding: EdgeInsets.only(right: index < _tabs.length - 1 ? 8 : 0),
+            child: GestureDetector(
+              onTap: () => _onTopTabChanged(index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+                        )
+                      : null,
+                  color: isSelected ? null : theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFFFF6B35).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color:
+                                theme.colorScheme.shadow.withOpacity(0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                ),
+                child: Text(
+                  _tabs[index],
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected
+                        ? Colors.white
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
   }
 
   @override
@@ -73,15 +150,7 @@ class _MutualinvestmentState extends State<Mutualinvestment>
             ),
             backgroundColor: Colors.transparent,
             centerTitle: true,
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Container(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.grey[800]
-                    : Colors.grey[400],
-                height: 1,
-              ),
-            ),
+           
           ),
           body: Center(
             child: Column(
@@ -154,53 +223,34 @@ class _MutualinvestmentState extends State<Mutualinvestment>
           centerTitle: true,
           elevation: 0,
           actions: [
-            if (user != null)
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline),
-                onPressed: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CreateInvestmentPage(),
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreateInvestmentPage(),
+                  ),
+                );
+                if (result != null && mounted) {
+                  // Investment created, could navigate to detail page
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Investment opportunity created!'),
+                      backgroundColor: Colors.green,
                     ),
                   );
-                  if (result != null && mounted) {
-                    // Investment created, could navigate to detail page
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Investment opportunity created!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                },
-                tooltip: 'Create Investment',
-              ),
+                }
+              },
+              tooltip: 'Create Investment',
+            ),
           ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(49),
             child: Column(
               children: [
-                Container(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[800]
-                      : Colors.grey[400],
-                  height: 1,
-                ),
-                TabBar(
-                  controller: _tabController,
-                  tabs: const [
-                    Tab(
-                        child:
-                            Text('Available', style: TextStyle(fontSize: 15))),
-                    Tab(
-                        child: Text('My Investments',
-                            style: TextStyle(fontSize: 15))),
-                    Tab(
-                        child: Text('Marketplace',
-                            style: TextStyle(fontSize: 15))),
-                  ],
-                ),
+                
+                _buildTopTabs(),
               ],
             ),
           ),
@@ -215,10 +265,7 @@ class _MutualinvestmentState extends State<Mutualinvestment>
               // Available Investments Tab
               _buildAvailableInvestmentsTab(),
               // My Investments Tab
-              user != null
-                  ? _buildMyInvestmentsTab(user.uid)
-                  : const Center(
-                      child: Text('Please login to view your investments')),
+                _buildMyInvestmentsTab(user.uid),
               // Marketplace Tab
               _buildMarketplaceTab(),
             ],
@@ -621,7 +668,6 @@ class _MutualinvestmentState extends State<Mutualinvestment>
 
   Widget _buildMyInvestmentCard(InvestmentModel investment) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
