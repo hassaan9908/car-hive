@@ -31,6 +31,34 @@ class _MapViewScreenState extends State<MapViewScreen> {
   AdModel? _selectedAd;
   bool _isCreatingMarkers = false;
   bool _isMapInitialized = false; // Track if map has been properly initialized
+  static const String _darkMapStyle = '''
+[
+  {"elementType":"geometry","stylers":[{"color":"#1d2c4d"}]},
+  {"elementType":"labels.text.fill","stylers":[{"color":"#8ec3b9"}]},
+  {"elementType":"labels.text.stroke","stylers":[{"color":"#1a3646"}]},
+  {"featureType":"administrative.country","elementType":"geometry.stroke","stylers":[{"color":"#4b6878"}]},
+  {"featureType":"administrative.land_parcel","elementType":"labels.text.fill","stylers":[{"color":"#64779e"}]},
+  {"featureType":"administrative.province","elementType":"geometry.stroke","stylers":[{"color":"#4b6878"}]},
+  {"featureType":"landscape.man_made","elementType":"geometry.stroke","stylers":[{"color":"#334e87"}]},
+  {"featureType":"landscape.natural","elementType":"geometry","stylers":[{"color":"#023e58"}]},
+  {"featureType":"poi","elementType":"geometry","stylers":[{"color":"#283d6a"}]},
+  {"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#6f9ba5"}]},
+  {"featureType":"poi","elementType":"labels.text.stroke","stylers":[{"color":"#1d2c4d"}]},
+  {"featureType":"poi.park","elementType":"geometry.fill","stylers":[{"color":"#023e58"}]},
+  {"featureType":"poi.park","elementType":"labels.text.fill","stylers":[{"color":"#3C7680"}]},
+  {"featureType":"road","elementType":"geometry","stylers":[{"color":"#304a7d"}]},
+  {"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#98a5be"}]},
+  {"featureType":"road","elementType":"labels.text.stroke","stylers":[{"color":"#1d2c4d"}]},
+  {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#2c6675"}]},
+  {"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#255763"}]},
+  {"featureType":"road.highway","elementType":"labels.text.fill","stylers":[{"color":"#b0d5ce"}]},
+  {"featureType":"road.highway","elementType":"labels.text.stroke","stylers":[{"color":"#023e58"}]},
+  {"featureType":"transit","elementType":"geometry","stylers":[{"color":"#2f3948"}]},
+  {"featureType":"transit.station","elementType":"labels.text.fill","stylers":[{"color":"#98a5be"}]},
+  {"featureType":"water","elementType":"geometry","stylers":[{"color":"#0e1626"}]},
+  {"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#4e6d70"}]}
+]
+''';
 
   @override
   void initState() {
@@ -47,6 +75,24 @@ class _MapViewScreenState extends State<MapViewScreen> {
       return;
     }
     _requestLocationPermission();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _applyMapStyle();
+  }
+
+  void _applyMapStyle() {
+    if (_mapController == null) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    try {
+      _mapController!.setMapStyle(isDark ? _darkMapStyle : null);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error applying map style: $e');
+      }
+    }
   }
 
   Future<void> _requestLocationPermission() async {
@@ -244,18 +290,17 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   Future<void> _updateMarkers() async {
     if (_isCreatingMarkers) return; // Prevent multiple simultaneous marker creation
-    
+    final adsSnapshot = List<AdModel>.from(_nearbyAds);
+
     setState(() {
       _isCreatingMarkers = true;
     });
 
-    final Set<Marker> newMarkers = {};
+    final Set<Marker> quickMarkers = {};
     int validMarkers = 0;
     int invalidMarkers = 0;
 
-    // Create markers with custom thumbnails
-    for (final ad in _nearbyAds) {
-      // Extract and validate coordinates
+    for (final ad in adsSnapshot) {
       final position = _extractCoordinates(ad);
       if (position == null) {
         invalidMarkers++;
@@ -263,68 +308,75 @@ class _MapViewScreenState extends State<MapViewScreen> {
       }
 
       validMarkers++;
+      quickMarkers.add(
+        Marker(
+          markerId: MarkerId(ad.id ?? '${position.latitude}_${position.longitude}'),
+          position: position,
+          infoWindow: InfoWindow(
+            title: ad.title.isNotEmpty ? ad.title : (ad.carBrand ?? 'Car'),
+            snippet: 'PKR ${ad.price} • ${ad.location}',
+          ),
+          onTap: () {
+            setState(() {
+              _selectedAd = ad;
+            });
+          },
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+        ),
+      );
+    }
+
+    if (mounted) {
+      setState(() {
+        _markers = quickMarkers;
+      });
+    }
+
+    // Build custom markers in the background to avoid delaying map display.
+    final List<Future<Marker?>> customMarkerFutures = adsSnapshot.map((ad) async {
+      final position = _extractCoordinates(ad);
+      if (position == null) return null;
 
       try {
-        // Create custom marker with car thumbnail
         final BitmapDescriptor customIcon = await CustomMarkerService.createCarMarker(
           imageUrl: ad.imageUrls?.isNotEmpty == true ? ad.imageUrls![0] : null,
           price: ad.price,
           title: ad.title.isNotEmpty ? ad.title : ad.carBrand,
         );
 
-        newMarkers.add(
-          Marker(
-            markerId: MarkerId(ad.id ?? '${position.latitude}_${position.longitude}'),
-            position: position,
-            infoWindow: InfoWindow(
-              title: ad.title.isNotEmpty ? ad.title : (ad.carBrand ?? 'Car'),
-              snippet: 'PKR ${ad.price} • ${ad.location}',
-            ),
-            onTap: () {
-              setState(() {
-                _selectedAd = ad;
-              });
-            },
-            icon: customIcon,
+        return Marker(
+          markerId: MarkerId(ad.id ?? '${position.latitude}_${position.longitude}'),
+          position: position,
+          infoWindow: InfoWindow(
+            title: ad.title.isNotEmpty ? ad.title : (ad.carBrand ?? 'Car'),
+            snippet: 'PKR ${ad.price} • ${ad.location}',
           ),
+          onTap: () {
+            setState(() {
+              _selectedAd = ad;
+            });
+          },
+          icon: customIcon,
         );
       } catch (e) {
-        print('Error creating custom marker for ad ${ad.id}: $e');
-        // Fallback to simple marker
-        try {
-          final BitmapDescriptor fallbackIcon = await CustomMarkerService.createSimpleMarker(
-            color: const Color(0xFFf48c25),
-            text: ad.price.length > 6 ? '${ad.price.substring(0, 4)}K' : ad.price,
-          );
-
-          newMarkers.add(
-            Marker(
-              markerId: MarkerId(ad.id ?? '${position.latitude}_${position.longitude}'),
-              position: position,
-              infoWindow: InfoWindow(
-                title: ad.title.isNotEmpty ? ad.title : (ad.carBrand ?? 'Car'),
-                snippet: 'PKR ${ad.price} • ${ad.location}',
-              ),
-              onTap: () {
-                setState(() {
-                  _selectedAd = ad;
-                });
-              },
-              icon: fallbackIcon,
-            ),
-          );
-        } catch (fallbackError) {
-          print('Error creating fallback marker for ad ${ad.id}: $fallbackError');
-          invalidMarkers++;
+        if (kDebugMode) {
+          print('Error creating custom marker for ad ${ad.id}: $e');
         }
+        return null;
       }
-    }
+    }).toList();
 
-    print('Map markers: $validMarkers valid, $invalidMarkers invalid out of ${_nearbyAds.length} ads');
+    final List<Marker?> customMarkers = await Future.wait(customMarkerFutures);
+    final Set<Marker> finalMarkers = {
+      ...quickMarkers,
+      ...customMarkers.whereType<Marker>(),
+    };
+
+    print('Map markers: $validMarkers valid, $invalidMarkers invalid out of ${adsSnapshot.length} ads');
 
     if (mounted) {
       setState(() {
-        _markers = newMarkers;
+        _markers = finalMarkers;
         _isCreatingMarkers = false;
       });
     }
@@ -483,6 +535,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
                   _mapController = controller;
                   _isMapInitialized = true; // Mark map as initialized
                   print('✅ Google Map created successfully');
+                  _applyMapStyle();
                   if (_userPosition != null) {
                     _moveCameraToUserPosition();
                   }

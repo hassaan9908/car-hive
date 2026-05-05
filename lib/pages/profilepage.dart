@@ -55,15 +55,15 @@ class Profilepage extends StatelessWidget {
           ),
           backgroundColor: Colors.transparent,
           centerTitle: true,
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1),
-            child: Container(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey[800]
-                  : Colors.grey[400],
-              height: 1,
-            ),
-          ),
+          // bottom: PreferredSize(
+          //   preferredSize: const Size.fromHeight(1),
+          //   child: Container(
+          //     color: Theme.of(context).brightness == Brightness.dark
+          //         ? Colors.grey[800]
+          //         : Colors.grey[400],
+          //     height: 1,
+          //   ),
+          // ),
         ),
         body: SafeArea(
           child: SingleChildScrollView(
