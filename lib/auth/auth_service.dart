@@ -1,6 +1,7 @@
 // In lib/auth/auth_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../services/trust_rank_service.dart';
 import '../services/notification_service.dart';
@@ -266,25 +267,34 @@ class AuthService {
 
   signInWithGoogle() async {
     try {
-      // Configure GoogleSignIn with minimal scopes to avoid People API
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        scopes: ['email', 'profile'],
-      );
+      UserCredential result;
 
-      final GoogleSignInAccount? gUser = await googleSignIn.signIn();
+      if (kIsWeb) {
+        // Web: use Firebase's popup flow — no origin registration needed beyond Firebase Auth
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        result = await _auth.signInWithPopup(googleProvider);
+      } else {
+        // Mobile: use google_sign_in package
+        final GoogleSignIn googleSignIn = GoogleSignIn(
+          scopes: ['email', 'profile'],
+        );
 
-      if (gUser == null) {
-        // User cancelled the sign-in
-        return null;
+        final GoogleSignInAccount? gUser = await googleSignIn.signIn();
+
+        if (gUser == null) {
+          return null;
+        }
+
+        final GoogleSignInAuthentication gAuth = await gUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: gAuth.accessToken,
+          idToken: gAuth.idToken,
+        );
+
+        result = await _auth.signInWithCredential(credential);
       }
-
-      final GoogleSignInAuthentication gAuth = await gUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: gAuth.accessToken,
-        idToken: gAuth.idToken,
-      );
-
-      final result = await _auth.signInWithCredential(credential);
 
       // Create or update user document in Firestore
       if (result.user != null) {

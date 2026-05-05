@@ -145,18 +145,17 @@ class Profilepage extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Explore section
-                _sectionHeader(context, 'Explore'),
-                _settingsCard(context, [
-                  if (authProvider.isLoggedIn) ...[
+                if (authProvider.isLoggedIn) ...[
+                  _sectionHeader(context, 'Explore'),
+                  _settingsCard(context, [
                     _settingsTile(context, Icons.article, 'Blog',
                         onTap: () => _navigateToBlog(context)),
                     _dividerInset(context),
                     _settingsTile(context, Icons.ondemand_video, 'Videos',
                         onTap: () => _navigateToVideos(context)),
-                  ],
-                ]),
-
-                const SizedBox(height: 16),
+                  ]),
+                  const SizedBox(height: 16),
+                ],
 
                 // More section
                 _sectionHeader(context, 'More'),
