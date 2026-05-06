@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Configuration for 360° video processing backend
@@ -18,23 +17,13 @@ class BackendConfig {
   /// - macOS/Linux: Run `ifconfig` or `ip addr` and look for your network interface
   /// 
   /// Example: 'http://192.168.1.100:8000'
+  static const String _herokuBaseUrl = 'https://carhive-360-backend-56ffd1e328e1.herokuapp.com';
+
   static Future<String> get baseUrl async {
-    if (kIsWeb) {
-      // Web: use localhost
-      return 'http://localhost:8000';
-    } else {
-      // Mobile: Check if custom URL is stored
-      final prefs = await SharedPreferences.getInstance();
-      final customUrl = prefs.getString(_prefsKeyBackendUrl);
-      
-      if (customUrl != null && customUrl.isNotEmpty) {
-        return customUrl;
-      }
-      
-      // Default: Android emulator uses 10.0.2.2 to access host machine
-      // For physical devices, this won't work - user needs to configure
-      return 'http://10.0.2.2:8000';
-    }
+    final prefs = await SharedPreferences.getInstance();
+    final customUrl = prefs.getString(_prefsKeyBackendUrl);
+    if (customUrl != null && customUrl.isNotEmpty) return customUrl;
+    return _herokuBaseUrl;
   }
   
   /// Set custom backend URL (for physical devices)
