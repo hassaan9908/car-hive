@@ -10,9 +10,6 @@ import '../services/cloudinary_service.dart';
 import '../models/chat_message_model.dart';
 
 const Color _kOrange = Color(0xFFFF9900);
-const Color _kBg = Color(0xFF0A0A0A);
-const Color _kSurface = Color(0xFF1E1E1E);
-const Color _kReceived = Color(0xFF232323);
 const Color _kOnline = Color(0xFF4CAF50);
 
 const List<String> _quickReplies = [
@@ -61,11 +58,38 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   bool _isOnline = false;
   String? _lastSeenLabel;
 
-  // Ad banner fields — seeded from constructor, then refreshed from Firestore
   String? _adTitle;
   String? _adPrice;
   String? _adImageUrl;
   String? _adStatus;
+
+  bool get _isDark =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  Color get _bg =>
+      _isDark ? const Color(0xFF0A0A0A) : Colors.white;
+  Color get _appBarBg =>
+      _isDark ? const Color(0xFF0F0F0F) : Colors.white;
+  Color get _surface =>
+      _isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF0F0F0);
+  Color get _receivedBubble =>
+      _isDark ? const Color(0xFF232323) : const Color(0xFFE8E8E8);
+  Color get _bannerBg =>
+      _isDark ? const Color(0xFF141414) : const Color(0xFFF5F5F5);
+  Color get _sheetBg =>
+      _isDark ? const Color(0xFF1A1A1A) : Colors.white;
+  Color get _borderColor =>
+      _isDark ? Colors.white12 : Colors.black12;
+  Color get _textColor =>
+      _isDark ? Colors.white : Colors.black87;
+  Color get _subTextColor =>
+      _isDark ? Colors.grey[600]! : Colors.grey[500]!;
+  Color get _carIconBoxBg =>
+      _isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0);
+  Color get _quickReplyBg =>
+      _isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF0F0F0);
+  Color get _quickReplyBorder =>
+      _isDark ? const Color(0xFF333333) : const Color(0xFFDDDDDD);
 
   @override
   void initState() {
@@ -135,9 +159,14 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   }
 
   void _showAttachmentMenu() {
+    final isDark = _isDark;
+    final sheetBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+    final handleColor = isDark ? Colors.white24 : Colors.black12;
+    final titleStyle = TextStyle(
+        color: isDark ? Colors.white : Colors.black87);
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: sheetBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -150,7 +179,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               height: 4,
               margin: const EdgeInsets.only(top: 12, bottom: 12),
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: handleColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -163,8 +192,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 ),
                 child: const Icon(Icons.photo_library, color: _kOrange),
               ),
-              title: const Text('Photo from gallery',
-                  style: TextStyle(color: Colors.white)),
+              title: Text('Photo from gallery', style: titleStyle),
               onTap: () {
                 Navigator.pop(context);
                 _pickAndSendImage(ImageSource.gallery);
@@ -179,8 +207,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 ),
                 child: const Icon(Icons.camera_alt, color: _kOrange),
               ),
-              title: const Text('Take a photo',
-                  style: TextStyle(color: Colors.white)),
+              title: Text('Take a photo', style: titleStyle),
               onTap: () {
                 Navigator.pop(context);
                 _pickAndSendImage(ImageSource.camera);
@@ -214,7 +241,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         url = await cloudinary.uploadImage(imageFile: File(picked.path));
       }
 
-      // Send the image URL as a message — prefixed so the bubble renders it
       await _chatService.sendMessage(widget.otherUserId, '[image]$url');
       _scrollToBottom();
     } catch (e) {
@@ -270,17 +296,18 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
       return Scaffold(
-        backgroundColor: _kBg,
-        appBar:
-            AppBar(backgroundColor: _kBg, title: const Text('Chat')),
-        body: const Center(
+        backgroundColor: _bg,
+        appBar: AppBar(
+            backgroundColor: _appBarBg,
+            title: Text('Chat', style: TextStyle(color: _textColor))),
+        body: Center(
             child: Text('Please login',
-                style: TextStyle(color: Colors.white))),
+                style: TextStyle(color: _textColor))),
       );
     }
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: _bg,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -300,12 +327,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     final statusText = _isOnline
         ? 'Online now'
         : (_lastSeenLabel ?? '');
+    final iconColor = _isDark ? _kOrange : Colors.black87;
 
     return AppBar(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: _appBarBg,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: _kOrange),
+        icon: Icon(Icons.arrow_back, color: iconColor),
         onPressed: () => Navigator.pop(context),
       ),
       centerTitle: true,
@@ -314,8 +342,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         children: [
           Text(
             widget.otherUserName,
-            style: const TextStyle(
-                color: Colors.white,
+            style: TextStyle(
+                color: _textColor,
                 fontSize: 16,
                 fontWeight: FontWeight.bold),
           ),
@@ -323,9 +351,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             Text(
               statusText,
               style: TextStyle(
-                color: _isOnline
-                    ? _kOnline
-                    : Colors.grey[600],
+                color: _isOnline ? _kOnline : _subTextColor,
                 fontSize: 12,
               ),
             ),
@@ -333,15 +359,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       ),
       actions: [
         IconButton(
-          icon:
-              const Icon(Icons.more_vert, color: _kOrange),
-          onPressed: () =>
-              _showConversationMenu(context),
+          icon: Icon(Icons.more_vert, color: iconColor),
+          onPressed: () => _showConversationMenu(context),
         ),
       ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(0.5),
-        child: Container(height: 0.5, color: Colors.white12),
+        child: Container(height: 0.5, color: _borderColor),
       ),
     );
   }
@@ -354,15 +378,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
-        color: Color(0xFF141414),
+      decoration: BoxDecoration(
+        color: _bannerBg,
         border: Border(
-            bottom:
-                BorderSide(color: Colors.white12, width: 0.5)),
+            bottom: BorderSide(color: _borderColor, width: 0.5)),
       ),
       child: Row(
         children: [
-          // Thumbnail
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: _adImageUrl != null &&
@@ -372,13 +394,11 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     width: 46,
                     height: 46,
                     fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) =>
-                        _carIconBox(),
+                    errorWidget: (_, __, ___) => _carIconBox(),
                   )
                 : _carIconBox(),
           ),
           const SizedBox(width: 12),
-          // Title + price
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,15 +406,14 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               children: [
                 Text(
                   _adTitle ?? '',
-                  style: const TextStyle(
-                      color: Colors.white,
+                  style: TextStyle(
+                      color: _textColor,
                       fontWeight: FontWeight.w600,
                       fontSize: 13),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (_adPrice != null &&
-                    _adPrice!.isNotEmpty)
+                if (_adPrice != null && _adPrice!.isNotEmpty)
                   Text(
                     'PKR $_adPrice',
                     style: const TextStyle(
@@ -404,7 +423,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             ),
           ),
           const SizedBox(width: 8),
-          // Status badge
           Container(
             padding: const EdgeInsets.symmetric(
                 horizontal: 10, vertical: 4),
@@ -437,11 +455,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       width: 46,
       height: 46,
       decoration: BoxDecoration(
-        color: const Color(0xFF2A2A2A),
+        color: _carIconBoxBg,
         borderRadius: BorderRadius.circular(8),
       ),
-      child:
-          const Icon(Icons.directions_car, color: _kOrange, size: 22),
+      child: const Icon(Icons.directions_car, color: _kOrange, size: 22),
     );
   }
 
@@ -455,14 +472,12 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         if (snapshot.connectionState ==
             ConnectionState.waiting) {
           return const Center(
-              child: CircularProgressIndicator(
-                  color: _kOrange));
+              child: CircularProgressIndicator(color: _kOrange));
         }
         if (snapshot.hasError) {
           return Center(
               child: Text('Error loading messages',
-                  style:
-                      TextStyle(color: Colors.grey[600])));
+                  style: TextStyle(color: _subTextColor)));
         }
 
         final messages = snapshot.data ?? [];
@@ -473,23 +488,20 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.chat_bubble_outline,
-                    size: 56, color: Colors.grey[800]),
+                    size: 56, color: _subTextColor),
                 const SizedBox(height: 16),
                 Text('No messages yet',
                     style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 16)),
+                        color: _subTextColor, fontSize: 16)),
                 const SizedBox(height: 8),
                 Text('Start the conversation!',
                     style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 13)),
+                        color: _subTextColor, fontSize: 13)),
               ],
             ),
           );
         }
 
-        // Auto-scroll on new messages
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _scrollController.hasClients) {
             try {
@@ -515,8 +527,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 if (showDate)
                   _buildDateSeparator(msg.timestamp),
                 GestureDetector(
-                  onLongPress: () =>
-                      _showDeleteDialog(msg),
+                  onLongPress: () => _showDeleteDialog(msg),
                   child: _buildBubble(msg, isMe),
                 ),
               ],
@@ -541,28 +552,31 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
-          const Expanded(
-              child: Divider(color: Colors.white12)),
+          Expanded(child: Divider(color: _borderColor)),
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
               _dateLabel(date),
-              style: const TextStyle(
-                  color: Colors.grey,
+              style: TextStyle(
+                  color: _subTextColor,
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.8),
             ),
           ),
-          const Expanded(
-              child: Divider(color: Colors.white12)),
+          Expanded(child: Divider(color: _borderColor)),
         ],
       ),
     );
   }
 
   Widget _buildBubble(ChatMessage msg, bool isMe) {
+    final receivedTextColor =
+        _isDark ? Colors.white : Colors.black87;
+    final receivedTimeColor =
+        _isDark ? Colors.grey[600]! : Colors.grey[500]!;
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: 3,
@@ -576,14 +590,12 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           padding: const EdgeInsets.symmetric(
               horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
-            color: isMe ? _kOrange : _kReceived,
+            color: isMe ? _kOrange : _receivedBubble,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(18),
               topRight: const Radius.circular(18),
-              bottomLeft:
-                  Radius.circular(isMe ? 18 : 4),
-              bottomRight:
-                  Radius.circular(isMe ? 4 : 18),
+              bottomLeft: Radius.circular(isMe ? 18 : 4),
+              bottomRight: Radius.circular(isMe ? 4 : 18),
             ),
           ),
           child: Column(
@@ -620,7 +632,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 Text(
                   msg.message,
                   style: TextStyle(
-                    color: isMe ? Colors.black87 : Colors.white,
+                    color: isMe ? Colors.black87 : receivedTextColor,
                     fontSize: 14.5,
                     height: 1.35,
                   ),
@@ -634,7 +646,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     style: TextStyle(
                       color: isMe
                           ? Colors.black45
-                          : Colors.grey[600],
+                          : receivedTimeColor,
                       fontSize: 10.5,
                     ),
                   ),
@@ -670,10 +682,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   Widget _buildQuickReplies() {
     return Container(
       height: 44,
-      decoration: const BoxDecoration(
-        color: _kBg,
+      decoration: BoxDecoration(
+        color: _bg,
         border: Border(
-            top: BorderSide(color: Colors.white12, width: 0.5)),
+            top: BorderSide(color: _borderColor, width: 0.5)),
       ),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
@@ -689,16 +701,15 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               padding: const EdgeInsets.symmetric(
                   horizontal: 14, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
+                color: _quickReplyBg,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                    color: const Color(0xFF333333),
-                    width: 0.5),
+                    color: _quickReplyBorder, width: 0.5),
               ),
               child: Text(
                 _quickReplies[index],
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 12.5),
+                style: TextStyle(
+                    color: _textColor, fontSize: 12.5),
               ),
             ),
           );
@@ -711,21 +722,20 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   Widget _buildInputBar() {
     return Container(
-      color: const Color(0xFF0F0F0F),
+      color: _appBarBg,
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       child: SafeArea(
         top: false,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Attachment
             GestureDetector(
               onTap: _isUploading ? null : _showAttachmentMenu,
               child: Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _kSurface,
+                  color: _surface,
                   shape: BoxShape.circle,
                 ),
                 child: _isUploading
@@ -739,12 +749,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               ),
             ),
             const SizedBox(width: 8),
-            // Text field
             Expanded(
               child: TextField(
                 controller: _messageController,
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 14),
+                style: TextStyle(color: _textColor, fontSize: 14),
                 maxLines: 4,
                 minLines: 1,
                 textCapitalization:
@@ -752,22 +760,19 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 decoration: InputDecoration(
                   hintText: 'Type a message...',
                   hintStyle: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14),
+                      color: _subTextColor, fontSize: 14),
                   filled: true,
-                  fillColor: _kSurface,
+                  fillColor: _surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            // Send button
             GestureDetector(
               onTap: _isSending ? null : () => _sendMessage(),
               child: Container(
@@ -826,9 +831,14 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   // ── Menus ─────────────────────────────────────────────────────────────────
 
   void _showConversationMenu(BuildContext context) {
+    final isDark = _isDark;
+    final sheetBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+    final handleColor = isDark ? Colors.white24 : Colors.black12;
+    final titleStyle = TextStyle(
+        color: isDark ? Colors.white : Colors.black87);
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: sheetBg,
       shape: const RoundedRectangleBorder(
         borderRadius:
             BorderRadius.vertical(top: Radius.circular(16)),
@@ -842,22 +852,19 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               height: 4,
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: handleColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.block,
-                  color: Colors.red),
-              title: const Text('Block user',
-                  style: TextStyle(color: Colors.white)),
+              leading: const Icon(Icons.block, color: Colors.red),
+              title: Text('Block user', style: titleStyle),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.report_outlined,
                   color: Colors.orange),
-              title: const Text('Report',
-                  style: TextStyle(color: Colors.white)),
+              title: Text('Report', style: titleStyle),
               onTap: () => Navigator.pop(context),
             ),
             const SizedBox(height: 8),
@@ -868,22 +875,29 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   }
 
   Future<void> _showDeleteDialog(ChatMessage msg) async {
+    final isDark = _isDark;
+    final dialogBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+    final titleStyle = TextStyle(
+        color: isDark ? Colors.white : Colors.black87);
+    final contentStyle = TextStyle(
+        color: isDark ? Colors.white70 : Colors.black54);
     final del = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text('Delete message',
-            style: TextStyle(color: Colors.white)),
-        content: const Text(
+        backgroundColor: dialogBg,
+        title: Text('Delete message', style: titleStyle),
+        content: Text(
             'Delete this message for everyone?',
-            style: TextStyle(color: Colors.white70)),
+            style: contentStyle),
         actions: [
           TextButton(
             onPressed: () =>
                 Navigator.of(ctx).pop(false),
             child: Text('Cancel',
-                style:
-                    TextStyle(color: Colors.grey[400])),
+                style: TextStyle(
+                    color: isDark
+                        ? Colors.grey[400]
+                        : Colors.grey[600])),
           ),
           TextButton(
             onPressed: () =>

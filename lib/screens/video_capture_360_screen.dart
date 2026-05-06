@@ -502,7 +502,12 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: const Text('360° Video Capture'),
+        iconTheme: const IconThemeData(color: Colors.white),
+        actionsIconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          '360° Video Capture',
+          style: TextStyle(color: Colors.white),
+        ),
         actions: [
           if (_processedFrameUrls != null)
             IconButton(
@@ -673,7 +678,7 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
                               horizontal: 32,
                               vertical: 16,
                             ),
-                          backgroundColor: Colors.blue,
+                          backgroundColor: const Color(0xFFf48c25),
                         ),
                       ),
                       const SizedBox(height: 16),

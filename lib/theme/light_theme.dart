@@ -40,7 +40,7 @@ final ThemeData lightTheme = ThemeData(
 
   // App Bar Theme - Automotive Style
   appBarTheme: const AppBarTheme(
-    backgroundColor: Colors.transparent, // Same as app background
+    backgroundColor: Colors.transparent,
     foregroundColor: AppColors.lightOnSurface,
     elevation: 0,
     centerTitle: true,
