@@ -27,9 +27,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BASE_DIR = Path(__file__).parent.parent
-UPLOAD_DIR = BASE_DIR / "uploads"
-OUTPUT_DIR = BASE_DIR / "output"
+UPLOAD_DIR = Path("/tmp/uploads")
+OUTPUT_DIR  = Path("/tmp/output")
 
 for directory in [UPLOAD_DIR, OUTPUT_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
@@ -251,4 +250,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

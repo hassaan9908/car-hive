@@ -7,9 +7,6 @@ import '../config/backend_config.dart';
 
 /// Service for communicating with the 360 video processing backend
 class Backend360Service {
-  // Backend URL from configuration (async)
-  static Future<String> get baseUrl async => await BackendConfig.baseUrl;
-  
   /// Upload video and process it to generate 360 frames
   /// Returns list of frame URLs
   /// 
@@ -25,17 +22,11 @@ class Backend360Service {
       onProgress?.call(0, 100, 'Uploading video...');
       
       // Check if backend is reachable
-      final url = await baseUrl;
       final healthCheck = await checkHealth();
       if (!healthCheck) {
         throw Exception(
-          'Backend service is not reachable at $url.\n\n'
-          'Please ensure:\n'
-          '1. Backend server is running (python process.py)\n'
-          '2. For physical devices, configure the backend URL in the app settings\n'
-          '   (e.g., http://192.168.1.100:8000)\n'
-          '3. Both devices are on the same network\n'
-          '4. Firewall allows connections on port 8000'
+          'Cloud server is not reachable.\n\n'
+          'Please check your internet connection and try again.'
         );
       }
       
@@ -133,12 +124,12 @@ class Backend360Service {
     }
   }
   
-  /// Health check
+  /// Health check — 30s timeout to handle Heroku dyno wake-up
   Future<bool> checkHealth() async {
     try {
       final response = await http.get(
         Uri.parse(await BackendConfig.healthUrl),
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(const Duration(seconds: 30));
       return response.statusCode == 200;
     } catch (e) {
       return false;
