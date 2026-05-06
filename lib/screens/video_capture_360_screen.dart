@@ -365,7 +365,7 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
     }
   }
 
-  /// Show completion dialog
+  /// Show completion dialog — both actions are independent
   void _showCompletionDialog(List<String> frameUrls) {
     showDialog(
       context: context,
@@ -379,28 +379,37 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
           ],
         ),
         content: Text(
-          'Successfully generated ${frameUrls.length} frames for 360° rotation.\n\n'
-          'You can now preview the rotation or save it.',
+          'Generated ${frameUrls.length} frames for 360° rotation.\n\n'
+          'Preview first, then save — or save directly.',
         ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _preview360();
+              _preview360(); // frames stay in state; Save button remains visible
             },
             child: const Text('Preview'),
           ),
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
-              widget.onComplete?.call(frameUrls);
-              Navigator.pop(context, frameUrls);
+              _save360();
             },
-            child: const Text('Save & Continue'),
+            child: const Text('Save 360°'),
           ),
         ],
       ),
     );
+  }
+
+  /// Save processed frames back to the ad form
+  void _save360() {
+    if (_processedFrameUrls == null || _processedFrameUrls!.isEmpty) {
+      _showError('No processed frames to save. Please process the video first.');
+      return;
+    }
+    widget.onComplete?.call(_processedFrameUrls!);
+    Navigator.pop(context, _processedFrameUrls);
   }
 
   /// Preview 360 rotation
@@ -509,12 +518,18 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
           style: TextStyle(color: Colors.white),
         ),
         actions: [
-          if (_processedFrameUrls != null)
+          if (_processedFrameUrls != null) ...[
             IconButton(
               icon: const Icon(Icons.preview),
               onPressed: _preview360,
               tooltip: 'Preview 360°',
             ),
+            IconButton(
+              icon: const Icon(Icons.save_alt),
+              onPressed: _save360,
+              tooltip: 'Save 360°',
+            ),
+          ],
         ],
       ),
       body: SafeArea(
@@ -733,26 +748,69 @@ class _VideoCapture360ScreenState extends State<VideoCapture360Screen>
                 if (_recordedVideoPath != null && !_isProcessing)
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                          size: 48,
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Video recorded!',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton.icon(
-                          onPressed: _processVideo,
-                          icon: const Icon(Icons.upload),
-                          label: const Text('Process Video'),
-                        ),
-                      ],
-                    ),
+                    child: _processedFrameUrls != null
+                        // Frames ready — show Preview + Save independently
+                        ? Column(
+                            children: [
+                              const Icon(Icons.check_circle,
+                                  color: Colors.green, size: 48),
+                              const SizedBox(height: 8),
+                              const Text(
+                                '360° Ready!',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton.icon(
+                                onPressed: _preview360,
+                                icon: const Icon(Icons.preview),
+                                label: const Text('Preview 360°'),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor:
+                                      const Color(0xFF1E1E1E),
+                                  minimumSize:
+                                      const Size(double.infinity, 44),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              FilledButton.icon(
+                                onPressed: _save360,
+                                icon: const Icon(Icons.save_alt),
+                                label: const Text('Save 360°'),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor:
+                                      const Color(0xFFf48c25),
+                                  minimumSize:
+                                      const Size(double.infinity, 44),
+                                ),
+                              ),
+                            ],
+                          )
+                        // Not yet processed — show Process button
+                        : Column(
+                            children: [
+                              const Icon(Icons.check_circle,
+                                  color: Colors.green, size: 48),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Video recorded!',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 16),
+                              ),
+                              const SizedBox(height: 16),
+                              FilledButton.icon(
+                                onPressed: _processVideo,
+                                icon: const Icon(Icons.upload),
+                                label: const Text('Process Video'),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor:
+                                      const Color(0xFFf48c25),
+                                ),
+                              ),
+                            ],
+                          ),
                   ),
               ],
             ),

@@ -1601,7 +1601,7 @@ class _PostAdCarState extends State<PostAdCar> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         const Text(
-                                          'Video Capture (60 frames)',
+                                          'Video Capture (24 frames)',
                                           style: TextStyle(
                                             color: Colors.blue,
                                             fontWeight: FontWeight.bold,
