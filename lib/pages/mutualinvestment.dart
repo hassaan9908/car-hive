@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../components/custom_bottom_nav.dart';
 import '../services/investment_vehicle_service.dart';
 import '../services/investment_service.dart';
@@ -47,6 +48,366 @@ class _MutualinvestmentState extends State<Mutualinvestment>
         });
       }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkTermsAccepted());
+  }
+
+  Future<void> _checkTermsAccepted() async {
+    final prefs = await SharedPreferences.getInstance();
+    final accepted = prefs.getBool('investment_terms_accepted') ?? false;
+    if (!accepted && mounted) {
+      _showTermsDialog(isFirstTime: true);
+    }
+  }
+
+  void _showTermsDialog({bool isFirstTime = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: !isFirstTime,
+      enableDrag: !isFirstTime,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.gavel,
+                        color: Color(0xFFf48c25), size: 24),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Terms & Conditions',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  children: [
+                    // Subtitle block
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFf48c25).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: const Color(0xFFf48c25).withOpacity(0.4)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mutual Investment – Terms & Conditions',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: const Color(0xFFf48c25),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Pakistan-Wide Compliance + Investment Rules',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.grey[300] : Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            'For: Ownership Transfer + Multi-Investor Vehicles + Provincial Laws',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _tcSection(isDark, '1. Purpose & Acceptance',
+                        'By participating in the Mutual Investment Program ("Program") through this App ("Platform"), the Investor acknowledges and agrees to:\n'
+                        '• These Terms & Conditions\n'
+                        '• Federal Pakistani vehicle laws\n'
+                        '• Provincial Excise & Taxation rules of Punjab, Sindh, and Islamabad (ICT)\n'
+                        '• Platform\'s investment process and owner-selection mechanism\n\n'
+                        'Continued use of the Platform signifies acceptance of updated policies.'),
+                    _tcSection(isDark, '2. Mutual Investment Structure',
+                        '2.1 Multi-Investor Setup\n'
+                        'A vehicle listed by its current owner may be opened for Mutual Investment, allowing 4–6 investors to bid or invest in the vehicle.\n\n'
+                        '2.2 Ownership Determination\n'
+                        '• Highest investor / highest payer becomes the legal owner (the person whose name will be on the official Registration Book/Smart Card)\n'
+                        '• 2nd highest investor becomes the secondary beneficiary, NOT legal owner\n'
+                        '• All remaining investors hold financial stakes only, not ownership\n\n'
+                        'Important Legal Note (Pakistan Law):\n'
+                        'Pakistan allows only one legal owner per vehicle on the official Excise registration. There is no system for joint names on the Registration Book/Smart Card.\n'
+                        'Legal ownership = only one name. Financial rights = based on internal agreements between investors.'),
+                    _tcSection(isDark, '3. Company\'s Role & Responsibilities',
+                        '3.1 Company Manages Entire Transfer Process\n'
+                        'The Company is responsible for:\n'
+                        '• Handling all legal documents\n'
+                        '• Coordinating with Excise & Taxation offices\n'
+                        '• Preparing and submitting transfer files\n'
+                        '• Ensuring biometric verification is completed\n'
+                        '• Scheduling visits to Excise / NADRA e-Sahulat\n'
+                        '• Assisting in Punjab ePay digital process\n'
+                        '• Ensuring Sindh Form T.O. compliance\n'
+                        '• Ensuring ICT MRA requirements are fulfilled\n\n'
+                        '3.2 Company is Physically Present\n'
+                        'To prevent fraud and ensure safety:\n'
+                        '• The Company will be physically present with all parties at Excise offices\n'
+                        '• Biometric verification will be conducted face to face\n'
+                        '• Pakistan does NOT allow online or remote multi-owner transfers\n'
+                        '• Therefore, all ownership changes must be done in person'),
+                    _tcSection(isDark, '4. Agreement Between Investors',
+                        'Because Pakistan only allows one registered owner, all other investor rights come from:\n'
+                        '• A private Mutual Investment Agreement\n'
+                        '• Stamped and notarized contract between investors\n'
+                        '• Internal guidelines of the Platform\n\n'
+                        'This Agreement defines:\n'
+                        '• Profit sharing\n'
+                        '• Use of vehicle\n'
+                        '• Responsibilities of highest and secondary investors\n'
+                        '• Exit rules\n'
+                        '• Dispute handling\n'
+                        '• Buyout options\n\n'
+                        'This Agreement is legally binding among the investors, even though Excise recognizes only one owner.'),
+                    _tcSection(isDark, '5. Mandatory Legal Compliance (Pakistan-Wide)',
+                        '5.1 Biometric Verification\n'
+                        'Required by law for:\n'
+                        '• Seller\n'
+                        '• Buyer (highest investor)\n'
+                        '• Hire Purchase Agreement (HPA)/Bank representative (if financed)\n\n'
+                        'Biometrics occur at:\n'
+                        '• Excise & Taxation Office\n'
+                        '• NADRA e-Sahulat Center\n'
+                        '• Facial recognition (Punjab digital system)\n\n'
+                        '5.2 Required Documents\n'
+                        'Applicable nationwide:\n'
+                        '• CNIC copies of Buyer & Seller\n'
+                        '• Form F or Form T.O.\n'
+                        '• Sale Agreement / Affidavit\n'
+                        '• Original Registration Book / Smart Card\n'
+                        '• Token tax clearance\n'
+                        '• NOC from banks if vehicle is leased'),
+                    _tcSection(isDark, '6. Provincial Regulations',
+                        '6.1 Punjab (ePay Transfer System)\n'
+                        '• Registration number check\n'
+                        '• Buyer details\n'
+                        '• HPA declaration\n'
+                        '• PSID challan generation (17-digit)\n'
+                        '• Digital status track: BioPending → EV → PA → Delivered\n'
+                        '• Online payment of transfer fees\n\n'
+                        '6.2 Islamabad (ICT)\n'
+                        '• Application to MRA/ETO\n'
+                        '• Form F\n'
+                        '• CNIC copies\n'
+                        '• Attested documents if someone cannot appear\n'
+                        '• Proof of residence for out-of-district applicants\n'
+                        '• Affidavit that car is not stolen/criminally involved\n'
+                        '• Mobile registration via City Islamabad App\n\n'
+                        '6.3 Sindh (Form T.O. Based System)\n'
+                        '• Stamped Sale Deed\n'
+                        '• CNIC copies\n'
+                        '• Original file\n'
+                        '• Vehicle physical inspection\n'
+                        '• RTA/PHA NOC for commercial vehicles\n'
+                        '• Internal Excise notes (ETI, AETO, ETO approvals)'),
+                    _tcSection(isDark, '7. Nature of Rights of Investors',
+                        '7.1 Legal Ownership\n'
+                        'Only one name appears on official records: the highest investor.\n\n'
+                        '7.2 Secondary Investor\n'
+                        'Second highest investor receives:\n'
+                        '• Secondary claim\n'
+                        '• Economic interest\n'
+                        '• Contractual protections\n'
+                        'But NOT official Excise-level ownership.\n\n'
+                        '7.3 Other Investors\n'
+                        'Remaining investors hold:\n'
+                        '• Financial/economic stake\n'
+                        '• Contractual rights\n'
+                        '• Zero Excise-level rights'),
+                    _tcSection(isDark, '8. Company Limitations',
+                        'The Company does not:\n'
+                        '• Change, bypass, or influence government rules\n'
+                        '• Provide online ownership transfer (illegal in Pakistan)\n'
+                        '• Modify Excise records\n'
+                        '• Accept liability for Excise delays\n'
+                        '• Take responsibility for incorrect or missing user documents\n'
+                        '• Guarantee investor disputes between themselves (covered under agreement)'),
+                    _tcSection(isDark, '9. Fraud Prevention & Safety Measures',
+                        'To prevent fraud, the Company ensures:\n'
+                        '• Face-to-face verification of all parties\n'
+                        '• Mandatory CNIC matching\n'
+                        '• Physical attendance during biometrics\n'
+                        '• Inspection of original vehicle documents\n'
+                        '• Excise-level verification before investment\n'
+                        '• Seller must bring original vehicle and plates at time of transfer\n\n'
+                        'No fund release until:\n'
+                        '• Buyer & Seller biometrics match\n'
+                        '• Excise confirms case\n'
+                        '• Transfer reaches Delivered status (Punjab) or equivalent in region'),
+                    _tcSection(isDark, '10. Risks & Liability',
+                        'Investors understand risks:\n'
+                        '• Delays in Excise offices\n'
+                        '• Biometrics not matching\n'
+                        '• Problems with vehicle file\n'
+                        '• District-to-district NOC issues\n'
+                        '• Rejection from Excise due to errors\n'
+                        '• Disputes between investors\n\n'
+                        'The Platform is not liable for losses due to government decisions or investor misrepresentation.'),
+                    _tcSection(isDark, '11. Exit & Resale of Investment',
+                        'All exits follow:\n'
+                        '• Platform rules\n'
+                        '• Mutual Investment Agreement\n'
+                        '• Provincial Excise laws\n'
+                        '• New biometric + document submission by replacing investor'),
+                    _tcSection(isDark, '12. Dispute Resolution',
+                        'Disputes are resolved through:\n'
+                        '1. Platform internal process\n'
+                        '2. Terms of the Mutual Investment Agreement\n'
+                        '3. Pakistani law in the relevant jurisdiction'),
+                    _tcSection(isDark, '13. Amendments',
+                        'The Platform may change these T&Cs at any time. Continued use of the Mutual Investment feature after any update constitutes acceptance of the revised terms.'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Last updated: May 2025',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.grey[600] : Colors.grey[500],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+              if (isFirstTime)
+                Padding(
+                  padding:
+                      const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.pushNamedAndRemoveUntil(
+                                context, '/', (route) => false);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 14),
+                            side: const BorderSide(
+                                color: Color(0xFFf48c25)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Decline',
+                              style:
+                                  TextStyle(color: Color(0xFFf48c25))),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () async {
+                            final prefs =
+                                await SharedPreferences.getInstance();
+                            await prefs.setBool(
+                                'investment_terms_accepted', true);
+                            if (context.mounted) Navigator.pop(context);
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFFf48c25),
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Accept & Continue'),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFf48c25),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Close'),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _tcSection(bool isDark, String title, String body) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              color: const Color(0xFFf48c25),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            body,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: isDark ? Colors.grey[300] : Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -224,6 +585,11 @@ class _MutualinvestmentState extends State<Mutualinvestment>
           elevation: 0,
           actions: [
             IconButton(
+              icon: const Icon(Icons.gavel_outlined),
+              onPressed: () => _showTermsDialog(),
+              tooltip: 'Terms & Conditions',
+            ),
+            IconButton(
               icon: const Icon(Icons.add_circle_outline),
               onPressed: () async {
                 final result = await Navigator.push(
@@ -233,7 +599,6 @@ class _MutualinvestmentState extends State<Mutualinvestment>
                   ),
                 );
                 if (result != null && mounted) {
-                  // Investment created, could navigate to detail page
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Investment opportunity created!'),

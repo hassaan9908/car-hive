@@ -53,8 +53,7 @@ class AdminService {
         print('AdminService: Ad status check - $title: $status');
 
         if (status == null || status == '') {
-          print(
-              'AdminService: Ad without status found - $title, counting as pending');
+          // Ads without status are treated as pending
           pendingAds++;
         } else {
           switch (status) {
@@ -67,10 +66,8 @@ class AdminService {
             case 'rejected':
               rejectedAds++;
               break;
+            // sold, removed, expired, etc. are not pending — skip them
             default:
-              print('AdminService: Unknown status for ad $title: $status');
-              // Count unknown statuses as pending for now
-              pendingAds++;
               break;
           }
         }
