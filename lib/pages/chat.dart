@@ -7,9 +7,6 @@ import '../models/conversation_model.dart';
 import 'chat_detail_page.dart';
 
 const Color _kOrange = Color(0xFFFF9900);
-const Color _kBg = Color(0xFF0A0A0A);
-const Color _kCard = Color(0xFF141414);
-const Color _kSurface = Color(0xFF1E1E1E);
 
 class Chat extends StatefulWidget {
   const Chat({super.key});
@@ -123,18 +120,20 @@ class _ChatState extends State<Chat> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final currentUser = _auth.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF0A0A0A) : Colors.white;
 
     if (currentUser == null) {
-      return _buildUnauthenticated();
+      return _buildUnauthenticated(context);
     }
 
     return Scaffold(
-      backgroundColor: _kBg,
-      appBar: _buildAppBar(),
+      backgroundColor: bg,
+      appBar: _buildAppBar(context),
       body: Column(
         children: [
-          _buildSearchBar(),
-          _buildTabBar(currentUser.uid),
+          _buildSearchBar(context),
+          _buildTabBar(context, currentUser.uid),
           Expanded(
             child: !_loaded
                 ? const Center(
@@ -145,8 +144,8 @@ class _ChatState extends State<Chat> with SingleTickerProviderStateMixin {
                         ['all', 'buying', 'selling'].map((filter) {
                       final filtered =
                           _applyFilter(_conversations, currentUser.uid, filter);
-                      if (filtered.isEmpty) return _buildEmpty(filter);
-                      return _buildList(filtered, currentUser.uid);
+                      if (filtered.isEmpty) return _buildEmpty(context, filter);
+                      return _buildList(context, filtered, currentUser.uid);
                     }).toList(),
                   ),
           ),
@@ -155,11 +154,15 @@ class _ChatState extends State<Chat> with SingleTickerProviderStateMixin {
     );
   }
 
-  AppBar _buildAppBar() {
+  AppBar _buildAppBar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF0A0A0A) : Colors.white;
+    final titleColor = isDark ? _kOrange : Colors.black87;
     return AppBar(
-      backgroundColor: _kBg,
+      backgroundColor: bg,
       elevation: 0,
       centerTitle: true,
+      iconTheme: IconThemeData(color: titleColor),
       title: StreamBuilder<int>(
         stream: _chatService.getTotalUnreadCount(),
         builder: (context, snapshot) {
@@ -167,10 +170,10 @@ class _ChatState extends State<Chat> with SingleTickerProviderStateMixin {
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Chats',
                 style: TextStyle(
-                    color: _kOrange,
+                    color: titleColor,
                     fontSize: 20,
                     fontWeight: FontWeight.bold),
               ),
@@ -204,28 +207,28 @@ class _ChatState extends State<Chat> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF0F0F0);
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final hintColor = isDark ? Colors.grey[600]! : Colors.grey[500]!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: TextField(
         controller: _searchController,
-        style:
-            const TextStyle(color: Colors.white, fontSize: 14),
+        style: TextStyle(color: textColor, fontSize: 14),
         decoration: InputDecoration(
           hintText: 'Search conversations...',
-          hintStyle:
-              TextStyle(color: Colors.grey[600], fontSize: 14),
-          prefixIcon:
-              Icon(Icons.search, color: Colors.grey[600], size: 20),
+          hintStyle: TextStyle(color: hintColor, fontSize: 14),
+          prefixIcon: Icon(Icons.search, color: hintColor, size: 20),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.clear,
-                      color: Colors.grey[600], size: 18),
+                  icon: Icon(Icons.clear, color: hintColor, size: 18),
                   onPressed: () => _searchController.clear(),
                 )
               : null,
           filled: true,
-          fillColor: _kSurface,
+          fillColor: surface,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -236,14 +239,15 @@ class _ChatState extends State<Chat> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildTabBar(String currentUserId) {
+  Widget _buildTabBar(BuildContext context, String currentUserId) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? Colors.white12 : Colors.black12;
     final allU = _unreadFor('all', currentUserId);
     final buyU = _unreadFor('buying', currentUserId);
     final selU = _unreadFor('selling', currentUserId);
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(
-            bottom: BorderSide(color: Colors.white12, width: 0.5)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: borderColor, width: 0.5)),
       ),
       child: TabBar(
         controller: _tabController,
@@ -294,13 +298,17 @@ class _ChatState extends State<Chat> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildList(
-      List<Conversation> conversations, String currentUserId) {
+      BuildContext context, List<Conversation> conversations, String currentUserId) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dividerColor = isDark
+        ? Colors.white.withOpacity(0.06)
+        : Colors.black.withOpacity(0.08);
     return ListView.separated(
       padding: const EdgeInsets.only(top: 4, bottom: 12),
       itemCount: conversations.length,
       separatorBuilder: (_, __) => Divider(
         height: 0.5,
-        color: Colors.white.withOpacity(0.06),
+        color: dividerColor,
         indent: 80,
         endIndent: 0,
       ),
@@ -318,7 +326,10 @@ class _ChatState extends State<Chat> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildEmpty(String filter) {
+  Widget _buildEmpty(BuildContext context, String filter) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark ? Colors.grey[800]! : Colors.grey[400]!;
+    final textColor = isDark ? Colors.grey[600]! : Colors.grey[500]!;
     final messages = {
       'all':
           'No conversations yet\nStart chatting from a car listing',
@@ -331,56 +342,41 @@ class _ChatState extends State<Chat> with SingleTickerProviderStateMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.chat_bubble_outline,
-              size: 56, color: Colors.grey[800]),
+          Icon(Icons.chat_bubble_outline, size: 56, color: iconColor),
           const SizedBox(height: 16),
           Text(
             messages[filter] ?? '',
             textAlign: TextAlign.center,
-            style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-                height: 1.6),
+            style: TextStyle(color: textColor, fontSize: 14, height: 1.6),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline,
-              size: 56, color: Colors.grey[800]),
-          const SizedBox(height: 12),
-          Text('Error loading chats',
-              style: TextStyle(color: Colors.grey[600])),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUnauthenticated() {
+  Widget _buildUnauthenticated(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF0A0A0A) : Colors.white;
+    final iconColor = isDark ? Colors.grey[800]! : Colors.grey[400]!;
+    final textColor = isDark ? Colors.grey[600]! : Colors.grey[500]!;
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: bg,
       appBar: AppBar(
-        backgroundColor: _kBg,
+        backgroundColor: bg,
         centerTitle: true,
-        title: const Text('Chats',
+        title: Text('Chats',
             style: TextStyle(
-                color: _kOrange, fontWeight: FontWeight.bold)),
+                color: isDark ? _kOrange : Colors.black87,
+                fontWeight: FontWeight.bold)),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.chat_bubble_outline,
-                size: 56, color: Colors.grey[800]),
+            Icon(Icons.chat_bubble_outline, size: 56, color: iconColor),
             const SizedBox(height: 16),
             Text('Please login to view your chats',
-                style: TextStyle(color: Colors.grey[600])),
+                style: TextStyle(color: textColor)),
           ],
         ),
       ),
@@ -426,6 +422,14 @@ class _ConversationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF0A0A0A) : Colors.white;
+    final nameColor = isDark ? Colors.white : Colors.black87;
+    final subColor = isDark ? Colors.grey[500]! : Colors.grey[600]!;
+    final splashColor = isDark
+        ? Colors.white.withOpacity(0.04)
+        : Colors.black.withOpacity(0.04);
+
     return FutureBuilder<Map<String, dynamic>?>(
       future: chatService.getUserInfo(otherUserId),
       builder: (context, snapshot) {
@@ -448,8 +452,8 @@ class _ConversationTile extends StatelessWidget {
         return Material(
           color: Colors.transparent,
           child: InkWell(
-            splashColor: Colors.white.withOpacity(0.04),
-            highlightColor: Colors.white.withOpacity(0.02),
+            splashColor: splashColor,
+            highlightColor: splashColor,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -499,11 +503,9 @@ class _ConversationTile extends StatelessWidget {
                             width: 13,
                             height: 13,
                             decoration: BoxDecoration(
-                              color:
-                                  const Color(0xFF4CAF50),
+                              color: const Color(0xFF4CAF50),
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: _kBg, width: 2),
+                              border: Border.all(color: bg, width: 2),
                             ),
                           ),
                         ),
@@ -520,7 +522,7 @@ class _ConversationTile extends StatelessWidget {
                         Text(
                           displayName,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: nameColor,
                             fontWeight: hasUnread
                                 ? FontWeight.bold
                                 : FontWeight.w500,
@@ -567,9 +569,7 @@ class _ConversationTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: hasUnread
-                                ? _kOrange
-                                : Colors.grey[500],
+                            color: hasUnread ? _kOrange : subColor,
                             fontSize: 13,
                             fontWeight: hasUnread
                                 ? FontWeight.w500
@@ -591,9 +591,7 @@ class _ConversationTile extends StatelessWidget {
                         _formatTime(
                             conversation.lastMessageTime),
                         style: TextStyle(
-                          color: hasUnread
-                              ? _kOrange
-                              : Colors.grey[600],
+                          color: hasUnread ? _kOrange : subColor,
                           fontSize: 11,
                           fontWeight: hasUnread
                               ? FontWeight.w600

@@ -327,8 +327,12 @@ class _Car360ViewerScreenState extends State<Car360ViewerScreen>
           ? null
           : AppBar(
               backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
               elevation: 0,
-              title: Text(widget.title),
+              title: Text(
+                widget.title,
+                style: const TextStyle(color: Colors.white),
+              ),
               actions: [
                 // Settings button
                 IconButton(

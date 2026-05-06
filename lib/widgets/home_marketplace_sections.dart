@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import '../models/ad_model.dart';
 import '../services/fuel_price_service.dart';
 import '../services/market_pulse_service.dart';
+import '../store/global_ads.dart';
 import 'market_pulse_teaser_card.dart';
 
 class HomeMarketplaceSections extends StatefulWidget {
@@ -34,6 +35,8 @@ class _HomeMarketplaceSectionsState extends State<HomeMarketplaceSections> {
   final _fuelPriceService = FuelPriceService();
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
       _fuelPricesSubscription;
+  StreamSubscription<List<AdModel>>? _adsSubscription;
+  Timer? _reloadDebounce;
 
   bool _isLoading = true;
   bool _isRefreshingNearYou = false;
@@ -51,11 +54,27 @@ class _HomeMarketplaceSectionsState extends State<HomeMarketplaceSections> {
     super.initState();
     _loadSections();
     _listenToFuelPriceUpdates();
+    _listenToAdsChanges();
+  }
+
+  void _listenToAdsChanges() {
+    _adsSubscription = GlobalAdStore().getAllActiveAds().listen((_) {
+      // Debounce: wait 3s after the last change before reloading sections
+      _reloadDebounce?.cancel();
+      _reloadDebounce = Timer(const Duration(seconds: 3), () {
+        if (mounted && !_isLoading) {
+          _HomeMarketplaceSectionsService.clearCache();
+          _loadSections();
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
     _fuelPricesSubscription?.cancel();
+    _adsSubscription?.cancel();
+    _reloadDebounce?.cancel();
     super.dispose();
   }
 
@@ -1135,6 +1154,11 @@ class _HomeMarketplaceSectionsService {
 
   static List<_HomeCarItem>? _newTodayCache;
   static DateTime? _newTodayCacheTimestamp;
+
+  static void clearCache() {
+    _newTodayCache = null;
+    _newTodayCacheTimestamp = null;
+  }
 
   Future<List<_HomeCarItem>> fetchFeaturedCars({int limit = 10}) async {
     final snapshot = await _firestore.collection('ads').get();

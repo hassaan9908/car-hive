@@ -151,11 +151,11 @@ class _SavedAdsPageState extends State<SavedAdsPage> {
             itemCount: savedAdIds.length,
             itemBuilder: (context, index) {
               final adId = savedAdIds[index];
-              return FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance
+              return StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
                     .collection('ads')
                     .doc(adId)
-                    .get(),
+                    .snapshots(),
                 builder: (context, adSnapshot) {
                   if (!adSnapshot.hasData || !adSnapshot.data!.exists) {
                     return const SizedBox.shrink();
@@ -163,8 +163,15 @@ class _SavedAdsPageState extends State<SavedAdsPage> {
 
                   final adData =
                       adSnapshot.data!.data() as Map<String, dynamic>;
-                  final ad = AdModel.fromFirestore(adData, adSnapshot.data!.id);
+                  final status =
+                      (adData['status'] ?? '').toString().toLowerCase();
 
+                  // Hide ads that are no longer active
+                  if (status != 'active' && status != 'approved') {
+                    return const SizedBox.shrink();
+                  }
+
+                  final ad = AdModel.fromFirestore(adData, adSnapshot.data!.id);
                   return _buildSavedAdCard(ad, colorScheme);
                 },
               );

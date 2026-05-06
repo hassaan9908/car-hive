@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:carhive/models/ad_model.dart';
 import 'package:carhive/store/global_ads.dart';
@@ -10,6 +12,7 @@ class SearchProvider extends ChangeNotifier {
   List<AdModel> _filteredAds = [];
   bool _isLoading = false;
   String? _error;
+  StreamSubscription<List<AdModel>>? _adsSub;
 
   String get searchQuery => _searchQuery;
   String? get selectedBrandId => _selectedBrandId;
@@ -17,28 +20,32 @@ class SearchProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Initialize with all ads
-  Future<void> initializeAds() async {
+  // Initialize with all ads and keep listening for changes
+  void initializeAds() {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    try {
-      final globalAdStore = GlobalAdStore();
-      final adsStream = globalAdStore.getAllActiveAds();
-      
-      await for (List<AdModel> ads in adsStream) {
+    _adsSub?.cancel();
+    _adsSub = GlobalAdStore().getAllActiveAds().listen(
+      (ads) {
         _allAds = ads;
-        _filteredAds = ads;
+        _isLoading = false;
+        _filterAds();
+        notifyListeners();
+      },
+      onError: (e) {
+        _error = e.toString();
         _isLoading = false;
         notifyListeners();
-        break; // Get the first snapshot
-      }
-    } catch (e) {
-      _error = e.toString();
-      _isLoading = false;
-      notifyListeners();
-    }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _adsSub?.cancel();
+    super.dispose();
   }
 
   // Update search query and filter ads

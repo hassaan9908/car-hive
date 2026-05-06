@@ -61,16 +61,15 @@ class _HomepageState extends State<Homepage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<SearchProvider>();
-      provider.initializeAds().then((_) {
-        final initialQuery = widget.initialSearchQuery?.trim();
-        if (initialQuery != null && initialQuery.isNotEmpty && mounted) {
-          _searchController.text = initialQuery;
-          provider.updateSearchQuery(initialQuery);
-          setState(() {
-            _isSearchActive = true;
-          });
-        }
-      });
+      provider.initializeAds();
+      final initialQuery = widget.initialSearchQuery?.trim();
+      if (initialQuery != null && initialQuery.isNotEmpty && mounted) {
+        _searchController.text = initialQuery;
+        provider.updateSearchQuery(initialQuery);
+        setState(() {
+          _isSearchActive = true;
+        });
+      }
     });
   }
 

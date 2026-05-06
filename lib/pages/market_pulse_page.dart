@@ -344,13 +344,19 @@ class _MarketPulsePageState extends State<MarketPulsePage>
               title: Text(
                 'MarketPulse',
                 style: TextStyle(
-                  color: colors.accent,
+                  color: colors.isDark ? colors.accent : colors.text,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               centerTitle: true,
               automaticallyImplyLeading: false,
               backgroundColor: colors.background,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back,
+                    color: colors.isDark ? colors.accent : colors.text),
+                onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                    context, '/', (route) => false),
+              ),
             ),
       body: body,
       bottomNavigationBar: widget.isAdmin

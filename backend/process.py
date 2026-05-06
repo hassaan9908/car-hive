@@ -2,6 +2,10 @@
 Backend service for processing 360° car rotation videos.
 Converts video → stabilized frames → resampled → smooth 360 sequence.
 """
+import sys
+# Force UTF-8 output so emoji characters in print() don't crash on Windows cp1252 consoles
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
 
 import os
 import cv2
