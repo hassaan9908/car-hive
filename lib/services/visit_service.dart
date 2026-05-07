@@ -280,6 +280,24 @@ class VisitService {
     return visitRef.id;
   }
 
+  Stream<List<VisitBooking>> watchAllVisits() {
+    return _visitsCollection
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map(VisitBooking.fromFirestore).toList());
+  }
+
+  Future<String> getUserDisplayName(String userId) async {
+    try {
+      final doc = await _usersCollection.doc(userId).get();
+      if (!doc.exists) return userId;
+      return _resolveUserName(doc.data() ?? <String, dynamic>{});
+    } catch (_) {
+      return userId;
+    }
+  }
+
   Stream<List<VisitBooking>> watchUserVisits(String userId) {
     return _visitsCollection
         .where('userId', isEqualTo: userId)
