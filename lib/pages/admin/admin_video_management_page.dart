@@ -119,27 +119,56 @@ class _AdminVideoManagementPageState extends State<AdminVideoManagementPage> {
         child: Consumer<ContentProvider>(
           builder: (context, contentProvider, child) {
             if (contentProvider.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (contentProvider.errorMessage != null) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error, color: Colors.red.shade400, size: 48),
+                    CircularProgressIndicator(color: accent),
                     const SizedBox(height: 16),
                     Text(
-                      contentProvider.errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.red.shade400),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _loadVideos,
-                      child: const Text('Retry'),
+                      'Loading videos...',
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.grey.shade700,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
+                ),
+              );
+            }
+
+            if (contentProvider.errorMessage != null) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red.shade400, size: 56),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Failed to load videos',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        contentProvider.errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.red.shade400, fontSize: 13),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        onPressed: _loadVideos,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(backgroundColor: accent, foregroundColor: Colors.white),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }
@@ -154,19 +183,25 @@ class _AdminVideoManagementPageState extends State<AdminVideoManagementPage> {
                   children: [
                     Icon(
                       Icons.video_library_outlined,
-                      size: 64,
-                      color: isDark
-                          ? Colors.white.withOpacity(0.3)
-                          : Colors.grey.shade400,
+                      size: 72,
+                      color: accent.withOpacity(0.5),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'No videos found',
+                      'No Videos Yet',
                       style: TextStyle(
-                        fontSize: 18,
-                        color: isDark
-                            ? Colors.white.withOpacity(0.7)
-                            : Colors.grey.shade600,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Upload your first video using the Upload Video page.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDark ? Colors.white60 : Colors.grey.shade600,
                       ),
                     ),
                   ],

@@ -85,10 +85,10 @@ class ContentProvider with ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      
+
       _blogs = await _contentService.getAllBlogs();
-      // Sort by createdAt in descending order (latest first)
-      _blogs.sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
+      // Sort by createdAt in descending order (latest first), null-safe
+      _blogs.sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
       notifyListeners();
     } catch (e) {
       String errorMessage = e.toString();
@@ -150,10 +150,10 @@ class ContentProvider with ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      
+
       _videos = await _contentService.getAllVideos();
-      // Sort by createdAt in descending order (latest first)
-      _videos.sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
+      // Sort by createdAt in descending order (latest first), null-safe
+      _videos.sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
       notifyListeners();
     } catch (e) {
       String errorMessage = e.toString();
