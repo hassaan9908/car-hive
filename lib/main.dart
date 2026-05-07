@@ -23,6 +23,7 @@ import 'theme/theme_provider.dart';
 import 'auth/auth_provider.dart';
 import 'firebase_options.dart';
 import 'pages/admin/admin_main.dart';
+import 'pages/admin/admin_login_page.dart';
 import 'providers/admin_provider.dart';
 import 'providers/search_provider.dart';
 import 'providers/content_provider.dart'; // Add ContentProvider import
@@ -168,7 +169,7 @@ class MyApp extends StatelessWidget {
                 ),
               );
             },
-            home: const AppInitializer(),
+            home: kIsWeb ? const AdminLoginPage() : const AppInitializer(),
             debugShowCheckedModeBanner: false,
             routes: {
               '/startup': (context) => const StartupPage(),
@@ -195,7 +196,8 @@ class MyApp extends StatelessWidget {
               '/marketpulse': (context) => const MarketPulsePage(),
               '/upload': (context) => const Upload(),
               'loginscreen': (context) => const Loginscreen(),
-              '/admin': (context) => const AdminMain(),
+              '/admin': (context) => const AdminLoginPage(),
+              '/admin/dashboard': (context) => const AdminMain(),
               '/admin-debug': (context) => const AdminDebugPage(),
               '/blogs': (context) => const BlogListPage(), // Add this route
               '/videos': (context) => const VideoListPage(), // Add this route

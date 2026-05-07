@@ -73,10 +73,10 @@ class ContentService {
     }
   }
 
-  // Get all blogs sorted by latest first
+  // Get all blogs (sorted client-side to avoid Firestore index requirements)
   Future<List<BlogModel>> getAllBlogs() async {
     try {
-      final snapshot = await _firestore.collection('blogs').orderBy('createdAt', descending: true).get();
+      final snapshot = await _firestore.collection('blogs').get();
       return snapshot.docs
           .map((doc) => BlogModel.fromFirestore(doc.data(), doc.id))
           .toList();
@@ -160,10 +160,10 @@ class ContentService {
     }
   }
 
-  // Get all videos sorted by latest first
+  // Get all videos (sorted client-side to avoid Firestore index requirements)
   Future<List<VideoModel>> getAllVideos() async {
     try {
-      final snapshot = await _firestore.collection('videos').orderBy('createdAt', descending: true).get();
+      final snapshot = await _firestore.collection('videos').get();
       return snapshot.docs
           .map((doc) => VideoModel.fromFirestore(doc.data(), doc.id))
           .toList();
