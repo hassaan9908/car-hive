@@ -298,6 +298,15 @@ class _AppInitializerState extends State<AppInitializer> {
 
   @override
   Widget build(BuildContext context) {
+    // On the deployed web app (not localhost), show admin panel only
+    if (kIsWeb) {
+      final host = Uri.base.host;
+      final isLocalhost = host == 'localhost' || host == '127.0.0.1';
+      if (!isLocalhost) {
+        return const AdminLoginPage();
+      }
+    }
+
     if (!_isInitialized) {
       return const Scaffold(
         body: Center(
