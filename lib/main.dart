@@ -169,7 +169,7 @@ class MyApp extends StatelessWidget {
                 ),
               );
             },
-            home: kIsWeb ? const AdminLoginPage() : const AppInitializer(),
+            home: const AppInitializer(),
             debugShowCheckedModeBanner: false,
             routes: {
               '/startup': (context) => const StartupPage(),

@@ -12,6 +12,7 @@ import 'admin_fuel_prices_page.dart';
 import 'admin_insight_metrics_page.dart';
 import 'admin_market_pulse_page.dart';
 import 'admin_reschedule_requests_page.dart';
+import 'admin_visit_bookings_page.dart';
 import 'admin_support_chats_page.dart';
 import 'admin_theme.dart';
 import 'admin_users_page.dart';
@@ -85,6 +86,12 @@ class _AdminLayoutState extends State<AdminLayout> with WidgetsBindingObserver {
       title: 'Visit Schedules',
       icon: Icons.edit_calendar_outlined,
       builder: (_) => const AdminVisitSchedulePage(),
+    ),
+    AdminNavigationItem(
+      id: 'visit_bookings',
+      title: 'Visit Bookings',
+      icon: Icons.event_available_outlined,
+      builder: (_) => const AdminVisitBookingsPage(),
     ),
     AdminNavigationItem(
       id: 'visit_requests',

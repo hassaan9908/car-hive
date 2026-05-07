@@ -536,8 +536,15 @@ service cloud.firestore {
       // Book Visit screen reads city/area/date/slot data from here
       allow read: if true;
 
-      // Only admins can manage schedules
-      allow create, update, delete: if isAdmin();
+      // Only admins can create/delete schedules
+      allow create, delete: if isAdmin();
+
+      // Admins can update anything; signed-in users may only increment bookedCount
+      // via the visit booking transaction (changes dates map and updatedAt only)
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['dates', 'updatedAt'])
+      );
     }
 
     // VISITS collection
