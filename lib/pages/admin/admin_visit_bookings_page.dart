@@ -206,7 +206,7 @@ class _BookingCardState extends State<_BookingCard> {
                         Text(
                           'Requested ${DateFormat('dd MMM yyyy, hh:mm a').format(booking.createdAt!)}',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.outline,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -259,7 +259,8 @@ class _Row extends StatelessWidget {
             child: Text(
               label,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
